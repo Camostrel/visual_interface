@@ -1022,14 +1022,6 @@
   margin: 0 auto;
 }
 
-.editor-left-panel.is-collapsed .brand {
-  justify-content: center;
-}
-
-.editor-left-panel.is-collapsed .panel-toggle-button {
-  margin: 0 auto;
-}
-
 @media (max-width: 760px) and (orientation: portrait) {
   .right-panel.is-collapsed .brand {
     justify-content: space-between;
@@ -1106,22 +1098,6 @@
   animation: arvid-slide-in-left 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-/* → editor: fade + всплытие снизу */
-:root[data-nav-transition="to-editor"]::view-transition-old(root) {
-  animation: arvid-fade-out 250ms ease both;
-}
-:root[data-nav-transition="to-editor"]::view-transition-new(root) {
-  animation: arvid-fade-in-up 250ms ease both;
-}
-
-/* ← editor: fade + уход вниз */
-:root[data-nav-transition="from-editor"]::view-transition-old(root) {
-  animation: arvid-fade-out-down 250ms ease both;
-}
-:root[data-nav-transition="from-editor"]::view-transition-new(root) {
-  animation: arvid-fade-in 250ms ease both;
-}
-
 @keyframes arvid-slide-out-left {
   to { transform: translateX(-25%); opacity: 0; }
 }
@@ -1133,18 +1109,6 @@
 }
 @keyframes arvid-slide-in-left {
   from { transform: translateX(-25%); opacity: 0; }
-}
-@keyframes arvid-fade-out {
-  to { opacity: 0; }
-}
-@keyframes arvid-fade-in {
-  from { opacity: 0; }
-}
-@keyframes arvid-fade-in-up {
-  from { opacity: 0; transform: translateY(12px); }
-}
-@keyframes arvid-fade-out-down {
-  to { opacity: 0; transform: translateY(12px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

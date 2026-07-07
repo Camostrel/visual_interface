@@ -11,6 +11,13 @@ class ArvidRoomPage {
     this.floorId = null;
     this.devicePopup = null;
     this.markerPress = null;
+    // Режим редактирования расстановки устройств (v0.2.0) — вместо отдельной страницы редактора.
+    this.editMode = false;
+    this.editDirty = false;
+    this.editSelectedEntityId = null;
+    this.editFilter = "all";
+    this.editStatusText = "";
+    this.deviceDrag = null;
     this.initialized = false;
   }
 
@@ -47,6 +54,13 @@ class ArvidRoomPage {
   async show(params = {}) {
     this.setRouteParams(params);
 
+    // При каждом показе комнаты выходим из режима редактирования;
+    // несохранённые изменения разруливаем через подтверждение.
+    if (this.editMode) {
+      await this.resolveEditDirty();
+      this.setEditMode(false, { skipRender: true });
+    }
+
     ARVID_LOG.info(this.logArea, "Showing room view", {
       areaId: this.areaId,
       floorId: this.floorId,
@@ -66,6 +80,9 @@ class ArvidRoomPage {
 
   handleStateChanged() {
     if (!this.initialized || !this.areaId) return;
+    // В режиме редактирования не перерисовываем по state_changed:
+    // перерисовка слоя убила бы активный drag и сбрасывала список устройств.
+    if (this.editMode) return;
     this.renderDeviceMarkers();
     this.renderControls();
   }
@@ -82,16 +99,10 @@ class ArvidRoomPage {
       window.ARVID_SPA?.navigate("floor", this.floorId ? { floor_id: this.floorId } : {});
     });
 
-    document.querySelector("[data-edit-room]")?.addEventListener("click", () => {
-      const params = new URLSearchParams();
-      params.set("area_id", this.areaId);
-      if (this.floorId) params.set("floor_id", this.floorId);
-
-      ARVID_LOG.info(this.logArea, "Opening room device editor", {
-        areaId: this.areaId,
-        floorId: this.floorId,
+    document.querySelector("[data-room-edit-toggle]")?.addEventListener("click", () => {
+      this.toggleEditMode().catch((error) => {
+        ARVID_LOG.error(this.logArea, "Failed to toggle room edit mode", error);
       });
-      window.ARVID_SPA?.navigate("editor", Object.fromEntries(params.entries()));
     });
   }
 
@@ -130,6 +141,9 @@ class ArvidRoomPage {
     this.panZoom = ArvidSvgUtils.setupPanZoom(container, this.svg, {
       logArea: this.logArea,
     });
+
+    // Тап по плану в режиме редактирования размещает выбранное устройство.
+    this.svg.addEventListener("click", (event) => this.handleEditPlanClick(event));
 
     this.updateMobilePlanLayout();
     this.bindResponsiveResize();
@@ -184,17 +198,23 @@ class ArvidRoomPage {
     const layer = ArvidSvgUtils.ensureOverlayLayer(this.svg, "arvid-device-markers");
     ArvidSvgUtils.clearLayer(layer);
 
-    const entities = this.getRoomEntities();
+    const entities = this.editMode ? this.getEditableEntities() : this.getRoomEntities();
     let rendered = 0;
 
     entities.forEach((state) => {
       const layout = this.getDeviceLayout(state.entity_id);
-      if (!layout || layout.visible === false || layout.x === undefined || layout.y === undefined) return;
+      if (!layout || layout.x === undefined || layout.y === undefined) return;
+
+      // Убранные с плана устройства в обычном режиме не показываем,
+      // в режиме редактирования — показываем полупрозрачными, чтобы их можно было вернуть.
+      const isHiddenOnPlan = layout.visible === false;
+      if (isHiddenOnPlan && !this.editMode) return;
 
       const marker = layout.marker || "icon";
       const kind = layout.icon === "auto" || !layout.icon ? ArvidDeviceUi.markerKind(state) : layout.icon;
+      const isSelected = this.editMode && state.entity_id === this.editSelectedEntityId;
       const group = ArvidSvgUtils.createSvgElement("g", {
-        class: `device-marker marker-${marker} device-kind-${kind} ${ArvidDeviceUi.isActive(state) ? "is-on is-active" : ""}`,
+        class: `device-marker marker-${marker} device-kind-${kind} ${ArvidDeviceUi.isActive(state) ? "is-on is-active" : ""} ${isSelected ? "is-selected" : ""} ${isHiddenOnPlan ? "is-hidden-on-plan" : ""}`,
         transform: `translate(${layout.x}, ${layout.y})`,
         tabindex: "0",
       });
@@ -247,6 +267,18 @@ class ArvidRoomPage {
         group.appendChild(text);
       }
 
+      // Рамка выделения выбранного устройства (только в режиме редактирования).
+      if (this.editMode) {
+        group.appendChild(ArvidSvgUtils.createSvgElement("rect", {
+          x: -24,
+          y: -24,
+          width: 48,
+          height: 48,
+          rx: 12,
+          class: "device-marker-selection",
+        }));
+      }
+
       this.bindDeviceMarkerEvents(group, state);
       layer.appendChild(group);
       rendered += 1;
@@ -268,6 +300,12 @@ class ArvidRoomPage {
   }
 
   bindDeviceMarkerEvents(group, state) {
+    // В режиме редактирования маркер не управляет устройством: drag переносит, клик выбирает.
+    if (this.editMode) {
+      group.addEventListener("pointerdown", (event) => this.startDeviceDrag(event, state, group));
+      return;
+    }
+
     // Короткое нажатие выполняет основное действие, длинное — открывает точечное управление.
     group.addEventListener("pointerdown", (event) => {
       if (event.button !== undefined && event.button !== 0) return;
@@ -504,6 +542,11 @@ class ArvidRoomPage {
     const container = document.querySelector("[data-room-controls]");
     if (!container) return;
 
+    if (this.editMode) {
+      this.renderEditPanel(container);
+      return;
+    }
+
     const entities = this.getRoomEntities();
     const lights = entities.filter((state) => state.entity_id.startsWith("light."));
     const sensors = entities.filter((state) => ArvidDeviceUi.isReadableSensor(state));
@@ -721,6 +764,369 @@ class ArvidRoomPage {
     });
 
     return card;
+  }
+
+  /* ===== Режим редактирования расстановки устройств (v0.2.0) =====
+   * Не отдельная страница: включается кнопкой в шапке комнаты.
+   * Упрощённый редактор: список устройств с фильтрами, перенос маркеров
+   * (drag на компьютере, тап по плану на телефоне), «убрать с плана», сохранение.
+   */
+
+  async toggleEditMode() {
+    if (this.editMode) await this.resolveEditDirty();
+    this.setEditMode(!this.editMode);
+  }
+
+  // Перед выходом из режима спрашиваем, что делать с несохранёнными изменениями.
+  async resolveEditDirty() {
+    if (!this.editDirty) return;
+
+    const shouldSave = window.confirm("Сохранить изменения расстановки устройств?");
+    if (shouldSave) {
+      await this.saveEditChanges();
+    } else {
+      await this.discardEditChanges();
+    }
+  }
+
+  setEditMode(enabled, options = {}) {
+    this.editMode = enabled;
+    this.editSelectedEntityId = null;
+    this.editStatusText = "";
+    this.closeDevicePopup();
+
+    const shell = document.querySelector('[data-spa-view="room"] .arvid-shell');
+    shell?.classList.toggle("is-room-editing", enabled);
+
+    const toggle = document.querySelector("[data-room-edit-toggle]");
+    if (toggle) {
+      toggle.textContent = enabled ? "Готово" : "Редактор";
+      toggle.classList.toggle("is-active", enabled);
+    }
+
+    ARVID_LOG.info(this.logArea, "Room edit mode toggled", { enabled, areaId: this.areaId });
+
+    if (options.skipRender) return;
+    this.renderDeviceMarkers();
+    this.renderControls();
+  }
+
+  getEditableEntities() {
+    // Редактируем только устройства скоупа: свет, движение/освещённость, панели.
+    return this.getRoomEntities().filter((state) => (
+      ["light", "motion", "illuminance", "panel"].includes(ArvidDeviceUi.markerKind(state))
+    ));
+  }
+
+  matchesEditFilter(kind) {
+    if (this.editFilter === "all") return true;
+    if (this.editFilter === "sensors") return kind === "motion" || kind === "illuminance";
+    return kind === this.editFilter;
+  }
+
+  ensureDeviceLayout(entityId) {
+    ARVID_APP.layout.devices = ARVID_APP.layout.devices || {};
+    const current = ARVID_APP.layout.devices[entityId] || {};
+
+    ARVID_APP.layout.devices[entityId] = {
+      area_id: current.area_id || this.areaId,
+      visible: current.visible ?? true,
+      marker: current.marker || "icon",
+      icon: current.icon || "auto",
+      ...current,
+    };
+
+    return ARVID_APP.layout.devices[entityId];
+  }
+
+  isDevicePlaced(entityId) {
+    const layout = this.getDeviceLayout(entityId);
+    return Boolean(layout && layout.visible !== false && layout.x !== undefined && layout.y !== undefined);
+  }
+
+  renderEditPanel(container) {
+    const filters = [
+      { key: "all", title: "Все" },
+      { key: "light", title: "Свет" },
+      { key: "sensors", title: "Датчики" },
+      { key: "panel", title: "Панели" },
+    ];
+
+    const entities = this.getEditableEntities();
+    const visibleEntities = entities.filter((state) => this.matchesEditFilter(ArvidDeviceUi.markerKind(state)));
+    const selected = this.editSelectedEntityId;
+    const selectedPlaced = selected ? this.isDevicePlaced(selected) : false;
+
+    container.innerHTML = "";
+
+    const card = document.createElement("section");
+    card.className = "control-card room-edit-card";
+    card.innerHTML = `
+      <header>
+        <h3>Расстановка устройств</h3>
+        <span>${visibleEntities.length}/${entities.length}</span>
+      </header>
+      <div class="edit-filter-chips"></div>
+      <div class="edit-device-list"></div>
+      <div class="muted-box" data-edit-hint></div>
+      <div class="segmented-actions edit-actions">
+        <button data-edit-center ${selected ? "" : "disabled"}>В центр плана</button>
+        <button data-edit-remove ${selected && selectedPlaced ? "" : "disabled"}>Убрать с плана</button>
+      </div>
+      <button class="panel-action primary-button" data-edit-save ${this.editDirty ? "" : "disabled"}>Сохранить разметку</button>
+      <div class="edit-status" data-edit-status></div>
+    `;
+
+    const chips = card.querySelector(".edit-filter-chips");
+    filters.forEach((filter) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.textContent = filter.title;
+      chip.classList.toggle("is-active", this.editFilter === filter.key);
+      chip.addEventListener("click", () => {
+        this.editFilter = filter.key;
+        this.renderControls();
+      });
+      chips.appendChild(chip);
+    });
+
+    const list = card.querySelector(".edit-device-list");
+    if (!visibleEntities.length) {
+      list.innerHTML = "<div class='muted-box'>По выбранному фильтру устройств нет</div>";
+    }
+    visibleEntities.forEach((state) => list.appendChild(this.buildEditDeviceRow(state)));
+
+    const hint = card.querySelector("[data-edit-hint]");
+    hint.textContent = selected
+      ? "Телефон: тапни по месту на плане. Компьютер: перетащи маркер мышью."
+      : "Выбери устройство в списке, чтобы разместить или перенести его.";
+
+    card.querySelector("[data-edit-center]")?.addEventListener("click", () => this.placeSelectedDeviceToCenter());
+    card.querySelector("[data-edit-remove]")?.addEventListener("click", () => this.removeSelectedDeviceFromPlan());
+    card.querySelector("[data-edit-save]")?.addEventListener("click", () => {
+      this.saveEditChanges().catch((error) => {
+        ARVID_LOG.error(this.logArea, "Failed to save room layout from edit panel", error);
+      });
+    });
+
+    container.appendChild(card);
+    this.syncEditStatus();
+  }
+
+  buildEditDeviceRow(state) {
+    const kind = ArvidDeviceUi.markerKind(state);
+    const placed = this.isDevicePlaced(state.entity_id);
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = `edit-device-row ${placed ? "is-placed" : ""} ${state.entity_id === this.editSelectedEntityId ? "is-selected" : ""}`;
+
+    const iconUrl = ArvidDeviceUi.iconAssetUrl(kind);
+    const iconHtml = iconUrl
+      ? `<img src="${iconUrl}" alt="">`
+      : `<span class="edit-device-fallback">${ArvidDeviceUi.iconText(kind)}</span>`;
+
+    row.innerHTML = `
+      ${iconHtml}
+      <span class="edit-device-name">
+        <strong>${ArvidDeviceUi.friendlyName(state)}</strong>
+        <small>${state.entity_id}</small>
+      </span>
+      <em>${placed ? "на плане" : "не размещено"}</em>
+    `;
+
+    row.addEventListener("click", () => this.selectEditDevice(state.entity_id));
+    return row;
+  }
+
+  selectEditDevice(entityId) {
+    // Повторный клик по выбранной строке снимает выбор.
+    this.editSelectedEntityId = entityId === this.editSelectedEntityId ? null : entityId;
+    ARVID_LOG.info(this.logArea, "Edit device selected", { entityId: this.editSelectedEntityId });
+    this.renderDeviceMarkers();
+    this.renderControls();
+  }
+
+  markEditDirty(reason) {
+    this.editDirty = true;
+    this.setEditStatus("Есть несохранённые изменения");
+    const saveButton = document.querySelector("[data-edit-save]");
+    if (saveButton) saveButton.disabled = false;
+    ARVID_LOG.debug(this.logArea, "Room layout marked dirty", { reason });
+  }
+
+  setEditStatus(text) {
+    this.editStatusText = text;
+    this.syncEditStatus();
+  }
+
+  syncEditStatus() {
+    const status = document.querySelector("[data-edit-status]");
+    if (status) status.textContent = this.editStatusText;
+  }
+
+  async saveEditChanges() {
+    this.setEditStatus("Сохраняю разметку...");
+    try {
+      ARVID_APP.layout = await ARVID_APP.storage.saveLayout(ARVID_APP.layout);
+      this.editDirty = false;
+      this.setEditStatus("Разметка сохранена");
+      ARVID_LOG.info(this.logArea, "Room layout saved from edit mode", { areaId: this.areaId });
+    } catch (error) {
+      this.setEditStatus("Ошибка сохранения разметки");
+      ARVID_LOG.error(this.logArea, "Failed to save room layout", error);
+      throw error;
+    }
+    if (this.editMode) this.renderControls();
+  }
+
+  async discardEditChanges() {
+    // Отбрасываем несохранённые правки: перечитываем layout из HA storage.
+    ARVID_APP.layout = await ARVID_APP.storage.getLayout();
+    this.editDirty = false;
+    this.setEditStatus("Изменения отменены");
+    ARVID_LOG.info(this.logArea, "Room layout changes discarded", { areaId: this.areaId });
+  }
+
+  isMobilePlacementMode() {
+    // Тап-размещение оставляем телефону: на компьютере клик после pan легко переносит устройство случайно.
+    return window.matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)").matches;
+  }
+
+  handleEditPlanClick(event) {
+    if (!this.editMode || !this.svg) return;
+    if (event.target.closest?.(".device-marker")) return;
+
+    if (!this.editSelectedEntityId) {
+      this.setEditStatus("Сначала выбери устройство в списке");
+      return;
+    }
+
+    if (!this.isMobilePlacementMode()) {
+      this.setEditStatus("На компьютере перетаскивай маркер мышью или используй «В центр плана»");
+      return;
+    }
+
+    const point = ArvidSvgUtils.clientPointToSvg(this.svg, event.clientX, event.clientY);
+    if (!point) return;
+    this.placeDeviceAt(this.editSelectedEntityId, point.x, point.y, "тап по плану");
+  }
+
+  placeDeviceAt(entityId, x, y, reason) {
+    const layout = this.ensureDeviceLayout(entityId);
+    layout.area_id = this.areaId;
+    layout.x = Math.round(x * 10) / 10;
+    layout.y = Math.round(y * 10) / 10;
+    layout.visible = true;
+
+    this.markEditDirty(reason);
+    this.renderDeviceMarkers();
+    this.renderControls();
+
+    ARVID_LOG.info(this.logArea, "Device placed on room plan", {
+      entityId,
+      x: layout.x,
+      y: layout.y,
+      reason,
+    });
+  }
+
+  placeSelectedDeviceToCenter() {
+    if (!this.editSelectedEntityId || !this.svg) return;
+
+    const metrics = ArvidSvgUtils.getViewBoxMetrics(this.svg);
+    if (!metrics) return;
+
+    this.placeDeviceAt(
+      this.editSelectedEntityId,
+      metrics.x + metrics.width / 2,
+      metrics.y + metrics.height / 2,
+      "кнопка «В центр плана»",
+    );
+  }
+
+  removeSelectedDeviceFromPlan() {
+    if (!this.editSelectedEntityId) return;
+
+    const layout = this.ensureDeviceLayout(this.editSelectedEntityId);
+    layout.visible = false;
+
+    this.markEditDirty("устройство убрано с плана");
+    this.renderDeviceMarkers();
+    this.renderControls();
+  }
+
+  startDeviceDrag(event, state, group) {
+    if (!this.svg) return;
+    if (event.button !== undefined && event.button !== 0) return;
+
+    // Если пользователь потянул маркер, план не должен начинать pan.
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Выбираем без перерисовки слоя: перерисовка удалила бы DOM-маркер, который тянем.
+    this.editSelectedEntityId = state.entity_id;
+
+    group.setPointerCapture?.(event.pointerId);
+    group.classList.add("is-dragging");
+
+    this.deviceDrag = {
+      entityId: state.entity_id,
+      group,
+      pointerId: event.pointerId,
+      moved: false,
+    };
+
+    const onMove = (moveEvent) => this.handleDeviceDragMove(moveEvent);
+    const onUp = (upEvent) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      this.finishDeviceDrag(upEvent);
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }
+
+  handleDeviceDragMove(event) {
+    if (!this.deviceDrag || !this.svg) return;
+    if (event.pointerId !== this.deviceDrag.pointerId) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const point = ArvidSvgUtils.clientPointToSvg(this.svg, event.clientX, event.clientY);
+    if (!point) return;
+
+    const layout = this.ensureDeviceLayout(this.deviceDrag.entityId);
+    layout.area_id = this.areaId;
+    layout.x = Math.round(point.x * 10) / 10;
+    layout.y = Math.round(point.y * 10) / 10;
+    layout.visible = true;
+
+    this.deviceDrag.group.setAttribute("transform", `translate(${layout.x}, ${layout.y})`);
+    this.deviceDrag.moved = true;
+  }
+
+  finishDeviceDrag(event) {
+    if (!this.deviceDrag) return;
+
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    const { entityId, group, moved } = this.deviceDrag;
+    group.classList.remove("is-dragging");
+    this.deviceDrag = null;
+
+    if (moved) {
+      this.markEditDirty("маркер перенесён перетаскиванием");
+      ARVID_LOG.info(this.logArea, "Device drag finished", { entityId });
+    }
+
+    // Клик без переноса — просто выбор устройства: обновляем список и рамку выделения.
+    this.renderDeviceMarkers();
+    this.renderControls();
   }
 }
 

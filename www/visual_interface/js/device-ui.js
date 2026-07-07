@@ -113,10 +113,12 @@ class ArvidDeviceUi {
   }
 
   static iconAssetUrl(kind) {
-    // SVG-иконки для освещённости и панелей пока не нарисованы — они падают в текстовый fallback.
+    // Полный комплект иконок скоупа в едином стиле (панель-градиент + гравировка).
     const icons = {
       light: "assets/icons/light.svg",
       motion: "assets/icons/motion.svg",
+      illuminance: "assets/icons/illuminance.svg",
+      panel: "assets/icons/panel.svg",
     };
     const relativePath = icons[kind];
     if (!relativePath || !window.ARVID_CONFIG?.localAsset) return null;

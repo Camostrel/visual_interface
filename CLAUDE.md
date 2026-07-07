@@ -4,7 +4,7 @@
 
 Потребительский веб-интерфейс к системе умного здания на Home Assistant (ядро — DALI).
 **Форк** старого `web_interface` (база v0.9.2): проверенная мобильная вёрстка сохранена,
-функциональность вычищена под узкий скоуп. Текущая версия: **v0.1.0**.
+функциональность вычищена под узкий скоуп. Текущая версия: **v0.2.0**.
 
 Работаем **только** в этом каталоге: `/home/user/nicksha/visual_interface/`.
 Старый `web_interface` — заморожен, используется только как справка (не менять!).
@@ -48,8 +48,7 @@ www/visual_interface/
     themes.css
     shell.css            ← оболочка + анимации View Transitions
     floor.css            ← главная страница + Quick View
-    room.css
-    editor.css
+    room.css             ← комната + режим редактирования расстановки
     schedule.css         ← popup расписания
 
   js/
@@ -59,26 +58,26 @@ www/visual_interface/
     floorplan-storage.js
     ha-registry.js       ← areas, floors, states, entities
     app-state.js         ← ARVID_APP, ARVID_RUNTIME (синглтон)
-    spa-router.js        ← ArvidSpaApp (маршрутизатор)
+    spa-router.js        ← ArvidSpaApp (маршрутизатор: floor / room)
     svg-utils.js
     device-ui.js         ← типы устройств СКОУПА: light / motion / illuminance / panel
     shell-ui.js
     floor-page.js
-    room-page.js
-    editor-page.js
+    room-page.js         ← комната + режим редактирования (v0.2.0, отдельной страницы нет)
     schedule-ui.js       ← ArvidScheduleUI (popup расписания)
 
   assets/
     logo/arvid-logo.svg
     floors/…  rooms/…    ← SVG-планы (тестовые)
-    icons/light.svg, motion.svg   ← иконок для illuminance/panel пока нет (текстовый fallback)
+    icons/light.svg, motion.svg, illuminance.svg, panel.svg
+                         ← единый стиль: панель-градиент + гравировка, viewBox 120
 ```
 
 ---
 
 ## SPA-архитектура (унаследована от базы — НЕ ломать)
 
-`index.html` содержит три view-контейнера: `data-spa-view="floor" | "room" | "editor"`.
+`index.html` содержит два view-контейнера: `data-spa-view="floor" | "room"`.
 Неактивные views скрыты через `hidden`. Переключение без перезагрузки страницы.
 **На телефоне вся страница не прокручивается** — скроллятся только панели и overlay.
 
@@ -88,8 +87,16 @@ www/visual_interface/
 index.html
 index.html?floor_id=…
 index.html?view=room&area_id=…&floor_id=…
-index.html?view=editor&area_id=…&floor_id=…
 ```
+
+### Режим редактирования расстановки (v0.2.0, DESIGN решение 20)
+
+Отдельной страницы редактора НЕТ. Кнопка «Редактор» в шапке комнаты включает режим
+(`is-room-editing` на shell): вместо панелей управления — карточка «Расстановка устройств»
+(фильтры Все/Свет/Датчики/Панели, список с едиными иконками, «В центр плана»,
+«Убрать с плана», «Сохранить разметку»). Перенос: drag на компьютере, тап по плану
+на телефоне. При выходе с несохранёнными изменениями — confirm: сохранить или отменить
+(перечитка layout из HA). Иконка маркера назначается автоматически по типу устройства.
 
 ### ARVID_APP / ARVID_RUNTIME (app-state.js)
 
@@ -105,8 +112,8 @@ ARVID_RUNTIME.addStateHandler(fn) // подписка на state_changed (без
 
 ### Анимации переходов
 
-Нативный **View Transitions API** (Chromium 111+), направления floor↔room (слайд),
-floor/room↔editor (fade+slide). Атрибут `data-nav-transition` на `<html>`.
+Нативный **View Transitions API** (Chromium 111+), направления floor↔room (слайд).
+Атрибут `data-nav-transition` на `<html>`.
 
 **Критичный нюанс CSS** — селектор без пробела:
 ```css
@@ -135,7 +142,7 @@ floor/room↔editor (fade+slide). Атрибут `data-nav-transition` на `<ht
 - Устройства не захардкожены в SVG, создаются динамически по layout/registry;
   координаты — в SVG viewBox
 - Целевой контракт v1 (DESIGN.md): элементы с `data-entity="<entity_id>"` прямо в SVG
-  из DWG-конвейера — редактор координат станет запасным путём
+  из DWG-конвейера; режим редактирования в комнате — путь для самостоятельной расстановки
 
 ---
 
@@ -167,7 +174,9 @@ WS-команды интеграции: `web_interface/ping`, `layout/get`, `lay
 
 - [ ] `index.html` открывается без ошибок в консоли
 - [ ] Quick View: открытие, повторный клик (анимация), toggle света
-- [ ] Переходы floor↔room↔editor + кнопка «Назад» (popstate)
+- [ ] Переходы floor↔room + кнопка «Назад» (popstate)
+- [ ] Режим редактирования: вход/выход, фильтры, drag (desktop) и тап (телефон),
+      «Убрать с плана», сохранение, confirm при несохранённых изменениях
 - [ ] Pan/zoom SVG-плана не ломается после смены view
 - [ ] WS-подписки не дублируются; overlay/popup закрываются при смене view
 - [ ] Popup расписания открывается; смена темы работает

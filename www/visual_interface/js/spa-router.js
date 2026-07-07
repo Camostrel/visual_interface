@@ -1,6 +1,7 @@
 /**
  * SPA-маршрутизатор ARVID.
- * Переключает Главную, Комнату и Редактор без перезагрузки index.html.
+ * Переключает Главную и Комнату без перезагрузки index.html.
+ * Редактирование расстановки — режим внутри комнаты, отдельного view у него нет.
  */
 class ArvidSpaApp {
   constructor() {
@@ -52,7 +53,7 @@ class ArvidSpaApp {
     const params = {};
 
     if (ARVID_APP.currentFloorId) params.floor_id = ARVID_APP.currentFloorId;
-    if ((view === "room" || view === "editor") && ARVID_APP.currentAreaId) {
+    if (view === "room" && ARVID_APP.currentAreaId) {
       params.area_id = ARVID_APP.currentAreaId;
     }
 
@@ -69,7 +70,7 @@ class ArvidSpaApp {
       view = "room";
     }
 
-    if (!["floor", "room", "editor"].includes(view)) {
+    if (!["floor", "room"].includes(view)) {
       ARVID_LOG.warn(this.logArea, "Unknown view requested, fallback to floor", { view });
       view = "floor";
     }
@@ -111,8 +112,6 @@ class ArvidSpaApp {
 
   getTransitionDirection(from, to) {
     if (!from || from === to) return "none";
-    if (to === "editor") return "to-editor";
-    if (from === "editor") return "from-editor";
     if (to === "room") return "floor-to-room";
     if (to === "floor") return "room-to-floor";
     return "none";
@@ -166,7 +165,6 @@ class ArvidSpaApp {
 
     if (view === "floor") this.pages.floor = new ArvidFloorPage();
     if (view === "room") this.pages.room = new ArvidRoomPage();
-    if (view === "editor") this.pages.editor = new ArvidEditorPage();
 
     return this.pages[view];
   }
@@ -179,9 +177,8 @@ class ArvidSpaApp {
 
   updateTitle(view) {
     const titles = {
-      floor: "ARVID Web Interface",
-      room: "ARVID Room",
-      editor: "ARVID Editor",
+      floor: "ARVID Visual Interface",
+      room: "ARVID Visual Interface — Помещение",
     };
     document.title = titles[view] || titles.floor;
   }

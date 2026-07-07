@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="light">
-  <!-- Единый стиль иконок устройств: панель-градиент + гравировка (как motion.svg).
-       Пересобрано из engraved_lamp_panel_v0.2: у экспорта Illustrator был viewBox 14400. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="wall panel">
+  <!-- Единый стиль иконок устройств: панель-градиент + гравировка (как motion.svg). -->
   <defs>
     <style>
       .panel-base { fill: url(#panel-gradient); }
       .panel-highlight { fill: url(#panel-highlight); opacity: .78; isolation: isolate; }
       .icon-main { fill: none; stroke: #6f8fac; stroke-width: 2.7; stroke-linecap: round; stroke-linejoin: round; }
-      .icon-thin { fill: none; stroke: #6f8fac; stroke-width: 2.2; stroke-linecap: round; }
       .icon-soft { fill: none; stroke: #8ea8bf; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
     </style>
     <linearGradient id="panel-gradient" x1="10" y1="10" x2="110" y2="110" gradientUnits="userSpaceOnUse">
@@ -26,13 +24,11 @@
     <rect class="panel-highlight" x="14" y="14" width="92" height="92" rx="20" ry="20"/>
   </g>
   <g id="device-icon" aria-hidden="true">
-    <path class="icon-main" d="m 47.5,66.8 c -5,-8.53 -5,-22.76 0,-29.87 3.75,-7.11 21.25,-7.11 25,0 5,7.11 5,21.33 0,29.87 L 70,73.91 H 50 Z"/>
-    <line class="icon-thin" x1="50" y1="73.91" x2="70" y2="73.91"/>
-    <line class="icon-thin" x1="51.25" y1="79.6" x2="68.75" y2="79.6"/>
-    <line class="icon-thin" x1="53.75" y1="85.29" x2="66.25" y2="85.29"/>
-    <path class="icon-soft" d="M 53.75,65.38 56.25,54 60,59.69 63.75,54 l 2.5,11.38"/>
-    <line class="icon-soft" x1="60" y1="26.98" x2="60" y2="21.29"/>
-    <line class="icon-soft" x1="75" y1="32.67" x2="77.5" y2="28.4"/>
-    <line class="icon-soft" x1="45" y1="32.67" x2="42.5" y2="28.4"/>
+    <!-- Настенная панель: рамка, поворотная ручка с меткой и две кнопки -->
+    <rect class="icon-main" x="38" y="33" width="44" height="54" rx="6"/>
+    <circle class="icon-main" cx="60" cy="53" r="9.5"/>
+    <line class="icon-soft" x1="60" y1="53" x2="60" y2="46"/>
+    <rect class="icon-soft" x="45" y="70" width="13" height="8.5" rx="2.5"/>
+    <rect class="icon-soft" x="62" y="70" width="13" height="8.5" rx="2.5"/>
   </g>
 </svg>

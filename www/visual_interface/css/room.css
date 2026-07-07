@@ -556,6 +556,146 @@
   stroke: var(--device-marker-accent);
 }
 
+/* v0.2.0: режим редактирования расстановки устройств (вместо отдельной страницы редактора). */
+
+/* Маркеры в режиме редактирования: перенос, выделение, убранные с плана. */
+.is-room-editing .device-marker {
+  cursor: grab;
+}
+
+.device-marker.is-dragging {
+  cursor: grabbing;
+  opacity: 0.9;
+}
+
+.device-marker.is-hidden-on-plan {
+  opacity: 0.42;
+}
+
+.device-marker-selection {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 0;
+  pointer-events: none;
+}
+
+.device-marker.is-selected .device-marker-selection {
+  stroke: var(--accent);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 8px rgba(80, 180, 255, 0.38));
+}
+
+/* Рамка выделения текстовых fallback-маркеров (без SVG-иконки). */
+.device-marker.is-selected circle,
+.device-marker.is-selected rect:not(.device-marker-hit):not(.device-marker-selection) {
+  stroke: var(--accent);
+  stroke-width: 3.5;
+}
+
+/* Панель редактирования: фильтры, список устройств, действия. */
+.edit-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.edit-filter-chips button {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.edit-filter-chips button.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.edit-device-list {
+  display: grid;
+  gap: 6px;
+  max-height: 38vh;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.edit-device-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  text-align: left;
+}
+
+.edit-device-row img {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.edit-device-fallback {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--panel-soft);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.edit-device-name {
+  min-width: 0;
+}
+
+.edit-device-name strong {
+  display: block;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edit-device-name small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edit-device-row em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.edit-device-row.is-placed em {
+  color: var(--accent);
+}
+
+.edit-device-row.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.edit-actions {
+  margin-bottom: 10px;
+}
+
+.edit-status {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  min-height: 16px;
+}
+
 .device-marker-hit {
   fill: transparent;
   stroke: transparent;

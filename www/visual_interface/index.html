@@ -22,7 +22,6 @@
   <link rel="stylesheet" href="css/shell.css">
   <link rel="stylesheet" href="css/floor.css">
   <link rel="stylesheet" href="css/room.css">
-  <link rel="stylesheet" href="css/editor.css">
   <link rel="stylesheet" href="css/schedule.css">
 </head>
 <body>
@@ -41,12 +40,10 @@
 
             <div class="collapsed-actions" aria-label="Быстрые действия меню">
               <button class="collapsed-action-button is-active" title="Главная" data-route-view="floor">⌂</button>
-              <button class="collapsed-action-button" title="Редактор" data-route-view="editor">✎</button>
               <button class="collapsed-action-button" title="Светлая / тёмная тема" data-theme-toggle>◐</button>
             </div>
 
             <div class="mobile-panel-actions" aria-label="Действия мобильной панели">
-              <button class="mobile-panel-action" title="Редактор" data-route-view="editor">✎</button>
               <button class="mobile-panel-action" title="Светлая / тёмная тема" data-theme-toggle>◐</button>
             </div>
 
@@ -55,7 +52,6 @@
               <section class="panel-section nav-section">
                 <h3>Навигация</h3>
                 <button class="nav-button primary-button" data-route-view="floor">Главная</button>
-                <button class="nav-button" data-route-view="editor">Редактор</button>
               </section>
 
               <section class="panel-section floors-section">
@@ -185,7 +181,7 @@
               </div>
               <div class="topbar-actions">
                 <button class="header-button" data-theme-toggle>Тема</button>
-                <button class="header-button" data-edit-room>Редактор</button>
+                <button class="header-button" data-room-edit-toggle>Редактор</button>
               </div>
             </header>
 
@@ -202,98 +198,6 @@
                 </div>
                 <aside class="room-controls" data-room-controls></aside>
               </div>
-            </section>
-          </main>
-        </div>
-    </section>
-
-    <section class="spa-view" data-spa-view="editor" hidden>
-      <div class="arvid-shell editor-shell">
-          <aside class="side-panel editor-left-panel" id="editorLeftPanel">
-            <div class="brand">
-              <img data-company-logo alt="ARVID logo">
-              <div class="brand-text">
-                <strong>Редактор</strong>
-                <small>Устройства помещений</small>
-              </div>
-            </div>
-
-
-            <div class="panel-content">
-              <button class="panel-action" data-route-view="floor">← Главная</button>
-              <button class="panel-action" data-theme-toggle>Светлая / тёмная тема</button>
-
-              <section class="panel-section">
-                <h3>Этаж</h3>
-                <select class="editor-select" data-editor-floor-select></select>
-              </section>
-
-              <section class="panel-section">
-                <h3>Помещение</h3>
-                <select class="editor-select" data-editor-room-select></select>
-                <div class="muted-box" data-editor-room-info>Выберите помещение для настройки.</div>
-              </section>
-
-              <section class="panel-section" data-editor-device-controls>
-                <h3>Устройство помещения</h3>
-                <select class="editor-select" data-editor-device-select></select>
-                <div class="muted-box" data-editor-device-info>Выберите устройство для размещения.</div>
-
-                <label class="editor-check-row">
-                  <input type="checkbox" data-editor-device-visible>
-                  <span>Показывать устройство</span>
-                </label>
-
-                <label class="editor-field-row">
-                  <span>Тип маркера</span>
-                  <select class="editor-select" data-editor-device-marker>
-                    <option value="icon">Иконка</option>
-                    <option value="circle">Круг</option>
-                    <option value="square">Квадрат</option>
-                  </select>
-                </label>
-
-                <label class="editor-field-row">
-                  <span>Иконка</span>
-                  <select class="editor-select" data-editor-device-icon>
-                    <option value="auto">Авто</option>
-                    <option value="light">Свет</option>
-                    <option value="motion">Движение</option>
-                    <option value="illuminance">Освещённость</option>
-                    <option value="panel">Панель</option>
-                    <option value="sensor">Датчик</option>
-                  </select>
-                </label>
-
-                <button class="panel-action" data-editor-center-device>Поставить в центр плана</button>
-                <div class="muted-box">Desktop: перетаскивай маркер мышью. Телефон: выбери устройство и тапни по месту на плане.</div>
-              </section>
-
-              <section class="panel-section">
-                <h3>Действия</h3>
-                <button class="panel-action primary-button" data-editor-save>Сохранить layout</button>
-              </section>
-
-              <div data-editor-summary></div>
-            </div>
-          </aside>
-
-          <main class="main-panel">
-            <header class="topbar">
-              <div class="topbar-title">
-                <h1 data-editor-title>Редактирование устройств помещения</h1>
-                <p data-editor-status>Загрузка данных...</p>
-              </div>
-              <div class="topbar-actions">
-                <button class="header-button" data-plan-zoom-out>−</button>
-                <span class="editor-zoom-label" data-plan-zoom-value>100%</span>
-                <button class="header-button" data-plan-zoom-in>+</button>
-                <button class="header-button" data-plan-reset>⤢</button>
-              </div>
-            </header>
-
-            <section class="workspace editor-workspace">
-              <div class="svg-stage editor-svg-stage" data-editor-svg></div>
             </section>
           </main>
         </div>
@@ -386,7 +290,6 @@
   <script src="js/shell-ui.js"></script>
   <script src="js/floor-page.js"></script>
   <script src="js/room-page.js"></script>
-  <script src="js/editor-page.js"></script>
   <script src="js/spa-router.js"></script>
   <script src="js/schedule-ui.js"></script>
   <script>

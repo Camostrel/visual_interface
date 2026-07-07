@@ -149,14 +149,12 @@ class ArvidShellUi {
 
   static getPanelStorageKey(panel) {
     if (panel.id === "leftPanel") return "arvid.leftPanel.collapsed";
-    // editorLeftPanel: кнопки сворачивания больше нет — состояние не храним,
-    // чтобы панель не осталась свёрнутой без способа её раскрыть.
     if (panel.id === "rightPanel") return "arvid.rightPanel.collapsed";
     return null;
   }
 
   static applyInitialPanelState() {
-    const leftPanel = this.query("#leftPanel") || this.query("#editorLeftPanel");
+    const leftPanel = this.query("#leftPanel");
     const rightPanel = this.query("#rightPanel");
 
     [leftPanel, rightPanel].forEach((panel) => {
@@ -186,7 +184,7 @@ class ArvidShellUi {
 
   static syncPanelState() {
     const shell = this.query(".arvid-shell");
-    const leftPanel = this.query("#leftPanel") || this.query("#editorLeftPanel");
+    const leftPanel = this.query("#leftPanel");
     const rightPanel = this.query("#rightPanel");
 
     if (!shell) return;

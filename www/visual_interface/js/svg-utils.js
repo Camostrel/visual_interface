@@ -252,7 +252,7 @@ class ArvidSvgPanZoom {
     if (event.button !== undefined && event.button !== 0) return;
 
     // Не начинаем перемещение плана, когда пользователь нажал на интерактивный маркер.
-    if (event.target.closest?.(".room-badge, .room-zone, .floor-room-quick-view, .device-marker, .editor-room-badge, .editor-device-marker")) return;
+    if (event.target.closest?.(".room-badge, .room-zone, .floor-room-quick-view, .device-marker")) return;
 
     this.svg.setPointerCapture?.(event.pointerId);
     this.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
