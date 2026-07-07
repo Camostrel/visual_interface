@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="motion sensor">
+
+  <defs>
+    <style>
+      .panel-base { fill: url(#panel-gradient); }
+      .panel-highlight { fill: url(#panel-highlight); opacity: .78; isolation: isolate; }
+      .icon-main { fill: none; stroke: #6f8fac; stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+      .icon-soft { fill: none; stroke: #8ea8bf; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+      .icon-fill { fill: #9ab8cc; stroke: #6f8fac; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+      .icon-dot { fill: #8ea8bf; }
+    </style>
+    <linearGradient id="panel-gradient" x1="10" y1="10" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f2f6fa"/>
+      <stop offset="0.52" stop-color="#e7edf3"/>
+      <stop offset="1" stop-color="#dce4ec"/>
+    </linearGradient>
+    <linearGradient id="panel-highlight" x1="14" y1="14" x2="106" y2="106" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".68"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <g id="device-panel">
+    <rect class="panel-base" x="10" y="10" width="100" height="100" rx="23" ry="23"/>
+    <rect class="panel-highlight" x="14" y="14" width="92" height="92" rx="20" ry="20"/>
+  </g>
+  <g id="device-icon" aria-hidden="true">
+
+    <path class="icon-main" d="M 47 66 A 13 13 0 0 1 73 66 L 73 76 H 47 Z"/>
+    <circle class="icon-main" cx="60" cy="60" r="11"/>
+    <circle class="icon-soft" cx="60" cy="60" r="5"/>
+    <path class="icon-soft" d="M 41 50 A 24 24 0 0 1 79 50"/>
+    <path class="icon-soft" d="M 33 42 A 34 34 0 0 1 87 42"/>
+    <path class="icon-soft" d="M 25 34 A 44 44 0 0 1 95 34"/>
+
+  </g>
+</svg>

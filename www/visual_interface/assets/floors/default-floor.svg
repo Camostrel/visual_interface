@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <g fill="none" stroke="#6f838b" stroke-width="6">
+    <rect x="120" y="90" width="960" height="560"/>
+    <path d="M420 90v560M780 90v560M120 330h960"/>
+    <path d="M420 330h360M590 330v320"/>
+  </g>
+  <g fill="#20323a" stroke="#6f838b" stroke-width="2">
+    <rect x="170" y="140" width="160" height="80" rx="8"/>
+    <rect x="500" y="140" width="180" height="90" rx="8"/>
+    <rect x="840" y="140" width="160" height="80" rx="8"/>
+    <rect x="190" y="420" width="120" height="70" rx="8"/>
+    <rect x="850" y="430" width="130" height="70" rx="8"/>
+  </g>
+  <text x="600" y="720" text-anchor="middle" fill="#8da1a8" font-size="24">default-floor.svg — замените на SVG из AutoCAD</text>
+</svg>

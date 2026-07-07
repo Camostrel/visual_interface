@@ -1,0 +1,1155 @@
+/*
+ * Оболочка ARVID: левая панель, рабочая область и правая панель.
+ * В v0.8.7 экран фиксируется по высоте, а прокрутка переносится внутрь нужных панелей.
+ */
+.arvid-shell {
+  height: 100vh;
+  height: 100dvh;
+  height: var(--arvid-app-height, 100dvh);
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 330px;
+  gap: 12px;
+  padding: 12px;
+  background:
+    radial-gradient(circle at top left, rgba(39, 208, 154, 0.12), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(39, 146, 208, 0.08), transparent 32%),
+    var(--bg);
+  overflow: hidden;
+  transition: grid-template-columns 180ms ease;
+}
+
+.arvid-shell.is-left-collapsed {
+  grid-template-columns: 72px minmax(0, 1fr) 330px;
+}
+
+.arvid-shell.is-right-collapsed {
+  grid-template-columns: 280px minmax(0, 1fr) 72px;
+}
+
+.arvid-shell.is-left-collapsed.is-right-collapsed {
+  grid-template-columns: 72px minmax(0, 1fr) 72px;
+}
+
+.side-panel,
+.main-panel {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: calc(100vh - 24px);
+  height: calc(100dvh - 24px);
+  height: calc(var(--arvid-app-height, 100dvh) - 24px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.side-panel.is-collapsed .panel-content,
+.side-panel.is-collapsed .brand-text,
+.side-panel.is-collapsed .panel-bottom {
+  display: none;
+}
+
+.side-panel.is-collapsed .collapsed-actions {
+  display: flex;
+}
+
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand img {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+}
+
+.brand strong {
+  display: block;
+  letter-spacing: 0.05em;
+}
+
+.brand small,
+.entity-line small,
+.entity-control-line small {
+  display: block;
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.brand-spacer {
+  flex: 1;
+}
+
+.panel-toggle-button {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--panel-soft);
+}
+
+.panel-toggle-button:hover {
+  border-color: color-mix(in srgb, var(--accent), transparent 40%);
+  background: var(--accent-soft);
+}
+
+.collapsed-actions {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 10px;
+}
+
+.collapsed-action-button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--panel-soft);
+}
+
+.collapsed-action-button:hover,
+.collapsed-action-button.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.panel-content {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-section h3 {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+[data-floor-list] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* v0.8.7: на desktop accordion-кнопки скрыты, содержимое правой панели работает как обычные блоки. */
+.mobile-accordion-toggle {
+  display: none;
+}
+
+.mobile-accordion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+/* v0.8.5: на desktop кнопки меню остаются на месте, прокручивается только список этажей. */
+.left-panel .floors-section {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.left-panel [data-floor-list] {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* v0.8.5: правая панель не двигает страницу; переполнение живёт внутри отдельных блоков. */
+.right-panel .panel-section {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Кнопки режимов работы идут колонкой с отступом между ними. */
+[data-building-modes] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.right-panel [data-building-modes] {
+  min-height: 0;
+}
+
+/* v0.8.7: компактные карточки сводки этажа и предупреждений на главной странице. */
+.floor-summary-grid,
+.warning-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.floor-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.floor-summary-toggle {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--panel-soft);
+  border-radius: 13px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.floor-summary-toggle strong {
+  min-width: 34px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.floor-summary-toggle > span {
+  min-width: 0;
+  flex: 1 1 auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+
+.floor-summary-list {
+  display: none;
+}
+
+.floor-summary-card.is-open .floor-summary-toggle {
+  border-color: color-mix(in srgb, var(--accent), transparent 35%);
+  background: var(--accent-soft);
+}
+
+/* v0.8.9: список сводки вынесен в плавающий слой, чтобы не сжимать правую панель. */
+.floor-summary-popover {
+  position: fixed;
+  z-index: 3600;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 260px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text);
+  background: var(--panel-strong);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.floor-summary-popover[hidden] {
+  display: none;
+}
+
+.floor-summary-popover-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.floor-summary-popover-title strong {
+  min-width: 28px;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  letter-spacing: 0;
+}
+
+.floor-summary-room,
+.warning-item {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--panel-soft);
+  border-radius: 12px;
+  padding: 9px 10px;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.floor-summary-room:hover,
+.warning-item:hover,
+.floor-summary-toggle:hover {
+  border-color: color-mix(in srgb, var(--accent), transparent 40%);
+  background: var(--accent-soft);
+}
+
+.floor-summary-room small,
+.warning-item small,
+.warning-item span,
+.mode-card.is-demo small {
+  color: var(--faint);
+}
+
+.warning-item strong {
+  font-size: 13px;
+}
+
+.warning-item span {
+  font-size: 12px;
+}
+
+.floor-summary-room span,
+.floor-summary-room small,
+.warning-item strong,
+.warning-item span,
+.warning-item small {
+  width: 100%;
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.warning-high {
+  border-color: color-mix(in srgb, #ff8c42, transparent 45%);
+}
+
+.warning-low {
+  border-color: color-mix(in srgb, #62a8ff, transparent 45%);
+}
+
+.mode-card.is-demo {
+  opacity: 0.82;
+}
+
+/* v0.8.10: плавающие панели делаем непрозрачными, чтобы план и карточки сзади не мешали чтению. */
+:root[data-theme="dark"] .floor-summary-popover,
+:root[data-theme="dark"] .mobile-accordion-body {
+  background: #101922;
+}
+
+:root[data-theme="light"] .floor-summary-popover,
+:root[data-theme="light"] .mobile-accordion-body {
+  background: #ffffff;
+}
+
+
+.nav-button,
+.floor-item,
+.mode-card,
+.panel-action,
+.control-card button {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--panel-soft);
+  border-radius: 13px;
+  padding: 11px 12px;
+  text-align: left;
+}
+
+.nav-button:hover,
+.floor-item:hover,
+.mode-card:hover,
+.panel-action:hover,
+.control-card button:hover {
+  border-color: color-mix(in srgb, var(--accent), transparent 40%);
+  background: var(--accent-soft);
+}
+
+.floor-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  line-height: 1.25;
+}
+
+.floor-item small {
+  color: var(--faint);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.floor-item.is-active,
+.mode-card.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.panel-bottom {
+  margin-top: auto;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.theme-toggle-button {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.theme-toggle-button:hover {
+  border-color: color-mix(in srgb, var(--accent), transparent 40%);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.clock-card,
+.weather-card {
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+}
+
+.clock-card strong {
+  display: block;
+  font-size: 24px;
+}
+
+.clock-card small,
+.weather-card small {
+  color: var(--muted);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar-title h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.topbar-title p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.topbar select,
+.topbar button,
+.header-button {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--panel-soft);
+  border-radius: 13px;
+  padding: 10px 12px;
+}
+
+.primary-button {
+  border-color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+}
+
+.main-panel {
+  min-width: 0;
+  height: calc(100vh - 24px);
+  height: calc(100dvh - 24px);
+  height: calc(var(--arvid-app-height, 100dvh) - 24px);
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace {
+  position: relative;
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.svg-stage {
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.arvid-svg-plan {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+
+.mobile-panel-actions {
+  display: none;
+}
+
+.plan-toolbar {
+  position: absolute;
+  left: 28px;
+  bottom: 28px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--panel-strong), transparent 8%);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.plan-toolbar button,
+.plan-toolbar span {
+  min-width: 42px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--panel-soft);
+}
+
+.plan-toolbar button:hover {
+  border-color: color-mix(in srgb, var(--accent), transparent 35%);
+  background: var(--accent-soft);
+}
+
+.plan-toolbar span {
+  min-width: 62px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.svg-stage,
+.arvid-svg-plan {
+  touch-action: none;
+}
+
+.svg-stage.is-pan-active {
+  cursor: grabbing;
+}
+
+.svg-stage:not(.is-pan-active) {
+  cursor: grab;
+}
+
+@media (max-width: 1280px) {
+  .arvid-shell {
+    grid-template-columns: 250px minmax(0, 1fr) 300px;
+  }
+
+  .arvid-shell.is-left-collapsed {
+    grid-template-columns: 72px minmax(0, 1fr) 300px;
+  }
+
+  .arvid-shell.is-right-collapsed {
+    grid-template-columns: 250px minmax(0, 1fr) 72px;
+  }
+
+  .arvid-shell.is-left-collapsed.is-right-collapsed {
+    grid-template-columns: 72px minmax(0, 1fr) 72px;
+  }
+}
+
+@media (max-width: 980px) and (orientation: landscape) {
+  .arvid-shell {
+    grid-template-columns: 220px minmax(0, 1fr) 260px;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .arvid-shell.is-left-collapsed {
+    grid-template-columns: 64px minmax(0, 1fr) 260px;
+  }
+
+  .arvid-shell.is-right-collapsed {
+    grid-template-columns: 220px minmax(0, 1fr) 64px;
+  }
+
+  .arvid-shell.is-left-collapsed.is-right-collapsed {
+    grid-template-columns: 64px minmax(0, 1fr) 64px;
+  }
+
+  .workspace {
+    height: calc(100dvh - 96px);
+    padding: 10px;
+  }
+
+  .topbar {
+    padding: 10px 12px;
+  }
+
+  .topbar-title h1 {
+    font-size: 18px;
+  }
+
+  .panel-content {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 760px) and (orientation: portrait) {
+  html,
+  body {
+    height: var(--arvid-app-height, 100dvh);
+    overflow: hidden;
+  }
+
+  .arvid-shell,
+  .arvid-shell.is-left-collapsed,
+  .arvid-shell.is-right-collapsed,
+  .arvid-shell.is-left-collapsed.is-right-collapsed {
+    display: flex;
+    flex-direction: column;
+    height: var(--arvid-app-height, 100dvh);
+    min-height: var(--arvid-app-height, 100dvh);
+    gap: 8px;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  .left-panel,
+  .left-panel.is-collapsed {
+    order: 1;
+    height: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 62px;
+    max-height: 62px;
+    padding: 8px;
+    border-radius: 18px;
+  }
+
+  .left-panel .brand,
+  .left-panel .collapsed-actions,
+  .left-panel .panel-bottom,
+  .left-panel .nav-section,
+  .left-panel .floors-section h3,
+  .left-panel.is-collapsed .brand-text,
+  .left-panel.is-collapsed .panel-bottom {
+    display: none !important;
+  }
+
+  .left-panel .panel-content,
+  .left-panel.is-collapsed .panel-content {
+    display: block;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .left-panel .floors-section {
+    display: block;
+  }
+
+  .left-panel [data-floor-list] {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 2px 2px;
+    scrollbar-width: none;
+  }
+
+  .left-panel [data-floor-list]::-webkit-scrollbar {
+    display: none;
+  }
+
+  .left-panel .floor-item {
+    width: 48px;
+    min-width: 48px;
+    min-height: 44px;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    text-align: center;
+    scroll-snap-align: center;
+  }
+
+  .left-panel .floor-item span,
+  .left-panel .floor-item small {
+    display: none;
+  }
+
+  .left-panel .floor-item::before {
+    content: attr(data-mobile-label);
+    font-weight: 800;
+    font-size: 15px;
+  }
+
+  .mobile-panel-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .mobile-panel-action {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    color: var(--text);
+    background: var(--panel-soft);
+  }
+
+  .mobile-panel-action:hover {
+    border-color: color-mix(in srgb, var(--accent), transparent 35%);
+    background: var(--accent-soft);
+  }
+
+  .main-panel {
+    order: 2;
+    height: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    padding: 12px;
+    gap: 8px;
+    flex-direction: column;
+  }
+
+  .topbar-title h1 {
+    font-size: 18px;
+  }
+
+  .topbar-title p {
+    display: none;
+  }
+
+  .topbar-actions {
+    display: none;
+  }
+
+  .workspace {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    padding: 10px;
+  }
+
+  .workspace .svg-stage {
+    height: var(--floor-plan-height, 100%);
+  }
+
+  .svg-stage {
+    border-radius: 16px;
+  }
+
+  .plan-toolbar {
+    left: 50%;
+    right: auto;
+    bottom: 18px;
+    transform: translateX(-50%);
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .plan-toolbar button,
+  .plan-toolbar span {
+    min-width: 38px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .plan-toolbar span {
+    min-width: 56px;
+  }
+
+  .right-panel,
+  .right-panel.is-collapsed {
+    order: 3;
+    height: auto;
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    z-index: auto;
+    min-height: 0;
+    max-height: min(42vh, 280px);
+    border-radius: 18px;
+    transform: none;
+    transition: none;
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .right-panel.has-mobile-accordion-open,
+  .right-panel.is-collapsed.has-mobile-accordion-open {
+    height: auto;
+  }
+
+  .right-panel .brand,
+  .right-panel.is-collapsed .brand {
+    display: none;
+  }
+
+  .right-panel .panel-content,
+  .right-panel.is-collapsed .panel-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  .right-panel .panel-section,
+  .right-panel.is-collapsed .panel-section {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--panel-soft);
+    flex: 0 0 auto;
+    overflow: hidden;
+  }
+
+  .right-panel .panel-section.is-open,
+  .right-panel.is-collapsed .panel-section.is-open {
+    flex: 0 0 auto;
+  }
+
+  .right-panel .panel-section h3 {
+    display: none;
+  }
+
+  .mobile-accordion-toggle {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border: 0;
+    color: var(--text);
+    background: transparent;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 700;
+  }
+
+  .mobile-accordion-toggle:hover {
+    background: var(--accent-soft);
+  }
+
+  .mobile-accordion-icon {
+    color: var(--muted);
+    transition: transform 160ms ease;
+  }
+
+  .right-panel .panel-section.is-open .mobile-accordion-icon {
+    transform: rotate(180deg);
+  }
+
+  .mobile-accordion-body {
+    display: none;
+    position: fixed;
+    left: var(--mobile-accordion-left, 12px);
+    top: var(--mobile-accordion-top, 12px);
+    z-index: 3400;
+    width: var(--mobile-accordion-width, calc(100vw - 24px));
+    max-height: var(--mobile-accordion-max-height, min(54vh, 420px));
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    color: var(--text);
+    background: #ffffff;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+
+  .right-panel .panel-section.is-open .mobile-accordion-body,
+  .mobile-accordion-body.is-floating {
+    display: flex;
+  }
+
+  .right-panel [data-building-modes] {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .right-panel .mode-card,
+  .right-panel .panel-action,
+  .right-panel .floor-summary-toggle,
+  .right-panel .floor-summary-room,
+  .right-panel .warning-item {
+    min-height: 40px;
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+
+  .floor-summary-list {
+    display: none;
+  }
+
+  .floor-summary-popover {
+    width: calc(100vw - 24px);
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+  }
+
+  .warning-list {
+    overflow: visible;
+  }
+
+  .right-panel .mode-card,
+  .right-panel .panel-action,
+  .right-panel .floor-summary-toggle,
+  .right-panel .floor-summary-room,
+  .right-panel .warning-item,
+  .right-panel .mobile-accordion-toggle {
+    line-height: 1.3;
+  }
+}
+
+/* v0.8.3: у правой панели больше нет отдельного collapsed-actions в HTML.
+ * На desktop в узком виде кнопку можно центрировать, а на мобильном sheet
+ * кнопка остаётся справа на том же месте, чтобы не прыгать к центру.
+ */
+.right-panel .collapsed-actions {
+  display: none !important;
+}
+
+.right-panel.is-collapsed .brand {
+  justify-content: center;
+}
+
+.right-panel.is-collapsed .brand-spacer {
+  display: none;
+}
+
+.right-panel.is-collapsed .panel-toggle-button {
+  margin: 0 auto;
+}
+
+.editor-left-panel.is-collapsed .brand {
+  justify-content: center;
+}
+
+.editor-left-panel.is-collapsed .panel-toggle-button {
+  margin: 0 auto;
+}
+
+@media (max-width: 760px) and (orientation: portrait) {
+  .right-panel.is-collapsed .brand {
+    justify-content: space-between;
+  }
+
+  .right-panel.is-collapsed .brand-spacer {
+    display: block;
+  }
+
+  .right-panel.is-collapsed .panel-toggle-button {
+    margin-left: auto;
+    margin-right: 0;
+  }
+}
+
+/* SPA: каждый экран живёт в своём view-контейнере, скрытые views не занимают место. */
+.arvid-spa,
+.spa-view {
+  width: 100%;
+  min-width: 0;
+  height: var(--arvid-app-height, 100vh);
+  min-height: 0;
+}
+
+.spa-view[hidden] {
+  display: none !important;
+}
+
+/* Лого не видно когда левая панель свёрнута */
+.side-panel.is-collapsed [data-company-logo] {
+  display: none;
+}
+
+/* Карточки предупреждений: восстанавливаем колоночный layout и сбрасываем стиль strong-бейджа */
+.warning-item.floor-summary-toggle {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+.warning-item.floor-summary-toggle strong {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  background: none;
+  border-radius: 0;
+  color: inherit;
+  font-size: 13px;
+  letter-spacing: inherit;
+  line-height: 1.3;
+}
+
+/* v0.9.0: анимации SPA-переходов через View Transitions API */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* floor → room: floor уходит влево, room приходит справа */
+:root[data-nav-transition="floor-to-room"]::view-transition-old(root) {
+  animation: arvid-slide-out-left 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+:root[data-nav-transition="floor-to-room"]::view-transition-new(root) {
+  animation: arvid-slide-in-right 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* room → floor: room уходит вправо, floor приходит слева */
+:root[data-nav-transition="room-to-floor"]::view-transition-old(root) {
+  animation: arvid-slide-out-right 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+:root[data-nav-transition="room-to-floor"]::view-transition-new(root) {
+  animation: arvid-slide-in-left 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* → editor: fade + всплытие снизу */
+:root[data-nav-transition="to-editor"]::view-transition-old(root) {
+  animation: arvid-fade-out 250ms ease both;
+}
+:root[data-nav-transition="to-editor"]::view-transition-new(root) {
+  animation: arvid-fade-in-up 250ms ease both;
+}
+
+/* ← editor: fade + уход вниз */
+:root[data-nav-transition="from-editor"]::view-transition-old(root) {
+  animation: arvid-fade-out-down 250ms ease both;
+}
+:root[data-nav-transition="from-editor"]::view-transition-new(root) {
+  animation: arvid-fade-in 250ms ease both;
+}
+
+@keyframes arvid-slide-out-left {
+  to { transform: translateX(-25%); opacity: 0; }
+}
+@keyframes arvid-slide-in-right {
+  from { transform: translateX(25%); opacity: 0; }
+}
+@keyframes arvid-slide-out-right {
+  to { transform: translateX(25%); opacity: 0; }
+}
+@keyframes arvid-slide-in-left {
+  from { transform: translateX(-25%); opacity: 0; }
+}
+@keyframes arvid-fade-out {
+  to { opacity: 0; }
+}
+@keyframes arvid-fade-in {
+  from { opacity: 0; }
+}
+@keyframes arvid-fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+}
+@keyframes arvid-fade-out-down {
+  to { opacity: 0; transform: translateY(12px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
+  }
+}

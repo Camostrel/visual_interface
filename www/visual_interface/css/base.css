@@ -1,0 +1,46 @@
+/*
+ * ARVID Web Interface base styles.
+ * Sections are intentionally separated by purpose to simplify future edits.
+ */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.arvid-loading,
+.arvid-error,
+.muted-box {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--muted);
+  background: var(--panel-soft);
+}
+
+.arvid-error {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger), transparent 60%);
+}

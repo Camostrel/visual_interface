@@ -1,0 +1,699 @@
+/*
+ * Страница помещения ARVID.
+ * v0.8.0: план сверху, компактные панели управления снизу.
+ */
+.room-shell {
+  min-height: var(--arvid-app-height, 100vh);
+  min-height: var(--arvid-app-height, 100dvh);
+}
+
+.room-shell .main-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(var(--arvid-app-height, 100vh) - 24px);
+  min-height: calc(var(--arvid-app-height, 100dvh) - 24px);
+  overflow: hidden;
+}
+
+.room-shell .workspace {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.room-layout {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.room-plan-area {
+  position: relative;
+  min-width: 0;
+  min-height: 360px;
+  flex: 1 1 52%;
+}
+
+.room-controls {
+  flex: 0 0 auto;
+  max-height: 42%;
+  min-height: 190px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 12px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.control-card {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+}
+
+.control-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.control-card h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.control-card header span {
+  max-width: 150px;
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.compact-field {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.compact-field select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--panel);
+  padding: 0 10px;
+}
+
+.slider-row {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.room-main-slider {
+  grid-template-columns: auto minmax(80px, 1fr) 44px;
+  align-items: center;
+}
+
+.slider-row input {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.slider-row em {
+  color: var(--text);
+  font-style: normal;
+  text-align: right;
+}
+
+.segmented-actions,
+.mini-actions,
+.control-row {
+  display: flex;
+  gap: 8px;
+}
+
+.segmented-actions {
+  margin-top: 12px;
+}
+
+.control-card button {
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--panel);
+  padding: 8px 12px;
+}
+
+.control-card button:hover {
+  border-color: color-mix(in srgb, var(--accent), transparent 40%);
+  background: var(--accent-soft);
+}
+
+.segmented-actions button {
+  flex: 1;
+}
+
+.compact-status-list,
+.sensor-status-list {
+  display: grid;
+  gap: 8px;
+}
+
+.compact-status-list {
+  grid-template-columns: auto 1fr;
+}
+
+.compact-status-list span,
+.sensor-status-line span {
+  color: var(--muted);
+}
+
+.compact-status-list strong,
+.sensor-status-line strong {
+  color: var(--accent);
+  text-align: right;
+}
+
+.sensor-status-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border), transparent 35%);
+}
+
+.sensor-status-line:last-child {
+  border-bottom: 0;
+}
+
+.entity-line,
+.entity-control-line {
+  padding: 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel-soft), transparent 20%);
+  border: 1px solid var(--border);
+}
+
+.entity-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.entity-line span {
+  color: var(--accent);
+}
+
+.entity-control-line em {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-style: normal;
+}
+
+.device-marker {
+  cursor: pointer;
+}
+
+.device-marker circle,
+.device-marker rect:not(.device-marker-hit) {
+  fill: color-mix(in srgb, var(--panel-strong), transparent 5%);
+  stroke: color-mix(in srgb, var(--muted), transparent 40%);
+  stroke-width: 1.8;
+}
+
+.device-marker.is-on circle,
+.device-marker.is-on rect:not(.device-marker-hit) {
+  stroke: var(--accent);
+  fill: var(--accent-soft);
+}
+
+.device-marker-icon {
+  fill: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+@media (max-width: 1200px) {
+  .room-controls {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .room-shell .main-panel {
+    min-height: calc(var(--arvid-app-height, 100dvh) - 12px);
+  }
+
+  .room-controls {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+}
+
+/* Мобильная вертикальная версия: больше полезного места, меньше карточки. */
+@media (max-width: 760px) and (orientation: portrait) {
+  html,
+  body {
+    width: 100%;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .room-shell {
+    height: var(--arvid-app-height, 100dvh);
+    min-height: var(--arvid-app-height, 100dvh);
+    padding: 4px;
+    overflow: hidden;
+  }
+
+  .room-shell .main-panel {
+    height: calc(var(--arvid-app-height, 100dvh) - 8px);
+    min-height: calc(var(--arvid-app-height, 100dvh) - 8px);
+    border-radius: 16px;
+  }
+
+  .room-shell .topbar {
+    flex: 0 0 auto;
+    min-height: 50px;
+    padding: 6px 8px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .room-shell .topbar-actions:first-child {
+    display: flex !important;
+    flex: 0 0 auto;
+  }
+
+  .room-shell .topbar-actions:last-child {
+    display: none !important;
+  }
+
+  .room-shell .header-button {
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 11px;
+    font-size: 13px;
+  }
+
+  .room-shell .topbar-title {
+    min-width: 0;
+  }
+
+  .room-shell .topbar-title h1 {
+    font-size: 17px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .room-shell .topbar-title p {
+    display: none;
+  }
+
+  .room-shell .workspace {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    padding: 6px;
+    overflow: hidden;
+  }
+
+  .room-layout {
+    height: 100%;
+    min-height: 0;
+    gap: 6px;
+  }
+
+  .room-plan-area {
+    flex: 0 0 auto;
+    height: var(--room-plan-height, 40dvh);
+    min-height: 240px;
+  }
+
+  .room-controls {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 2px 4px 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .control-card {
+    flex: 0 0 auto;
+    padding: 9px;
+    border-radius: 14px;
+  }
+
+  .control-card header {
+    margin-bottom: 7px;
+  }
+
+  .control-card h3 {
+    font-size: 14px;
+  }
+
+  .control-card header span {
+    font-size: 10px;
+    max-width: 110px;
+  }
+
+  .compact-field {
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  .compact-field select {
+    min-height: 34px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  .room-main-slider {
+    grid-template-columns: auto minmax(70px, 1fr) 38px;
+    gap: 7px;
+    font-size: 12px;
+  }
+
+  .segmented-actions,
+  .mini-actions,
+  .control-row {
+    gap: 6px;
+  }
+
+  .segmented-actions {
+    margin-top: 8px;
+  }
+
+  .control-card button {
+    min-height: 34px;
+    padding: 7px 8px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  .compact-status-list,
+  .sensor-status-list {
+    gap: 5px;
+    font-size: 12px;
+  }
+
+  .sensor-status-line {
+    padding: 5px 0;
+  }
+
+  .room-shell .plan-toolbar {
+    bottom: 6px;
+  }
+
+  .room-shell .plan-toolbar button,
+  .room-shell .plan-toolbar span {
+    min-width: 34px;
+    height: 32px;
+  }
+
+  .room-shell .plan-toolbar span {
+    min-width: 50px;
+  }
+}
+/* v0.8.1: на desktop возвращаем управление комнатой в правую панель. */
+@media (min-width: 861px) {
+  .room-layout {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .room-plan-area {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .room-controls {
+    flex: 0 0 390px;
+    width: 390px;
+    max-height: none;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .control-card {
+    flex: 0 0 auto;
+  }
+}
+
+@media (min-width: 861px) and (max-width: 1280px) {
+  .room-controls {
+    flex-basis: 340px;
+    width: 340px;
+  }
+}
+
+/* v0.8.1: на мобильном оставляем нижнюю прокручиваемую панель. */
+@media (max-width: 860px) {
+  .room-layout {
+    flex-direction: column;
+  }
+
+  .room-controls {
+    width: auto;
+  }
+}
+
+/* v0.8.5: на телефоне фиксируем план и страницу, прокручивается только управление устройствами. */
+@media (max-width: 760px) and (orientation: portrait) {
+  html,
+  body {
+    width: 100%;
+    height: var(--arvid-app-height, 100dvh);
+    min-height: var(--arvid-app-height, 100dvh);
+    overflow: hidden;
+  }
+
+  .room-shell {
+    height: var(--arvid-app-height, 100dvh);
+    min-height: var(--arvid-app-height, 100dvh);
+    padding: 4px;
+    overflow: hidden;
+  }
+
+  .room-shell .main-panel {
+    height: calc(var(--arvid-app-height, 100dvh) - 8px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .room-shell .workspace {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .room-layout {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .room-plan-area {
+    flex: 0 0 auto;
+    height: var(--room-plan-height, 38dvh);
+    min-height: 220px;
+    max-height: 42vh;
+  }
+
+  .room-controls {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 2px 6px 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+}
+
+/* Маркеры устройств: динамические элементы получают более технический вид, похожий на SVG-планы. */
+.device-marker {
+  --device-marker-accent: #7ab0d0;
+}
+
+.device-marker.device-kind-light {
+  --device-marker-accent: #d6b84a;
+}
+
+.device-marker.device-kind-panel {
+  --device-marker-accent: #b48fd6;
+}
+
+.device-marker.device-kind-motion,
+.device-marker.device-kind-illuminance {
+  --device-marker-accent: #7ab0d0;
+}
+
+.device-marker circle,
+.device-marker rect:not(.device-marker-hit) {
+  fill: rgba(16, 28, 44, 0.92);
+  stroke: color-mix(in srgb, var(--device-marker-accent), transparent 22%);
+  stroke-width: 2;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.32));
+}
+
+.device-marker.is-on circle,
+.device-marker.is-on rect:not(.device-marker-hit) {
+  fill: color-mix(in srgb, var(--device-marker-accent), #101c2c 72%);
+  stroke: var(--device-marker-accent);
+}
+
+.device-marker-hit {
+  fill: transparent;
+  stroke: transparent;
+  pointer-events: all;
+}
+
+.device-marker-icon {
+  fill: color-mix(in srgb, var(--device-marker-accent), #ffffff 45%);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* Цвет SVG-плана берётся из темы, сам SVG остаётся без собственного фона. */
+.arvid-svg-plan {
+  color: var(--svg-plan-line);
+}
+
+.device-marker-image {
+  pointer-events: none;
+  filter: drop-shadow(0 7px 14px rgba(0, 0, 0, 0.26));
+}
+
+/* Активные SVG-панели устройств подсвечиваем без дополнительной подложки вокруг иконки. */
+.device-marker.is-active .device-marker-image,
+.device-marker.is-on .device-marker-image {
+  filter:
+    drop-shadow(0 8px 16px rgba(0, 0, 0, 0.28))
+    drop-shadow(0 0 10px color-mix(in srgb, var(--device-marker-accent), transparent 24%))
+    brightness(1.18)
+    saturate(1.35);
+}
+
+.device-marker-popup {
+  position: fixed;
+  z-index: 9000;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--panel-strong);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  backdrop-filter: blur(18px);
+}
+
+.device-marker-popup[hidden] {
+  display: none;
+}
+
+.device-marker-popup__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.device-marker-popup__header span,
+.device-marker-popup__body small,
+.device-popup-metric span,
+.device-popup-slider span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.device-marker-popup__header strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+}
+
+.device-marker-popup__header button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-soft);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.device-popup-slider {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.device-popup-slider input {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.device-popup-slider em {
+  color: var(--accent);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.device-popup-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.device-popup-actions button,
+.device-popup-stepper button {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-soft);
+  color: var(--text);
+  cursor: pointer;
+  padding: 8px 10px;
+}
+
+.device-popup-metric {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-soft);
+}
+
+.device-popup-metric strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 22px;
+}
+
+.device-popup-stepper {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.device-popup-stepper strong {
+  text-align: center;
+  font-size: 22px;
+}

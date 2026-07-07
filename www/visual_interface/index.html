@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ARVID Visual Interface</title>
+  <script>
+    // Применяем сохранённую тему до загрузки CSS, чтобы убрать мигание экрана.
+    (function () {
+      try {
+        var theme = localStorage.getItem("arvid.theme");
+        if (theme === "dark" || theme === "light") {
+          document.documentElement.dataset.theme = theme;
+        }
+      } catch (error) {
+        // Если браузер запретил localStorage, страница останется с темой из html.
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/shell.css">
+  <link rel="stylesheet" href="css/floor.css">
+  <link rel="stylesheet" href="css/room.css">
+  <link rel="stylesheet" href="css/editor.css">
+  <link rel="stylesheet" href="css/schedule.css">
+</head>
+<body>
+  <div class="arvid-spa" data-spa-root>
+    <section class="spa-view" data-spa-view="floor">
+      <div class="arvid-shell">
+          <aside class="side-panel left-panel" id="leftPanel">
+            <div class="brand">
+              <button class="panel-toggle-button" data-toggle-panel="#leftPanel" aria-label="Свернуть меню" title="Свернуть меню">☰</button>
+              <img data-company-logo alt="ARVID logo">
+              <div class="brand-text">
+                <strong data-company-name>ARVID</strong>
+                <small data-building-name>Smart Building</small>
+              </div>
+            </div>
+
+            <div class="collapsed-actions" aria-label="Быстрые действия меню">
+              <button class="collapsed-action-button is-active" title="Главная" data-route-view="floor">⌂</button>
+              <button class="collapsed-action-button" title="Редактор" data-route-view="editor">✎</button>
+              <button class="collapsed-action-button" title="Светлая / тёмная тема" data-theme-toggle>◐</button>
+            </div>
+
+            <div class="mobile-panel-actions" aria-label="Действия мобильной панели">
+              <button class="mobile-panel-action" title="Редактор" data-route-view="editor">✎</button>
+              <button class="mobile-panel-action" title="Светлая / тёмная тема" data-theme-toggle>◐</button>
+            </div>
+
+            <div class="panel-content">
+
+              <section class="panel-section nav-section">
+                <h3>Навигация</h3>
+                <button class="nav-button primary-button" data-route-view="floor">Главная</button>
+                <button class="nav-button" data-route-view="editor">Редактор</button>
+              </section>
+
+              <section class="panel-section floors-section">
+                <h3>Этажи</h3>
+                <div data-floor-list></div>
+              </section>
+            </div>
+
+            <div class="panel-bottom">
+              <div class="clock-card">
+                <strong data-clock-time>--:--</strong>
+                <small data-clock-date>--</small>
+              </div>
+              <div class="weather-card" style="margin-top:10px">
+                <strong>Погода</strong><br>
+                <small>Источник подключим позже</small>
+              </div>
+              <button class="theme-toggle-button" data-theme-toggle style="margin-top:10px">◐ Тема</button>
+            </div>
+          </aside>
+
+          <main class="main-panel">
+            <header class="topbar">
+              <div class="topbar-title">
+                <h1><span data-building-name>ARVID Smart Building</span> | <span data-current-floor-name>Этаж</span></h1>
+                <p>Навигатор по зданию</p>
+              </div>
+              <div class="topbar-actions">
+                <select data-floor-select aria-label="Выбор этажа"></select>
+                <button class="header-button">Автоматизации</button>
+              </div>
+            </header>
+
+            <section class="workspace">
+              <div class="svg-stage" data-floor-svg></div>
+              <div class="plan-toolbar" data-plan-toolbar aria-label="Управление планом">
+                <button data-plan-zoom-out aria-label="Отдалить план" title="Отдалить">−</button>
+                <span data-plan-zoom-value>100%</span>
+                <button data-plan-zoom-in aria-label="Приблизить план" title="Приблизить">+</button>
+                <button data-plan-reset aria-label="Сбросить масштаб" title="Сбросить масштаб">⤢</button>
+              </div>
+            </section>
+          </main>
+
+          <aside class="side-panel right-panel is-collapsed" id="rightPanel">
+            <div class="brand">
+              <div class="brand-text">
+                <strong>Общие функции</strong>
+                <small>Режимы и действия</small>
+              </div>
+              <div class="brand-spacer"></div>
+              <button class="panel-toggle-button" data-toggle-panel="#rightPanel" aria-label="Свернуть общие функции" title="Свернуть общие функции">↔</button>
+            </div>
+
+            <div class="panel-content">
+              <section class="panel-section mobile-accordion-section">
+                <h3>Режимы работы</h3>
+                <button class="mobile-accordion-toggle" type="button" data-mobile-accordion-toggle aria-expanded="false">
+                  <span>Режимы работы</span>
+                  <span class="mobile-accordion-icon" aria-hidden="true">⌄</span>
+                </button>
+                <div class="mobile-accordion-body">
+                  <div data-building-modes></div>
+                </div>
+              </section>
+
+              <section class="panel-section mobile-accordion-section">
+                <h3>Быстрые действия</h3>
+                <button class="mobile-accordion-toggle" type="button" data-mobile-accordion-toggle aria-expanded="false">
+                  <span>Быстрые действия</span>
+                  <span class="mobile-accordion-icon" aria-hidden="true">⌄</span>
+                </button>
+                <div class="mobile-accordion-body">
+                  <button class="panel-action" data-all-lights-on>Включить весь свет</button>
+                  <button class="panel-action" data-all-lights-off>Выключить весь свет</button>
+                  <button class="panel-action" data-floor-lights-off>Выключить свет этажа</button>
+                </div>
+              </section>
+
+              <section class="panel-section mobile-accordion-section">
+                <h3>Сводка этажа</h3>
+                <button class="mobile-accordion-toggle" type="button" data-mobile-accordion-toggle aria-expanded="false">
+                  <span>Сводка этажа</span>
+                  <span class="mobile-accordion-icon" aria-hidden="true">⌄</span>
+                </button>
+                <div class="mobile-accordion-body">
+                  <div class="floor-summary-grid" data-floor-summary></div>
+                </div>
+              </section>
+
+              <section class="panel-section mobile-accordion-section" data-mobile-accordion-static="1">
+                <h3>Расписание</h3>
+                <button class="mobile-accordion-toggle" type="button" data-mobile-accordion-toggle aria-expanded="false">
+                  <span>Расписание</span>
+                  <span class="mobile-accordion-icon" aria-hidden="true">⌄</span>
+                </button>
+                <div class="mobile-accordion-body">
+                  <button class="panel-action" data-open-schedule>Расписание</button>
+                </div>
+              </section>
+
+              <section class="panel-section mobile-accordion-section">
+                <h3>Предупреждения</h3>
+                <button class="mobile-accordion-toggle" type="button" data-mobile-accordion-toggle aria-expanded="false">
+                  <span>Предупреждения</span>
+                  <span class="mobile-accordion-icon" aria-hidden="true">⌄</span>
+                </button>
+                <div class="mobile-accordion-body">
+                  <div class="warning-list" data-floor-warnings></div>
+                </div>
+              </section>
+            </div>
+          </aside>
+        </div>
+    </section>
+
+    <section class="spa-view" data-spa-view="room" hidden>
+      <div class="arvid-shell room-shell" style="grid-template-columns: 1fr;">
+          <main class="main-panel">
+            <header class="topbar">
+              <div class="topbar-actions">
+                <button class="header-button" data-back>← Назад</button>
+              </div>
+              <div class="topbar-title" style="flex:1">
+                <h1 data-room-title>Комната</h1>
+                <p data-room-subtitle>area_id</p>
+              </div>
+              <div class="topbar-actions">
+                <button class="header-button" data-theme-toggle>Тема</button>
+                <button class="header-button" data-edit-room>Редактор</button>
+              </div>
+            </header>
+
+            <section class="workspace">
+              <div class="room-layout">
+                <div class="room-plan-area">
+                  <div class="svg-stage" data-room-svg></div>
+                  <div class="plan-toolbar" data-plan-toolbar aria-label="Управление планом">
+                    <button data-plan-zoom-out aria-label="Отдалить план" title="Отдалить">−</button>
+                    <span data-plan-zoom-value>100%</span>
+                    <button data-plan-zoom-in aria-label="Приблизить план" title="Приблизить">+</button>
+                    <button data-plan-reset aria-label="Сбросить масштаб" title="Сбросить масштаб">⤢</button>
+                  </div>
+                </div>
+                <aside class="room-controls" data-room-controls></aside>
+              </div>
+            </section>
+          </main>
+        </div>
+    </section>
+
+    <section class="spa-view" data-spa-view="editor" hidden>
+      <div class="arvid-shell editor-shell">
+          <aside class="side-panel editor-left-panel" id="editorLeftPanel">
+            <div class="brand">
+              <img data-company-logo alt="ARVID logo">
+              <div class="brand-text">
+                <strong>Редактор</strong>
+                <small>Устройства помещений</small>
+              </div>
+            </div>
+
+
+            <div class="panel-content">
+              <button class="panel-action" data-route-view="floor">← Главная</button>
+              <button class="panel-action" data-theme-toggle>Светлая / тёмная тема</button>
+
+              <section class="panel-section">
+                <h3>Этаж</h3>
+                <select class="editor-select" data-editor-floor-select></select>
+              </section>
+
+              <section class="panel-section">
+                <h3>Помещение</h3>
+                <select class="editor-select" data-editor-room-select></select>
+                <div class="muted-box" data-editor-room-info>Выберите помещение для настройки.</div>
+              </section>
+
+              <section class="panel-section" data-editor-device-controls>
+                <h3>Устройство помещения</h3>
+                <select class="editor-select" data-editor-device-select></select>
+                <div class="muted-box" data-editor-device-info>Выберите устройство для размещения.</div>
+
+                <label class="editor-check-row">
+                  <input type="checkbox" data-editor-device-visible>
+                  <span>Показывать устройство</span>
+                </label>
+
+                <label class="editor-field-row">
+                  <span>Тип маркера</span>
+                  <select class="editor-select" data-editor-device-marker>
+                    <option value="icon">Иконка</option>
+                    <option value="circle">Круг</option>
+                    <option value="square">Квадрат</option>
+                  </select>
+                </label>
+
+                <label class="editor-field-row">
+                  <span>Иконка</span>
+                  <select class="editor-select" data-editor-device-icon>
+                    <option value="auto">Авто</option>
+                    <option value="light">Свет</option>
+                    <option value="motion">Движение</option>
+                    <option value="illuminance">Освещённость</option>
+                    <option value="panel">Панель</option>
+                    <option value="sensor">Датчик</option>
+                  </select>
+                </label>
+
+                <button class="panel-action" data-editor-center-device>Поставить в центр плана</button>
+                <div class="muted-box">Desktop: перетаскивай маркер мышью. Телефон: выбери устройство и тапни по месту на плане.</div>
+              </section>
+
+              <section class="panel-section">
+                <h3>Действия</h3>
+                <button class="panel-action primary-button" data-editor-save>Сохранить layout</button>
+              </section>
+
+              <div data-editor-summary></div>
+            </div>
+          </aside>
+
+          <main class="main-panel">
+            <header class="topbar">
+              <div class="topbar-title">
+                <h1 data-editor-title>Редактирование устройств помещения</h1>
+                <p data-editor-status>Загрузка данных...</p>
+              </div>
+              <div class="topbar-actions">
+                <button class="header-button" data-plan-zoom-out>−</button>
+                <span class="editor-zoom-label" data-plan-zoom-value>100%</span>
+                <button class="header-button" data-plan-zoom-in>+</button>
+                <button class="header-button" data-plan-reset>⤢</button>
+              </div>
+            </header>
+
+            <section class="workspace editor-workspace">
+              <div class="svg-stage editor-svg-stage" data-editor-svg></div>
+            </section>
+          </main>
+        </div>
+    </section>
+
+    <!-- Popup расписания — поверх всех views, общий для SPA -->
+    <div class="schedule-overlay" data-schedule-overlay>
+      <div class="schedule-popup">
+        <div class="schedule-popup__header">
+          <strong>Расписание</strong>
+          <div class="schedule-header-actions">
+            <button type="button" class="schedule-add-header-btn" data-schedule-show-add>+ Добавить</button>
+            <button type="button" class="schedule-close-btn" data-schedule-close>×</button>
+          </div>
+        </div>
+
+        <!-- Контейнер: список + панель формы поверх -->
+        <div class="schedule-popup__content">
+
+          <!-- Вид: список событий -->
+          <div class="schedule-popup__body" data-schedule-view="list">
+            <div class="schedule-list" data-schedule-list></div>
+          </div>
+
+          <!-- Панель формы — выезжает поверх списка справа -->
+          <div class="schedule-form-panel" data-schedule-view="form">
+            <div class="schedule-form-panel__header">
+              <button type="button" class="schedule-back-btn" data-schedule-back>← Назад</button>
+              <h3 class="schedule-form-title" data-sf-form-title>Новое событие</h3>
+            </div>
+            <div class="schedule-form-panel__body">
+              <form class="schedule-form" data-schedule-form>
+                <div class="schedule-field">
+                  <label>Название</label>
+                  <input type="text" data-sf-name placeholder="Например: Урок математики" required>
+                </div>
+                <div class="schedule-field">
+                  <label>Тип</label>
+                  <select data-sf-type>
+                    <option value="lesson">Урок</option>
+                    <option value="break">Перемена</option>
+                    <option value="window">Окошко</option>
+                    <option value="off">Нерабочее время</option>
+                  </select>
+                </div>
+                <div class="schedule-time-row">
+                  <div class="schedule-field">
+                    <label>Начало</label>
+                    <input type="time" data-sf-start required>
+                  </div>
+                  <div class="schedule-field">
+                    <label>Конец</label>
+                    <input type="time" data-sf-end required>
+                  </div>
+                </div>
+                <div class="schedule-field">
+                  <label>Дни недели</label>
+                  <div class="schedule-weekdays" data-sf-weekdays>
+                    <button type="button" data-day="mon">Пн</button>
+                    <button type="button" data-day="tue">Вт</button>
+                    <button type="button" data-day="wed">Ср</button>
+                    <button type="button" data-day="thu">Чт</button>
+                    <button type="button" data-day="fri">Пт</button>
+                    <button type="button" data-day="sat">Сб</button>
+                    <button type="button" data-day="sun">Вс</button>
+                  </div>
+                </div>
+                <div class="schedule-field">
+                  <label>Описание (необязательно)</label>
+                  <textarea data-sf-description rows="2" placeholder="Дополнительная информация"></textarea>
+                </div>
+                <button type="submit" class="schedule-submit-btn" data-sf-submit>Добавить</button>
+              </form>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/logger.js"></script>
+  <script src="js/ha-ws.js"></script>
+  <script src="js/floorplan-storage.js"></script>
+  <script src="js/ha-registry.js"></script>
+  <script src="js/app-state.js"></script>
+  <script src="js/svg-utils.js"></script>
+  <script src="js/device-ui.js"></script>
+  <script src="js/shell-ui.js"></script>
+  <script src="js/floor-page.js"></script>
+  <script src="js/room-page.js"></script>
+  <script src="js/editor-page.js"></script>
+  <script src="js/spa-router.js"></script>
+  <script src="js/schedule-ui.js"></script>
+  <script>
+    window.ARVID_SPA = new ArvidSpaApp();
+    window.ARVID_SPA.init()
+      .then(() => ARVID_SCHEDULE.init())
+      .catch((error) => {
+        ARVID_LOG.error("boot", "SPA boot failed", error);
+        document.body.innerHTML = `<div class="arvid-error">Ошибка запуска: ${error.message || error}</div>`;
+      });
+  </script>
+</body>
+</html>
