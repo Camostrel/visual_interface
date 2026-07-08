@@ -198,7 +198,10 @@ class ArvidRoomPage {
     const layer = ArvidSvgUtils.ensureOverlayLayer(this.svg, "arvid-device-markers");
     ArvidSvgUtils.clearLayer(layer);
 
-    const entities = this.editMode ? this.getEditableEntities() : this.getRoomEntities();
+    // И на плане, и в редакторе показываем только устройства скоупа.
+    // Иначе старые записи layout (климат/шторы из общего стора) висят «пустыми»
+    // неубираемыми маркерами: их нет в списке редактора, значит их нельзя снять.
+    const entities = this.getScopedEntities();
     let rendered = 0;
 
     entities.forEach((state) => {
@@ -811,8 +814,10 @@ class ArvidRoomPage {
     this.renderControls();
   }
 
-  getEditableEntities() {
-    // Редактируем только устройства скоупа: свет, движение/освещённость, панели.
+  getScopedEntities() {
+    // Единый фильтр скоупа visual_interface: свет, движение/освещённость, панели.
+    // Используется и для маркеров на плане, и для списка в режиме редактирования,
+    // чтобы план и редактор всегда показывали один и тот же набор устройств.
     return this.getRoomEntities().filter((state) => (
       ["light", "motion", "illuminance", "panel"].includes(ArvidDeviceUi.markerKind(state))
     ));
@@ -852,7 +857,7 @@ class ArvidRoomPage {
       { key: "panel", title: "Панели" },
     ];
 
-    const entities = this.getEditableEntities();
+    const entities = this.getScopedEntities();
     const visibleEntities = entities.filter((state) => this.matchesEditFilter(ArvidDeviceUi.markerKind(state)));
     const selected = this.editSelectedEntityId;
     const selectedPlaced = selected ? this.isDevicePlaced(selected) : false;
