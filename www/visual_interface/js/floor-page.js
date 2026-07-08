@@ -71,6 +71,13 @@ class ArvidFloorPage {
       });
     });
 
+    // Фиксированная кнопка «Выключить этаж» поверх карты (та же логика, что в панели).
+    document.querySelector("[data-floor-off]")?.addEventListener("click", () => {
+      this.turnOffFloorLights().catch((error) => {
+        ARVID_LOG.error(this.logArea, "Failed to turn off floor lights", error);
+      });
+    });
+
     document.querySelector("[data-all-lights-on]")?.addEventListener("click", () => {
       this.setAllLights(true).catch((error) => {
         ARVID_LOG.error(this.logArea, "Failed to turn on all lights", error);
@@ -442,33 +449,30 @@ class ArvidFloorPage {
     });
   }
 
-  resolveFloorLightsEntityId() {
-    const floorLayout = ARVID_APP.layout?.floors?.[ARVID_APP.currentFloorId] || {};
-    const candidates = [
-      floorLayout.all_lights_entity_id,
-      floorLayout.all_lights_group,
-      `light.${ARVID_APP.currentFloorId}_all`,
-      `light.${ARVID_APP.currentFloorId}_lights_all`,
-      `group.${ARVID_APP.currentFloorId}_all_lights`,
-    ].filter(Boolean);
-
-    return candidates.find((entityId) => ARVID_APP.registry.getState(entityId)) || candidates[0] || null;
+  // Все лампы текущего этажа = light.* всех его комнат (HA area ∪ размещённые нами).
+  getFloorLightEntityIds() {
+    const ids = new Set();
+    this.getAreasForCurrentFloor().forEach((area) => {
+      ARVID_APP.entitiesForRoom(area.area_id).forEach((state) => {
+        if (state.entity_id.startsWith("light.")) ids.add(state.entity_id);
+      });
+    });
+    return [...ids];
   }
 
   async turnOffFloorLights() {
-    const entityId = this.resolveFloorLightsEntityId();
-    if (!entityId) {
-      ARVID_LOG.warn(this.logArea, "Floor-wide lights entity is not configured", {
+    const entityIds = this.getFloorLightEntityIds();
+    if (!entityIds.length) {
+      ARVID_LOG.warn(this.logArea, "На этаже не найдено ламп для выключения", {
         floorId: ARVID_APP.currentFloorId,
       });
       return;
     }
 
-    const domain = entityId.split(".")[0];
-    await ARVID_APP.ha.callService(domain, "turn_off", {}, { entity_id: entityId });
-    ARVID_LOG.info(this.logArea, "Floor-wide lights turned off", {
+    await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: entityIds });
+    ARVID_LOG.info(this.logArea, "Floor lights turned off", {
       floorId: ARVID_APP.currentFloorId,
-      entityId,
+      count: entityIds.length,
     });
   }
 
@@ -863,19 +867,22 @@ class ArvidFloorPage {
       zone.classList.toggle("is-disabled", !hasArea);
       zone.setAttribute("tabindex", hasArea ? "0" : "-1");
       zone.setAttribute("role", "button");
-      zone.setAttribute("aria-label", hasArea ? `Открыть карточку помещения ${areaId}` : `Помещение ${areaId} не найдено в Home Assistant`);
+      zone.setAttribute("aria-label", hasArea ? `Помещение ${areaId}: тап — свет, двойной тап — открыть` : `Помещение ${areaId} не найдено в Home Assistant`);
 
       if (!hasArea) return;
 
+      // Модель взаимодействия (v0.5.0, ТЗ заказчика):
+      // короткий тап = вкл/выкл света комнаты; двойной тап = переход на план комнаты.
       zone.addEventListener("click", (event) => {
         event.stopPropagation();
-        this.openRoomQuickView(areaId, event);
+        this.handleZoneTap(areaId);
       }, { signal: this.roomZoneAbortController.signal });
 
       zone.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        this.openRoomQuickView(areaId, event);
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          this.toggleRoomLights(areaId); // Enter/Пробел — основное действие (свет)
+        }
       }, { signal: this.roomZoneAbortController.signal });
 
       bound += 1;
@@ -888,8 +895,54 @@ class ArvidFloorPage {
     });
   }
 
+  /**
+   * Тап по зоне комнаты: различаем короткий (свет) и двойной (переход) по таймауту.
+   */
+  handleZoneTap(areaId) {
+    if (this._zoneTapTimer && this._zoneTapAreaId === areaId) {
+      // Второй тап по той же зоне в пределах окна — это двойной тап.
+      window.clearTimeout(this._zoneTapTimer);
+      this._zoneTapTimer = null;
+      this._zoneTapAreaId = null;
+      this.openRoomByArea(areaId);
+      return;
+    }
+
+    this._zoneTapAreaId = areaId;
+    this._zoneTapTimer = window.setTimeout(() => {
+      this._zoneTapTimer = null;
+      this._zoneTapAreaId = null;
+      this.toggleRoomLights(areaId);
+    }, 250);
+  }
+
+  /**
+   * Вкл/выкл всего света комнаты (короткий тап по зоне).
+   * Лампы комнаты = HA area ∪ размещённые нами (entitiesForRoom): работает и с заранее
+   * сформированными группами света, и с ручной расстановкой.
+   */
+  async toggleRoomLights(areaId) {
+    const roomEntities = ARVID_APP.entitiesForRoom(areaId);
+    const lights = roomEntities.filter((state) => state.entity_id.startsWith("light."));
+    if (!lights.length) {
+      ARVID_LOG.warn(this.logArea, "Zone tap: в комнате нет света", { areaId });
+      return;
+    }
+
+    const anyOn = lights.some((state) => state.state === "on");
+    const action = anyOn ? "turn_off" : "turn_on";
+    const entityIds = lights.map((state) => state.entity_id);
+
+    await ARVID_APP.ha.callService("light", action, {}, { entity_id: entityIds });
+    ARVID_LOG.info(this.logArea, "Room lights toggled from zone tap", {
+      areaId,
+      action,
+      count: entityIds.length,
+    });
+  }
+
   syncRoomZones() {
-    // На плане используем интерактивные контуры комнат из самого SVG и Quick View по клику.
+    // На плане: подсветка зон по состоянию + прямое управление тапом (см. bindRoomZones).
     if (!this.svg) return;
     this.bindRoomZones();
     this.applyRoomLightHighlight();

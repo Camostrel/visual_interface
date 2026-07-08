@@ -124,12 +124,14 @@ ARVID_RUNTIME.addStateHandler(fn) // подписка на state_changed (без
 /* НЕПРАВИЛЬНО */ :root[…] ::view-transition-old(root) { }
 ```
 
-### Quick View (мини-карточка помещения)
+### Взаимодействие с зонами карты (v0.5.0, ТЗ заказчика)
 
-- Анимация через `opacity + transform + visibility` (не `display`)
-- **Reflow trick:** при повторном клике `remove('is-open') → getBoundingClientRect() → add('is-open')`
-- При `state_changed` без события мыши — сохранять позицию popup, не пересчитывать
-- Карточка «Свет N/N» — первая в списке метрик и кликабельна (toggle света помещения)
+- **Короткий тап** по зоне комнаты = вкл/выкл света всего помещения (`toggleRoomLights`).
+- **Двойной тап** = переход на план комнаты (различение по таймауту 250 мс в `handleZoneTap`).
+- **Кнопка «Выключить этаж»** — фиксированная поверх карты (`[data-floor-off]`), гасит
+  `light.*` всех комнат этажа (`getFloorLightEntityIds` через `entitiesForRoom`).
+- **Quick View отключён** (не вызывается из клика), код методов оставлен в `floor-page.js`
+  на будущее — не удалять без причины.
 
 ### CSS-переменные (только реальные!)
 
