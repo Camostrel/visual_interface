@@ -127,6 +127,16 @@ state_changed  → ArvidFloorPage.handleStateChanged() → syncRoomZones()
 > Поэтому в режиме редактирования список — это **все** устройства скоупа HA (не по area),
 > с поиском по названию. «Фильтр по помещению» отложен как идея (нужен, когда area будут заданы).
 
+### 4.1 Единый датчик движения+освещённости (v0.4.1)
+
+Датчик DALI — это ДВЕ сущности с общим `device_id`: `sensor.ms_*` (движение,
+`device_class` пустой → распознаём по префиксу `ms_`) и `sensor.il_*` (освещённость,
+`device_class=illuminance`). В интерфейсе это **одна точка** (kind `sensor`):
+- `room-page.collapseToUnits(states)` схлопывает пару в якорь (сущность движения) по
+  `registry.getDeviceId` / `getEntitiesForDevice`;
+- `getSensorReadings(anchor)` возвращает `{motion, lux}` того же устройства;
+- на плане — один маркер, в показаниях — оба значения (движение · lx).
+
 ## 5. Backend (`custom_components/visual_interface/`)
 
 | Файл | Роль |

@@ -73,6 +73,16 @@ class ArvidHaRegistry {
     return state?.attributes?.friendly_name || registry?.name || entityId;
   }
 
+  getDeviceId(entityId) {
+    return this.entityById.get(entityId)?.device_id || null;
+  }
+
+  // Все сущности одного физического устройства (нужно для пары ms_/il_ одного датчика).
+  getEntitiesForDevice(deviceId) {
+    if (!deviceId) return [];
+    return this.states.filter((state) => this.entityById.get(state.entity_id)?.device_id === deviceId);
+  }
+
   getAreaForEntity(entityId) {
     const entity = this.entityById.get(entityId);
     if (!entity) return null;

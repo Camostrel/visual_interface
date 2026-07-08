@@ -143,7 +143,11 @@ class ArvidRoomPage {
       logArea: this.logArea,
     });
 
-    // Тап по плану в режиме редактирования размещает выбранное устройство.
+    // Щелчок/тап по плану в режиме редактирования размещает выбранное устройство.
+    // Запоминаем точку нажатия, чтобы отличить клик от панорамирования (см. handleEditPlanClick).
+    this.svg.addEventListener("pointerdown", (event) => {
+      this._editClickStart = { x: event.clientX, y: event.clientY };
+    });
     this.svg.addEventListener("click", (event) => this.handleEditPlanClick(event));
 
     this.updateMobilePlanLayout();
@@ -191,16 +195,55 @@ class ArvidRoomPage {
   }
 
   isScopedState(state) {
-    return ["light", "motion", "illuminance", "panel"].includes(ArvidDeviceUi.markerKind(state));
+    return ["light", "sensor", "panel"].includes(ArvidDeviceUi.markerKind(state));
   }
 
   /**
-   * Все устройства скоупа во всём HA (не только этой комнаты).
+   * Схлопываем сущности в «точки-устройства»: пара датчика ms_/il_ (общий device_id)
+   * превращается в одну точку. Якорь пары — сущность движения (ms_), к ней прикреплена
+   * освещённость. Свет и панели остаются как есть.
+   */
+  collapseToUnits(states) {
+    const units = [];
+    const seenSensorDevices = new Set();
+
+    states.forEach((state) => {
+      if (ArvidDeviceUi.markerKind(state) !== "sensor") {
+        units.push(state);
+        return;
+      }
+
+      const deviceId = ARVID_APP.registry.getDeviceId(state.entity_id);
+      const groupKey = deviceId || state.entity_id;
+      if (seenSensorDevices.has(groupKey)) return;
+      seenSensorDevices.add(groupKey);
+
+      // Якорь — движение (ms_), если оно есть у этого устройства; иначе текущая сущность.
+      const siblings = deviceId ? ARVID_APP.registry.getEntitiesForDevice(deviceId) : [state];
+      const anchor = siblings.find((s) => ArvidDeviceUi.isMotion(s)) || state;
+      units.push(anchor);
+    });
+
+    return units;
+  }
+
+  // Показания единого датчика: движение (ms_) + освещённость (il_) одного устройства.
+  getSensorReadings(anchorState) {
+    const deviceId = ARVID_APP.registry.getDeviceId(anchorState.entity_id);
+    const siblings = deviceId ? ARVID_APP.registry.getEntitiesForDevice(deviceId) : [anchorState];
+    return {
+      motion: siblings.find((s) => ArvidDeviceUi.isMotion(s)) || null,
+      lux: siblings.find((s) => ArvidDeviceUi.isIlluminance(s)) || null,
+    };
+  }
+
+  /**
+   * Все устройства скоупа во всём HA (не только этой комнаты), схлопнутые в точки.
    * Нужны в режиме редактирования: на частных объектах area не заданы, поэтому
    * для расстановки показываем полный список с поиском, а не только устройства area.
    */
   getAllScopedEntities() {
-    return ARVID_APP.registry.states.filter((state) => this.isScopedState(state));
+    return this.collapseToUnits(ARVID_APP.registry.states.filter((state) => this.isScopedState(state)));
   }
 
   getDeviceLayout(entityId) {
@@ -309,10 +352,8 @@ class ArvidRoomPage {
     const kind = ArvidDeviceUi.markerKind(state);
     const labels = {
       light: "L",
-      motion: "M",
-      illuminance: "LX",
+      sensor: "D",
       panel: "P",
-      sensor: "S",
     };
     return labels[kind] || ArvidDeviceUi.domain(state.entity_id).slice(0, 2).toUpperCase();
   }
@@ -501,20 +542,31 @@ class ArvidRoomPage {
   }
 
   renderSensorDevicePopupBody(body, state, kind) {
-    const unit = state.attributes?.unit_of_measurement || "";
-    const value = ArvidDeviceUi.isPanelEvent(state)
-      ? ArvidDeviceUi.panelEventText(state)
-      : ArvidDeviceUi.isMotion(state)
-        ? (ArvidDeviceUi.isMotionActive(state) ? "Есть движение" : "Нет движения")
-        : `${state.state}${unit ? ` ${unit}` : ""}`;
+    // Панель — последнее событие.
+    if (ArvidDeviceUi.isPanelEvent(state)) {
+      body.innerHTML = `
+        <div class="device-popup-metric">
+          <span>Последнее событие</span>
+          <strong>${ArvidDeviceUi.panelEventText(state)}</strong>
+        </div>
+        <small>${state.entity_id}</small>
+      `;
+      return;
+    }
 
-    body.innerHTML = `
-      <div class="device-popup-metric">
-        <span>${this.getSensorDisplayLabel(state, kind)}</span>
-        <strong>${value}</strong>
-      </div>
-      <small>${state.entity_id}</small>
-    `;
+    // Датчик — оба показания одного устройства: движение и освещённость.
+    const { motion, lux } = this.getSensorReadings(state);
+    const rows = [];
+    if (motion) {
+      rows.push(`<div class="device-popup-metric"><span>Движение</span><strong>${ArvidDeviceUi.isMotionActive(motion) ? "Есть движение" : "Нет движения"}</strong></div>`);
+    }
+    if (lux) {
+      rows.push(`<div class="device-popup-metric"><span>Освещённость</span><strong>${lux.state} ${lux.attributes?.unit_of_measurement || "lx"}</strong></div>`);
+    }
+    if (!rows.length) {
+      rows.push(`<div class="device-popup-metric"><span>Датчик</span><strong>${state.state}</strong></div>`);
+    }
+    body.innerHTML = rows.join("");
   }
 
   placeDevicePopup(popup, anchorGroup) {
@@ -567,7 +619,8 @@ class ArvidRoomPage {
 
     const entities = this.getRoomEntities();
     const lights = entities.filter((state) => state.entity_id.startsWith("light."));
-    const sensors = entities.filter((state) => ArvidDeviceUi.isReadableSensor(state));
+    // Датчики схлопываем в точки: пара ms_/il_ = одна строка с двумя показаниями.
+    const sensors = this.collapseToUnits(entities.filter((state) => ArvidDeviceUi.isSensor(state)));
     const panels = entities.filter((state) => ArvidDeviceUi.isPanelEvent(state));
 
     container.innerHTML = "";
@@ -731,31 +784,30 @@ class ArvidRoomPage {
     return [...sensors].sort((a, b) => order(a) - order(b));
   }
 
-  renderSensorStatusLine(state) {
+  // Строка датчика: имя + оба показания (движение · освещённость) одного устройства.
+  renderSensorStatusLine(anchorState) {
     const row = document.createElement("div");
     row.className = "sensor-status-line";
 
-    const unit = state.attributes.unit_of_measurement || "";
-    const kind = ArvidDeviceUi.markerKind(state);
-    const label = this.getSensorDisplayLabel(state, kind);
-    const value = ArvidDeviceUi.isMotion(state)
-      ? (ArvidDeviceUi.isMotionActive(state) ? "Есть движение" : "Нет движения")
-      : `${state.state}${unit}`;
-
     row.innerHTML = `
-      <span>${label}</span>
-      <strong>${value}</strong>
+      <span>${ArvidDeviceUi.friendlyName(anchorState)}</span>
+      <strong>${this.formatSensorReadings(anchorState)}</strong>
     `;
     return row;
   }
 
+  formatSensorReadings(anchorState) {
+    const { motion, lux } = this.getSensorReadings(anchorState);
+    const parts = [];
+    if (motion) parts.push(ArvidDeviceUi.isMotionActive(motion) ? "движение" : "нет движения");
+    if (lux) parts.push(`${lux.state} ${lux.attributes?.unit_of_measurement || "lx"}`);
+    return parts.join(" · ") || "—";
+  }
+
   getSensorDisplayLabel(state, kind) {
-    const labels = {
-      motion: "Движение",
-      illuminance: "Освещённость",
-      panel: "Панель",
-    };
-    return labels[kind] || ArvidDeviceUi.friendlyName(state);
+    if (ArvidDeviceUi.isPanelEvent(state)) return "Панель";
+    if (kind === "sensor") return "Датчик";
+    return ArvidDeviceUi.friendlyName(state);
   }
 
   /**
@@ -831,17 +883,14 @@ class ArvidRoomPage {
   }
 
   getScopedEntities() {
-    // Единый фильтр скоупа visual_interface: свет, движение/освещённость, панели.
-    // Используется и для маркеров на плане, и для списка в режиме редактирования,
-    // чтобы план и редактор всегда показывали один и тот же набор устройств.
-    return this.getRoomEntities().filter((state) => (
-      ["light", "motion", "illuminance", "panel"].includes(ArvidDeviceUi.markerKind(state))
-    ));
+    // Устройства скоупа этой комнаты, схлопнутые в точки (пара датчика ms_/il_ = одна точка).
+    // Используется для маркеров на плане (обычный режим и редактирование).
+    return this.collapseToUnits(this.getRoomEntities().filter((state) => this.isScopedState(state)));
   }
 
   matchesEditFilter(kind) {
     if (this.editFilter === "all") return true;
-    if (this.editFilter === "sensors") return kind === "motion" || kind === "illuminance";
+    if (this.editFilter === "sensors") return kind === "sensor";
     return kind === this.editFilter;
   }
 
@@ -1037,28 +1086,26 @@ class ArvidRoomPage {
     ARVID_LOG.info(this.logArea, "Room layout changes discarded", { areaId: this.areaId });
   }
 
-  isMobilePlacementMode() {
-    // Тап-размещение оставляем телефону: на компьютере клик после pan легко переносит устройство случайно.
-    return window.matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)").matches;
-  }
-
   handleEditPlanClick(event) {
     if (!this.editMode || !this.svg) return;
     if (event.target.closest?.(".device-marker")) return;
 
+    // Отличаем клик-размещение от панорамирования плана: при заметном сдвиге
+    // указателя между down и up считаем это pan и ничего не ставим.
+    const start = this._editClickStart;
+    if (start && (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8)) {
+      return;
+    }
+
     if (!this.editSelectedEntityId) {
-      this.setEditStatus("Сначала выбери устройство в списке");
+      this.setEditStatus("Сначала выбери устройство в списке, затем щёлкни по месту на плане");
       return;
     }
 
-    if (!this.isMobilePlacementMode()) {
-      this.setEditStatus("На компьютере перетаскивай маркер мышью или используй «В центр плана»");
-      return;
-    }
-
+    // Работает и на компьютере (щелчок), и на телефоне (тап).
     const point = ArvidSvgUtils.clientPointToSvg(this.svg, event.clientX, event.clientY);
     if (!point) return;
-    this.placeDeviceAt(this.editSelectedEntityId, point.x, point.y, "тап по плану");
+    this.placeDeviceAt(this.editSelectedEntityId, point.x, point.y, "щелчок по плану");
   }
 
   placeDeviceAt(entityId, x, y, reason) {

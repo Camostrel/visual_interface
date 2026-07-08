@@ -1,11 +1,20 @@
 /**
  * Вспомогательные функции для отображения сущностей Home Assistant.
- * Скоуп visual_interface: свет (light.*), движение/освещённость (sensor.*),
- * кнопочные и поворотные панели (event.*). Другие типы устройств не поддерживаем.
+ * Скоуп visual_interface: свет (light.), датчик движения+освещённости (sensor.ms_ и sensor.il_),
+ * кнопочные и поворотные панели (event.).
+ *
+ * Нейминг DALI (см. WEB_INTERFACE_API.md): движение = sensor.ms_, освещённость = sensor.il_.
+ * Пара ms_/il_ — это ОДНО физическое устройство (общий device_id в HA), поэтому на плане
+ * и в списках это одна «точка-датчик» (kind = "sensor") с двумя показаниями.
  */
 class ArvidDeviceUi {
   static domain(entityId) {
     return entityId.split(".")[0];
+  }
+
+  // Часть entity_id после домена: "sensor.ms_hir23_w" -> "ms_hir23_w".
+  static objectId(entityId) {
+    return (entityId || "").split(".")[1] || "";
   }
 
   static friendlyName(state) {
@@ -13,31 +22,31 @@ class ArvidDeviceUi {
   }
 
   /**
-   * Проверяем, является ли сущность датчиком движения.
-   * В этом проекте датчики движения могут быть именно sensor.*, а не только binary_sensor.*.
+   * Датчик движения. У DALI-датчиков device_class часто пустой,
+   * поэтому основной признак — префикс объекта `ms_` (нейминг ядра).
    */
   static isMotion(state) {
     const entityId = state?.entity_id || "";
     const domain = ArvidDeviceUi.domain(entityId);
+    const objectId = ArvidDeviceUi.objectId(entityId).toLowerCase();
     const deviceClass = state?.attributes?.device_class;
-    const lowerId = entityId.toLowerCase();
     const lowerName = String(state?.attributes?.friendly_name || "").toLowerCase();
 
     if (domain === "sensor") {
+      if (objectId.startsWith("ms_")) return true;
       if (["motion", "occupancy", "presence"].includes(deviceClass)) return true;
       return (
-        lowerId.includes("motion")
-        || lowerId.includes("occupancy")
-        || lowerId.includes("presence")
-        || lowerId.includes("dvizhen")
-        || lowerId.includes("движ")
+        objectId.includes("motion")
+        || objectId.includes("occupancy")
+        || objectId.includes("presence")
+        || objectId.includes("dvizhen")
+        || objectId.includes("движ")
         || lowerName.includes("motion")
-        || lowerName.includes("occupancy")
         || lowerName.includes("движ")
       );
     }
 
-    // Оставляем совместимость, если часть объектов всё же будет binary_sensor.*.
+    // Совместимость, если часть датчиков всё же придёт как binary_sensor.*.
     if (domain === "binary_sensor") {
       return ["motion", "occupancy", "presence"].includes(deviceClass);
     }
@@ -46,22 +55,32 @@ class ArvidDeviceUi {
   }
 
   /**
-   * Состояния движения по текущей договорённости:
-   * активно: motion, occupancy;
-   * неактивно: no_motion, vacant.
+   * Состояния движения по договорённости ядра:
+   * активно: motion, occupancy; неактивно: no_motion, vacant.
    */
   static isMotionActive(state) {
     const value = String(state?.state || "").trim().toLowerCase();
     if (["motion", "occupancy"].includes(value)) return true;
     if (["no_motion", "vacant"].includes(value)) return false;
 
-    // Дополнительная совместимость с возможными HA-состояниями.
+    // Совместимость с возможными HA-состояниями.
     if (["on", "detected", "occupied", "presence", "present", "1", "true"].includes(value)) return true;
     return false;
   }
 
+  /**
+   * Датчик освещённости. Признак — device_class=illuminance или префикс объекта `il_`.
+   */
   static isIlluminance(state) {
-    return state?.entity_id?.startsWith("sensor.") && state?.attributes?.device_class === "illuminance";
+    const entityId = state?.entity_id || "";
+    if (!entityId.startsWith("sensor.")) return false;
+    return state?.attributes?.device_class === "illuminance"
+      || ArvidDeviceUi.objectId(entityId).toLowerCase().startsWith("il_");
+  }
+
+  /** Любая из двух сущностей единого датчика (движение или освещённость). */
+  static isSensor(state) {
+    return ArvidDeviceUi.isMotion(state) || ArvidDeviceUi.isIlluminance(state);
   }
 
   /**
@@ -72,9 +91,7 @@ class ArvidDeviceUi {
     return ArvidDeviceUi.domain(state?.entity_id || "") === "event";
   }
 
-  /**
-   * Человекочитаемое описание последнего события панели.
-   */
+  /** Человекочитаемое описание последнего события панели. */
   static panelEventText(state) {
     const eventType = state?.attributes?.event_type;
     if (!eventType) return "событий не было";
@@ -91,33 +108,32 @@ class ArvidDeviceUi {
     return keyNo !== undefined && keyNo !== null ? `${typeText} · кнопка ${keyNo}` : typeText;
   }
 
+  /**
+   * Тип точки на плане. Датчик движения+освещённости — единый тип "sensor".
+   */
   static markerKind(state) {
     const domain = ArvidDeviceUi.domain(state.entity_id);
     if (domain === "light") return "light";
     if (ArvidDeviceUi.isPanelEvent(state)) return "panel";
-    if (ArvidDeviceUi.isMotion(state)) return "motion";
-    if (ArvidDeviceUi.isIlluminance(state)) return "illuminance";
+    if (ArvidDeviceUi.isSensor(state)) return "sensor";
     return domain;
   }
 
   static iconText(kind) {
     const icons = {
       light: "💡",
-      motion: "◌",
-      illuminance: "☀",
+      sensor: "◌",
       panel: "▦",
-      sensor: "S",
-      binary_sensor: "B",
     };
     return icons[kind] || "•";
   }
 
   static iconAssetUrl(kind) {
-    // Полный комплект иконок скоупа в едином стиле (панель-градиент + гравировка).
+    // Единый комплект иконок скоупа (панель-градиент + гравировка).
+    // Датчик (движение+освещённость) — одна иконка-радар.
     const icons = {
       light: "assets/icons/light.svg",
-      motion: "assets/icons/motion.svg",
-      illuminance: "assets/icons/illuminance.svg",
+      sensor: "assets/icons/motion.svg",
       panel: "assets/icons/panel.svg",
     };
     const relativePath = icons[kind];
@@ -130,9 +146,8 @@ class ArvidDeviceUi {
   }
 
   /**
-   * Единая активность для визуальной подсветки маркеров.
-   * Для датчиков движения используем специальные состояния проекта,
-   * для остальных устройств — стандартные HA-состояния.
+   * Активность для подсветки маркеров.
+   * Для датчика — активность движения, для остального — стандартное «включено».
    */
   static isActive(state) {
     if (!state) return false;
@@ -141,7 +156,7 @@ class ArvidDeviceUi {
   }
 
   static isReadableSensor(state) {
-    return ArvidDeviceUi.isMotion(state) || ArvidDeviceUi.isIlluminance(state);
+    return ArvidDeviceUi.isSensor(state);
   }
 }
 
