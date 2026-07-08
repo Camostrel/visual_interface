@@ -519,7 +519,8 @@ class ArvidFloorPage {
    * Собираем краткую сводку по помещению для Quick View и сводки этажа.
    */
   getRoomStats(areaId) {
-    const entities = ARVID_APP.registry.getEntitiesForArea(areaId);
+    // Устройства комнаты: HA area ∪ размещённые нами на её плане (работает без HA-area).
+    const entities = ARVID_APP.entitiesForRoom(areaId);
     const lights = entities.filter((state) => state.entity_id.startsWith("light."));
     const lightsOn = lights.filter((state) => state.state === "on");
     const motionSensor = entities.find((state) => ArvidDeviceUi.isMotion(state));
@@ -891,10 +892,24 @@ class ArvidFloorPage {
     // На плане используем интерактивные контуры комнат из самого SVG и Quick View по клику.
     if (!this.svg) return;
     this.bindRoomZones();
+    this.applyRoomLightHighlight();
 
     if (this.quickViewAreaId) {
       this.refreshRoomQuickView();
     }
+  }
+
+  /**
+   * Красим зоны комнат, где включён свет, прозрачным оранжевым (класс has-light-on).
+   * Вызывается при загрузке плана и на каждый state_changed (через handleStateChanged).
+   */
+  applyRoomLightHighlight() {
+    if (!this.svg) return;
+    this.svg.querySelectorAll(".room-zone[data-room-id]").forEach((zone) => {
+      const areaId = zone.dataset.roomId;
+      const hasLightOn = this.getRoomStats(areaId).hasLightOn;
+      zone.classList.toggle("has-light-on", hasLightOn);
+    });
   }
 
   getRoomZoneCenter(areaId) {

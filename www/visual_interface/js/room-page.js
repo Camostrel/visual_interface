@@ -16,6 +16,7 @@ class ArvidRoomPage {
     this.editDirty = false;
     this.editSelectedEntityId = null;
     this.editFilter = "all";
+    this.editSearch = "";
     this.editStatusText = "";
     this.deviceDrag = null;
     this.initialized = false;
@@ -185,7 +186,21 @@ class ArvidRoomPage {
   }
 
   getRoomEntities() {
-    return ARVID_APP.registry.getEntitiesForArea(this.areaId);
+    // Устройства комнаты: HA area ∪ размещённые нами на её плане (см. ARVID_APP.entitiesForRoom).
+    return ARVID_APP.entitiesForRoom(this.areaId);
+  }
+
+  isScopedState(state) {
+    return ["light", "motion", "illuminance", "panel"].includes(ArvidDeviceUi.markerKind(state));
+  }
+
+  /**
+   * Все устройства скоупа во всём HA (не только этой комнаты).
+   * Нужны в режиме редактирования: на частных объектах area не заданы, поэтому
+   * для расстановки показываем полный список с поиском, а не только устройства area.
+   */
+  getAllScopedEntities() {
+    return ARVID_APP.registry.states.filter((state) => this.isScopedState(state));
   }
 
   getDeviceLayout(entityId) {
@@ -795,6 +810,7 @@ class ArvidRoomPage {
   setEditMode(enabled, options = {}) {
     this.editMode = enabled;
     this.editSelectedEntityId = null;
+    this.editSearch = "";
     this.editStatusText = "";
     this.closeDevicePopup();
 
@@ -857,7 +873,11 @@ class ArvidRoomPage {
       { key: "panel", title: "Панели" },
     ];
 
-    const entities = this.getScopedEntities();
+    // Показываем ВСЕ устройства скоупа во всём HA (не только area комнаты):
+    // на частных объектах area не заданы, а расставить нужно любое устройство.
+    // Фильтр по помещению (area) — идея на будущее (когда area будут заданы),
+    // сейчас он мешает. Вместо него — чипы по типу + поиск по названию.
+    const entities = this.getAllScopedEntities();
     const visibleEntities = entities.filter((state) => this.matchesEditFilter(ArvidDeviceUi.markerKind(state)));
     const selected = this.editSelectedEntityId;
     const selectedPlaced = selected ? this.isDevicePlaced(selected) : false;
@@ -872,6 +892,7 @@ class ArvidRoomPage {
         <span>${visibleEntities.length}/${entities.length}</span>
       </header>
       <div class="edit-filter-chips"></div>
+      <input class="edit-search" data-edit-search type="search" placeholder="Поиск по названию…" autocomplete="off">
       <div class="edit-device-list"></div>
       <div class="muted-box" data-edit-hint></div>
       <div class="segmented-actions edit-actions">
@@ -906,6 +927,17 @@ class ArvidRoomPage {
       ? "Телефон: тапни по месту на плане. Компьютер: перетащи маркер мышью."
       : "Выбери устройство в списке, чтобы разместить или перенести его.";
 
+    // Поиск фильтрует уже отрисованные строки локально (без перерисовки),
+    // иначе поле теряло бы фокус на каждом символе.
+    const search = card.querySelector("[data-edit-search]");
+    if (search) {
+      search.value = this.editSearch || "";
+      search.addEventListener("input", () => {
+        this.editSearch = search.value;
+        this.applyEditSearchFilter(list);
+      });
+    }
+
     card.querySelector("[data-edit-center]")?.addEventListener("click", () => this.placeSelectedDeviceToCenter());
     card.querySelector("[data-edit-remove]")?.addEventListener("click", () => this.removeSelectedDeviceFromPlan());
     card.querySelector("[data-edit-save]")?.addEventListener("click", () => {
@@ -915,7 +947,16 @@ class ArvidRoomPage {
     });
 
     container.appendChild(card);
+    this.applyEditSearchFilter(list);
     this.syncEditStatus();
+  }
+
+  applyEditSearchFilter(list) {
+    const query = (this.editSearch || "").trim().toLowerCase();
+    list.querySelectorAll(".edit-device-row").forEach((row) => {
+      const haystack = row.dataset.search || "";
+      row.style.display = !query || haystack.includes(query) ? "" : "none";
+    });
   }
 
   buildEditDeviceRow(state) {
@@ -930,10 +971,14 @@ class ArvidRoomPage {
       ? `<img src="${iconUrl}" alt="">`
       : `<span class="edit-device-fallback">${ArvidDeviceUi.iconText(kind)}</span>`;
 
+    const name = ArvidDeviceUi.friendlyName(state);
+    // Строка поиска: имя + entity_id, чтобы искать и по названию, и по id.
+    row.dataset.search = `${name} ${state.entity_id}`.toLowerCase();
+
     row.innerHTML = `
       ${iconHtml}
       <span class="edit-device-name">
-        <strong>${ArvidDeviceUi.friendlyName(state)}</strong>
+        <strong>${name}</strong>
         <small>${state.entity_id}</small>
       </span>
       <em>${placed ? "на плане" : "не размещено"}</em>

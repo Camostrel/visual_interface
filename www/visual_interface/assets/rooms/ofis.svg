@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 1000" width="500" height="1000" font-family="Arial, sans-serif">
+  <!-- План кабинета «Офис» (area_id = ofis). Прямоугольник ~2:1, вытянут сверху вниз.
+       Пустой — устройства расставляются в режиме редактирования. Линии по теме (currentColor). -->
+  <defs>
+    <style>
+      .wall   { fill: none; stroke: currentColor; stroke-width: 5; stroke-linejoin: round; }
+      .win    { fill: none; stroke: currentColor; stroke-width: 3; }
+      .door   { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-dasharray: 5 3; }
+      .floor-fill { fill: rgba(130, 155, 190, 0.05); }
+      .title  { fill: currentColor; font-size: 30px; font-weight: 700; pointer-events: none; text-anchor: middle; }
+      .sub    { fill: #8494a8; font-size: 14px; letter-spacing: 3px; pointer-events: none; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <!-- Пол и стены -->
+  <rect class="floor-fill" x="45" y="45" width="410" height="910" rx="6"/>
+  <rect class="wall" x="45" y="45" width="410" height="910" rx="6"/>
+
+  <!-- Окно на верхней стене -->
+  <line class="win" x1="180" y1="45" x2="320" y2="45"/>
+  <line class="win" x1="180" y1="52" x2="320" y2="52"/>
+
+  <!-- Окно на левой стене -->
+  <line class="win" x1="45" y1="360" x2="45" y2="520"/>
+  <line class="win" x1="52" y1="360" x2="52" y2="520"/>
+
+  <!-- Дверь в нижней стене (проём + дуга открывания) -->
+  <path class="wall" d="M45,955 H190 M330,955 H455"/>
+  <path class="door" d="M190,955 A140,140 0 0,1 330,955"/>
+
+  <!-- Подпись -->
+  <text class="title" x="250" y="500">Офис</text>
+  <text class="sub"   x="250" y="528">ofis</text>
+</svg>

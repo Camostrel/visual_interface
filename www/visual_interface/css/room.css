@@ -611,6 +611,22 @@
   background: var(--accent-soft);
 }
 
+.edit-search {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel-soft), transparent 20%);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.edit-search::placeholder {
+  color: var(--muted);
+}
+
 .edit-device-list {
   display: grid;
   gap: 6px;

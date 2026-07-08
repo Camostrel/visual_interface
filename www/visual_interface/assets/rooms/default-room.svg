@@ -1,20 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" font-family="Arial, sans-serif">
+  <!-- Запасной план комнаты (fallback для area без своего SVG).
+       Пустой прямоугольник — устройства расставляются в режиме редактирования. -->
   <defs>
-    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-      <path d="M30 0H0V30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-    </pattern>
+    <style>
+      .wall { fill: none; stroke: currentColor; stroke-width: 5; stroke-linejoin: round; }
+      .win  { fill: none; stroke: currentColor; stroke-width: 3; }
+      .door { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-dasharray: 5 3; }
+      .floor-fill { fill: rgba(130, 155, 190, 0.05); }
+      .sub  { fill: #8494a8; font-size: 14px; letter-spacing: 2px; pointer-events: none; text-anchor: middle; }
+    </style>
   </defs>
-  <g fill="none" stroke="#718890" stroke-width="6">
-    <rect x="90" y="70" width="720" height="410"/>
-    <path d="M90 400q70 0 70 80"/>
-  </g>
-  <g fill="#20323a" stroke="#6f838b" stroke-width="2">
-    <rect x="360" y="190" width="220" height="120" rx="8"/>
-    <rect x="380" y="145" width="45" height="35" rx="8"/>
-    <rect x="500" y="145" width="45" height="35" rx="8"/>
-    <rect x="380" y="320" width="45" height="35" rx="8"/>
-    <rect x="500" y="320" width="45" height="35" rx="8"/>
-    <rect x="150" y="120" width="100" height="260" rx="8"/>
-  </g>
-  <text x="450" y="525" text-anchor="middle" fill="#8da1a8" font-size="20">default-room.svg — замените на SVG комнаты</text>
+
+  <rect class="floor-fill" x="45" y="45" width="710" height="510" rx="6"/>
+  <rect class="wall" x="45" y="45" width="710" height="510" rx="6"/>
+
+  <!-- Окно сверху -->
+  <line class="win" x1="300" y1="45" x2="500" y2="45"/>
+  <line class="win" x1="300" y1="52" x2="500" y2="52"/>
+
+  <!-- Дверь снизу -->
+  <path class="wall" d="M45,555 H300 M440,555 H755"/>
+  <path class="door" d="M300,555 A140,140 0 0,1 440,555"/>
+
+  <text class="sub" x="400" y="310">план комнаты не задан</text>
 </svg>

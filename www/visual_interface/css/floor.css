@@ -1,4 +1,40 @@
 /* Floor page markers and cards. */
+
+/* Интерактивные зоны комнат на плане этажа (v0.4.0).
+   Сам SVG задаёт .room-zone прозрачными; подсветку рисуем здесь. */
+.room-zone {
+  cursor: pointer;
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 2;
+  transition: fill 0.18s ease, stroke 0.18s ease;
+}
+
+/* Наведение и активная (открыт Quick View) — лёгкая заливка акцентом + контур. */
+.room-zone:hover,
+.room-zone.is-active {
+  fill: color-mix(in srgb, var(--accent), transparent 84%);
+  stroke: color-mix(in srgb, var(--accent), transparent 25%);
+}
+
+/* Включён свет в комнате — прозрачный оранжевый (перекрывает hover-заливку). */
+.room-zone.has-light-on {
+  fill: rgba(255, 150, 40, 0.20);
+  stroke: rgba(255, 150, 40, 0.45);
+}
+
+.room-zone.has-light-on:hover,
+.room-zone.has-light-on.is-active {
+  fill: rgba(255, 150, 40, 0.30);
+  stroke: rgba(255, 150, 40, 0.65);
+}
+
+/* Комната есть на плане, но не найдена в HA — не кликается и не подсвечивается. */
+.room-zone.is-disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
 .room-badge {
   cursor: pointer;
 }

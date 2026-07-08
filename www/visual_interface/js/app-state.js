@@ -9,6 +9,32 @@ window.ARVID_APP = {
   layout: null,
   currentFloorId: null,
   currentAreaId: null,
+
+  /**
+   * Устройства, относящиеся к комнате.
+   * Объединяем два источника привязки, чтобы работало и с назначенными в HA area,
+   * и на частных объектах, где area устройствам не заданы (v0.4.0):
+   *   1) сущности HA с этим area_id (стандартная привязка HA);
+   *   2) устройства, размещённые нами на плане этой комнаты (layout.devices[*].area_id).
+   * Так свет «в комнате» определяется даже без HA-area — по нашей расстановке.
+   */
+  entitiesForRoom(areaId) {
+    if (!this.registry || !areaId) return [];
+
+    const result = new Map();
+    this.registry.getEntitiesForArea(areaId).forEach((state) => {
+      result.set(state.entity_id, state);
+    });
+
+    const devices = this.layout?.devices || {};
+    Object.keys(devices).forEach((entityId) => {
+      if (devices[entityId]?.area_id !== areaId) return;
+      const state = this.registry.getState(entityId);
+      if (state) result.set(entityId, state);
+    });
+
+    return [...result.values()];
+  },
 };
 
 window.ARVID_RUNTIME = {

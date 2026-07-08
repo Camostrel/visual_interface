@@ -1,20 +1,71 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" width="1200" height="760" font-family="Arial, sans-serif">
+  <!-- Реалистичный план этажа (v0.4.0): горизонтальный коридор, кабинеты сверху и снизу.
+       Активна только зона «Офис» (data-room-id="ofis") — остальные кабинеты нарисованы
+       как неактивные. Линии наследуют цвет темы через currentColor (.arvid-svg-plan). -->
   <defs>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M40 0H0V40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-    </pattern>
+    <style>
+      .wall   { fill: none; stroke: currentColor; stroke-width: 4; stroke-linejoin: round; }
+      .part   { fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
+      .door   { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-dasharray: 4 3; }
+      .room-inactive-fill { fill: rgba(130, 150, 175, 0.05); }
+      .room-mine-fill     { fill: rgba(130, 155, 190, 0.09); }
+      .label       { fill: #8494a8; font-size: 22px; font-weight: 600; pointer-events: none; text-anchor: middle; }
+      .label-mine  { fill: currentColor; font-size: 24px; font-weight: 700; pointer-events: none; text-anchor: middle; }
+      .label-sub   { fill: #8494a8; font-size: 12px; letter-spacing: 2px; pointer-events: none; text-anchor: middle; }
+      .corridor-label { fill: #8494a8; font-size: 15px; letter-spacing: 3px; pointer-events: none; text-anchor: middle; }
+      /* Зона задаётся прозрачной; подсветку (hover / активная / свет вкл) рисует floor.css. */
+      .room-zone { fill: transparent; stroke: transparent; stroke-width: 2; pointer-events: all; }
+    </style>
   </defs>
-  <g fill="none" stroke="#6f838b" stroke-width="6">
-    <rect x="120" y="90" width="960" height="560"/>
-    <path d="M420 90v560M780 90v560M120 330h960"/>
-    <path d="M420 330h360M590 330v320"/>
+
+  <!-- Заливки кабинетов (под линиями и зоной) -->
+  <g id="room-fills">
+    <rect class="room-inactive-fill" x="45"  y="45"  width="270" height="300" rx="4"/>
+    <rect class="room-inactive-fill" x="325" y="45"  width="270" height="300" rx="4"/>
+    <rect class="room-inactive-fill" x="605" y="45"  width="270" height="300" rx="4"/>
+    <rect class="room-inactive-fill" x="885" y="45"  width="270" height="300" rx="4"/>
+    <rect class="room-mine-fill"     x="45"  y="415" width="390" height="300" rx="4"/>
+    <rect class="room-inactive-fill" x="445" y="415" width="350" height="300" rx="4"/>
+    <rect class="room-inactive-fill" x="805" y="415" width="350" height="300" rx="4"/>
   </g>
-  <g fill="#20323a" stroke="#6f838b" stroke-width="2">
-    <rect x="170" y="140" width="160" height="80" rx="8"/>
-    <rect x="500" y="140" width="180" height="90" rx="8"/>
-    <rect x="840" y="140" width="160" height="80" rx="8"/>
-    <rect x="190" y="420" width="120" height="70" rx="8"/>
-    <rect x="850" y="430" width="130" height="70" rx="8"/>
+
+  <!-- Стены и перегородки -->
+  <g id="walls">
+    <!-- Внешний контур -->
+    <rect class="wall" x="40" y="40" width="1120" height="680" rx="4"/>
+
+    <!-- Верхняя стена коридора (y=350) с дверными проёмами -->
+    <path class="wall" d="M40,350 H150 M210,350 H430 M490,350 H700 M780,350 H980 M1060,350 H1160"/>
+    <!-- Нижняя стена коридора (y=410) с дверными проёмами -->
+    <path class="wall" d="M40,410 H180 M300,410 H560 M680,410 H940 M1020,410 H1160"/>
+
+    <!-- Перегородки верхнего ряда -->
+    <path class="part" d="M320,44 V350 M600,44 V350 M880,44 V350"/>
+    <!-- Перегородки нижнего ряда -->
+    <path class="part" d="M440,410 V716 M800,410 V716"/>
+
+    <!-- Дверные дуги (символически, у проёмов) -->
+    <path class="door" d="M180,410 A60,60 0 0,1 240,470"/>
+    <path class="door" d="M150,350 A60,60 0 0,0 210,290"/>
   </g>
-  <text x="600" y="720" text-anchor="middle" fill="#8da1a8" font-size="24">default-floor.svg — замените на SVG из AutoCAD</text>
+
+  <!-- Подписи -->
+  <g id="labels">
+    <text class="label" x="180"  y="205">Офис</text>
+    <text class="label" x="460"  y="205">Офис</text>
+    <text class="label" x="740"  y="205">Офис</text>
+    <text class="label" x="1020" y="205">Офис</text>
+
+    <text class="corridor-label" x="600" y="385">К О Р И Д О Р</text>
+
+    <text class="label-mine" x="240" y="560">Офис</text>
+    <text class="label-sub"  x="240" y="582">ofis</text>
+    <text class="label" x="620" y="570">Офис</text>
+    <text class="label" x="980" y="570">Офис</text>
+  </g>
+
+  <!-- Активная зона моего офиса (поверх всего, ловит наведение и клик) -->
+  <g id="room-zones">
+    <rect class="room-zone" data-room-id="ofis" x="45" y="415" width="390" height="300" rx="4"/>
+  </g>
 </svg>
