@@ -1,7 +1,7 @@
-"""Storage layer for ARVID Web Interface.
+"""Storage layer for ARVID Visual Interface.
 
-This module only loads and saves our own layout/config data.
-It does not call Home Assistant services and does not read entity states.
+Модуль только загружает и сохраняет наши данные layout/config.
+Он не вызывает сервисы Home Assistant и не читает состояния сущностей.
 """
 
 from __future__ import annotations
@@ -18,7 +18,6 @@ from .const import (
     DEFAULT_BUILDING_NAME,
     DEFAULT_CITY,
     DEFAULT_COMPANY_NAME,
-    DOMAIN,
     STORAGE_KEY,
     STORAGE_VERSION,
 )
@@ -36,9 +35,9 @@ def _utc_now_iso() -> str:
 def default_layout() -> LayoutData:
     """Build default layout structure.
 
-    The schema is intentionally simple in v0.1:
-    - HA remains the source of floors, areas, entities and friendly names.
-    - This storage keeps only visual and UI-related data.
+    Схема осознанно простая:
+    - HA остаётся источником этажей, помещений, сущностей и friendly-имён;
+    - этот стор хранит только визуальные/UI-данные (координаты устройств, тема).
     """
     now = _utc_now_iso()
     return {
@@ -53,17 +52,11 @@ def default_layout() -> LayoutData:
         "floors": {},
         "rooms": {},
         "devices": {},
-        "room_cards": {},
         "modes": [],
         "ui": {
             "theme": "dark",
             "left_panel_collapsed": False,
             "right_panel_collapsed": False,
-            "room_badges": {
-                "motion": True,
-                "temperature": True,
-                "light": True,
-            },
         },
         "meta": {
             "created_at": now,
@@ -75,14 +68,14 @@ def default_layout() -> LayoutData:
 def merge_with_defaults(data: LayoutData | None) -> LayoutData:
     """Merge saved data with defaults to survive schema additions.
 
-    This is a shallow/deep hybrid merge. It is enough for v0.1 and keeps old
-    user data if we add new top-level/default fields later.
+    Гибридный shallow/deep merge: сохраняет пользовательские данные при добавлении
+    новых полей по умолчанию в будущих версиях схемы.
     """
     base = default_layout()
 
     if not isinstance(data, dict):
         _LOGGER.warning(
-            "web_interface storage is empty or invalid; using default layout"
+            "visual_interface storage is empty or invalid; using default layout"
         )
         return base
 
@@ -92,15 +85,10 @@ def merge_with_defaults(data: LayoutData | None) -> LayoutData:
         else:
             base[key] = value
 
-    # Keep nested ui.room_badges defaults if saved layout does not contain all keys.
-    saved_ui = data.get("ui", {}) if isinstance(data.get("ui"), dict) else {}
-    saved_badges = saved_ui.get("room_badges", {}) if isinstance(saved_ui.get("room_badges"), dict) else {}
-    base["ui"]["room_badges"].update(saved_badges)
-
     return base
 
 
-class WebInterfaceStorage:
+class VisualInterfaceStorage:
     """Small wrapper around Home Assistant Store with logging."""
 
     def __init__(self, hass: HomeAssistant) -> None:
@@ -116,14 +104,14 @@ class WebInterfaceStorage:
     async def async_load(self) -> LayoutData:
         """Load layout from Home Assistant storage."""
         if self._data is not None:
-            _LOGGER.debug("Returning cached web_interface layout")
+            _LOGGER.debug("Returning cached visual_interface layout")
             return deepcopy(self._data)
 
-        _LOGGER.info("Loading web_interface layout from HA storage key=%s", STORAGE_KEY)
+        _LOGGER.info("Loading visual_interface layout from HA storage key=%s", STORAGE_KEY)
         raw = await self._store.async_load()
         self._data = merge_with_defaults(raw)
         _LOGGER.info(
-            "Loaded web_interface layout: floors=%s rooms=%s devices=%s",
+            "Loaded visual_interface layout: floors=%s rooms=%s devices=%s",
             len(self._data.get("floors", {})),
             len(self._data.get("rooms", {})),
             len(self._data.get("devices", {})),
@@ -140,14 +128,14 @@ class WebInterfaceStorage:
         layout.setdefault("meta", {})["updated_at"] = _utc_now_iso()
 
         _LOGGER.info(
-            "Saving complete web_interface layout: floors=%s rooms=%s devices=%s",
+            "Saving complete visual_interface layout: floors=%s rooms=%s devices=%s",
             len(layout.get("floors", {})),
             len(layout.get("rooms", {})),
             len(layout.get("devices", {})),
         )
         await self._store.async_save(layout)
         self._data = deepcopy(layout)
-        _LOGGER.info("web_interface layout saved successfully")
+        _LOGGER.info("visual_interface layout saved successfully")
         return deepcopy(layout)
 
     async def async_update_room(self, area_id: str, room_data: dict[str, Any]) -> LayoutData:

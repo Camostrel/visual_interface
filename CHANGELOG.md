@@ -1,5 +1,30 @@
 # Changelog — ARVID Visual Interface
 
+## v0.3.0 — 2026-07-08 — собственный backend (домен visual_interface)
+
+Форк отвязан от общего стора старого интерфейса. Своя HA-интеграция, свой чистый стор.
+
+### Backend (новая интеграция, v0.1.0)
+
+- `custom_components/visual_interface/` — форк прежнего `web_interface`:
+  домен `visual_interface`, `STORAGE_KEY = "visual_interface.layout"` (отдельный стор),
+  класс `VisualInterfaceStorage`, WS-команды `visual_interface/*`. Поведение 1:1
+  (get/ping без прав, save/room/device под `require_admin`).
+- Дефолтный layout почищен: убраны неиспользуемые `room_cards` и `ui.room_badges`
+  (были про temperature/motion-бейджи старого интерфейса).
+- Старый `custom_components/web_interface/` удалён из форка (живёт в мастер-проекте).
+
+### Frontend
+
+- `floorplan-storage.js`: все 5 команд переведены на `visual_interface/*`.
+- Версия фронта → v0.3.0.
+
+### Требует разового действия на HA
+
+Добавить `visual_interface:` в `configuration.yaml` и перезапустить HA (config_flow нет).
+Стор чистый — расстановку устройств в офисе нужно сделать заново (осознанный выбор:
+уходим от замусоренного `web_interface.layout`).
+
 ## v0.2.1 — 2026-07-08 — фикс «пустых» маркеров, чистка топбара
 
 ### Исправлено

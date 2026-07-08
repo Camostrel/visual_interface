@@ -1,5 +1,5 @@
 /**
- * Client for our web_interface Home Assistant integration storage commands.
+ * Client for our visual_interface Home Assistant integration storage commands.
  */
 class ArvidFloorplanStorage {
   constructor(ha) {
@@ -8,13 +8,13 @@ class ArvidFloorplanStorage {
   }
 
   async ping() {
-    ARVID_LOG.info(this.logArea, "Pinging web_interface integration");
-    return this.ha.send({ type: "web_interface/ping" });
+    ARVID_LOG.info(this.logArea, "Pinging visual_interface integration");
+    return this.ha.send({ type: "visual_interface/ping" });
   }
 
   async getLayout() {
     ARVID_LOG.info(this.logArea, "Loading layout from HA storage");
-    const result = await this.ha.send({ type: "web_interface/layout/get" });
+    const result = await this.ha.send({ type: "visual_interface/layout/get" });
     ARVID_LOG.info(this.logArea, "Layout loaded", {
       rooms: Object.keys(result.layout?.rooms || {}).length,
       devices: Object.keys(result.layout?.devices || {}).length,
@@ -25,7 +25,7 @@ class ArvidFloorplanStorage {
   async saveLayout(layout) {
     ARVID_LOG.info(this.logArea, "Saving full layout");
     const result = await this.ha.send({
-      type: "web_interface/layout/save",
+      type: "visual_interface/layout/save",
       layout,
     });
     ARVID_LOG.info(this.logArea, "Full layout saved");
@@ -35,7 +35,7 @@ class ArvidFloorplanStorage {
   async updateRoom(areaId, room) {
     ARVID_LOG.info(this.logArea, "Updating room layout", { areaId, room });
     const result = await this.ha.send({
-      type: "web_interface/layout/room/update",
+      type: "visual_interface/layout/room/update",
       area_id: areaId,
       room,
     });
@@ -45,7 +45,7 @@ class ArvidFloorplanStorage {
   async updateDevice(entityId, device) {
     ARVID_LOG.info(this.logArea, "Updating device layout", { entityId, device });
     const result = await this.ha.send({
-      type: "web_interface/layout/device/update",
+      type: "visual_interface/layout/device/update",
       entity_id: entityId,
       device,
     });

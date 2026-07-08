@@ -4,7 +4,7 @@
 
 Потребительский веб-интерфейс к системе умного здания на Home Assistant (ядро — DALI).
 **Форк** старого `web_interface` (база v0.9.2): проверенная мобильная вёрстка сохранена,
-функциональность вычищена под узкий скоуп. Текущая версия: **v0.2.0**.
+функциональность вычищена под узкий скоуп. Текущая версия фронта: **v0.3.0**, backend **v0.1.0**.
 
 Работаем **только** в этом каталоге: `/home/user/nicksha/visual_interface/`.
 Старый `web_interface` — заморожен, используется только как справка (не менять!).
@@ -36,10 +36,11 @@ Admin-ядро пусконаладки (`arvid-dali-panel`) не трогаем
 ## Структура проекта
 
 ```
-custom_components/web_interface/   ← backend: хранилище layout в HA storage
-                                     (домен web_interface оставлен намеренно — общий
-                                      layout со старым интерфейсом, без перенастройки HA;
-                                      версию backend не трогаем, пока не меняем его код)
+custom_components/visual_interface/  ← backend: своя HA-интеграция (домен visual_interface),
+                                       чистый стор visual_interface.layout. Хранит только
+                                       layout/config (координаты устройств, привязки SVG, тема).
+                                       Регистрация: строка visual_interface: в configuration.yaml
+                                       (config_flow нет) + рестарт HA.
 www/visual_interface/
   index.html             ← единственная HTML-страница (SPA)
 
@@ -146,13 +147,20 @@ ARVID_RUNTIME.addStateHandler(fn) // подписка на state_changed (без
 
 ---
 
-## Backend
+## Backend (своя интеграция `visual_interface`, v0.1.0)
 
-Хранит **только layout/config** в HA storage. Управление устройствами — стандартный
-HA WebSocket API. **REST как основной путь не использовать.**
+Хранит **только layout/config** в собственном сторе `visual_interface.layout`
+(координаты устройств, привязки SVG, тема). Управление устройствами и состояния —
+стандартный HA WebSocket API. **REST как основной путь не использовать.**
 
-WS-команды интеграции: `web_interface/ping`, `layout/get`, `layout/save`,
-`layout/room/update`, `layout/device/update`.
+WS-команды: `visual_interface/ping`, `visual_interface/layout/get`,
+`visual_interface/layout/save`, `visual_interface/layout/room/update`,
+`visual_interface/layout/device/update`. Права: get/ping — свободно, save/room/device —
+`require_admin` (тонкая модель прав — открытый вопрос, WEB_INTERFACE_API §6).
+
+Установка: папка в `/config/custom_components/visual_interface/`, строка
+`visual_interface:` в `configuration.yaml`, рестарт HA (config_flow нет).
+Стор чистый и независимый от старого `web_interface` — форк развивается сам по себе.
 
 ---
 
@@ -164,7 +172,7 @@ WS-команды интеграции: `web_interface/ping`, `layout/get`, `lay
 4. **Версия:** формат `v0.1.0`; при изменении синхронно обновлять `js/config.js` и `CHANGELOG.md`
    (backend версионируется отдельно, только когда меняем его код).
 5. **CHANGELOG.md вести при каждом изменении**; метки фиксов — латиницей (Fix A/B/C).
-6. **Мобильная вёрстка — святое:** проверять floor/room/editor на телефоне при любых правках UI.
+6. **Мобильная вёрстка — святое:** проверять floor/room (+ режим редактирования) на телефоне при любых правках UI.
 7. **Не возвращать вычищенное** (климат/шторы/CO₂/сценарии) и удалённые механики базы
    (sessionStorage HA cache, preview в редакторе, room.html/editor.html).
 8. Большие задачи — сначала план, потом выполнение после подтверждения.
@@ -188,7 +196,7 @@ WS-команды интеграции: `web_interface/ping`, `layout/get`, `lay
 
 ```
 Frontend → /config/www/NickSha/visual_interface/
-Backend  → /config/custom_components/web_interface/
+Backend  → /config/custom_components/visual_interface/
 URL:       https://office.arvid-cloud.ru/local/NickSha/visual_interface/index.html
 ```
 
@@ -198,3 +206,28 @@ URL:       https://office.arvid-cloud.ru/local/NickSha/visual_interface/index.ht
 - **НЕ деплоить `js/config.js` с токеном** — на диске заглушка
 - При деплое — только заливка файлов; HA не рестартить, логи не читать без задачи
 - После деплоя фронтенда — Ctrl+Shift+R в браузере
+- **Исключение — установка/обновление backend:** новая интеграция требует строки
+  `visual_interface:` в `configuration.yaml` и рестарта HA. Рестарт делает пользователь
+  (не автоматизируем), это разовое действие установки, а не обычный деплой.
+
+---
+
+## Статус и дальнейший путь (2026-07-08)
+
+**Где мы:** v0.3.0. Свой backend (домен `visual_interface`, чистый стор). Скоуп
+свет/датчики/панели закрыт по вёрстке и управлению. Режим редактирования в комнате.
+
+**Модель координат — гибрид (осознанно):**
+- **Частные объекты (офис, тест сейчас):** ручная расстановка через режим редактирования,
+  координаты в нашем сторе. Это ПОЛНОЦЕННЫЙ путь, не временный.
+- **Большие объекты (продакшн, будет 100%):** конвейер DWG→SVG с `data-entity` в SVG,
+  авто-привязка по имени (DESIGN Сценарий 1). Пока не реализован.
+
+**Долг/следующее (в порядке важности):**
+1. Читать `data-entity` из SVG (сейчас читаем только `data-room-id` зон) — основа Сценария 1.
+2. Перейти с `loadAll()` + глобального `state_changed` на `subscribe_entities` по сегменту
+   (DESIGN реш. 13) — критично для реального объекта ~4400 устройств.
+3. Опора на `arvid_dali_center` read-only WS — точечно, где не хватает стандартных сущностей
+   (состав DALI-группы, живой поток событий панелей).
+4. Фичи: CCT (тип 0102), честная обработка `unavailable`/зомби (реш. 17), «живой» индикатор
+   панелей, индикатор «ожидание» при действии (реш. 12).

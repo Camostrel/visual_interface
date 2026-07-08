@@ -1,12 +1,12 @@
 {
-  "domain": "web_interface",
-  "name": "ARVID Web Interface",
+  "domain": "visual_interface",
+  "name": "ARVID Visual Interface",
   "codeowners": [],
   "config_flow": false,
   "dependencies": ["websocket_api"],
-  "documentation": "https://example.local/arvid-web-interface",
+  "documentation": "https://example.local/arvid-visual-interface",
   "integration_type": "hub",
   "iot_class": "local_push",
   "requirements": [],
-  "version": "0.9.2"
+  "version": "0.1.0"
 }

@@ -40,14 +40,13 @@ ssh -i ~/.ssh/id_ed25519 \
 | Тип | Локально (этот хост) | На HA |
 |-----|----------------------|-------|
 | Frontend | `www/visual_interface/` | `/config/www/NickSha/visual_interface/` |
-| Backend (хранилище layout) | `custom_components/web_interface/` | `/config/custom_components/web_interface/` |
+| Backend (своя интеграция) | `custom_components/visual_interface/` | `/config/custom_components/visual_interface/` |
 
 Рабочая папка проекта: `/home/user/nicksha/visual_interface/`
 
-> Backend намеренно остаётся под доменом `web_interface` — это то же хранилище layout,
-> что и у старого интерфейса (переезд без перенастройки интеграции в HA и без потери layout).
-> Целевая модель v1 по DESIGN.md — вообще без своего backend (координаты из SVG);
-> до тех пор backend трогаем только при необходимости.
+> Backend — собственная HA-интеграция (домен `visual_interface`, свой стор
+> `visual_interface.layout`), независимая от старого `web_interface`. Хранит только
+> layout (координаты устройств для частных объектов, привязки SVG, тема).
 
 ---
 
@@ -114,9 +113,21 @@ scp -O -P 2222 -i ~/.ssh/id_ed25519 -o Ciphers=aes256-ctr -o MACs=hmac-sha2-256-
 ### Backend (manifest.json / const.py / *.py)
 ```bash
 scp -O -P 2222 -i ~/.ssh/id_ed25519 -o Ciphers=aes256-ctr -o MACs=hmac-sha2-256-etm@openssh.com -o StrictHostKeyChecking=no \
-  /home/user/nicksha/visual_interface/custom_components/web_interface/ИМЯ \
-  root@office.arvid-cloud.ru:/config/custom_components/web_interface/ИМЯ
+  /home/user/nicksha/visual_interface/custom_components/visual_interface/ИМЯ \
+  root@office.arvid-cloud.ru:/config/custom_components/visual_interface/ИМЯ
 ```
+
+### Первичная установка backend (разово, делает пользователь)
+
+Интеграция без config_flow — регистрируется через `configuration.yaml`:
+
+1. Залить папку `custom_components/visual_interface/` на HA (scp/tar).
+2. Добавить в `/config/configuration.yaml` строку:
+   ```yaml
+   visual_interface:
+   ```
+3. Перезапустить Home Assistant (Settings → System → Restart).
+4. Проверить: фронтенд открывается, в консоли нет ошибки `visual_interface/ping`.
 
 ---
 
@@ -143,9 +154,8 @@ ssh -i ~/.ssh/id_ed25519 -p 2222 -o Ciphers=aes256-ctr -o MACs=hmac-sha2-256-etm
 
 ## После деплоя backend
 
-Если менялись файлы `custom_components/web_interface/` (кроме manifest.json и const.py) — перезапустить интеграцию:
-
-**HA → Settings → Devices & Services → ARVID Web Interface → Перезапустить**
+Если менялись Python-файлы `custom_components/visual_interface/` — перезапустить HA
+(интеграция без config_flow, отдельной «перезагрузки» в UI нет). Рестарт делает пользователь.
 
 ---
 

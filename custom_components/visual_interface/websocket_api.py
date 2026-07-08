@@ -1,4 +1,4 @@
-"""WebSocket API commands for ARVID Web Interface."""
+"""WebSocket API commands for ARVID Visual Interface."""
 
 from __future__ import annotations
 
@@ -19,12 +19,12 @@ from .const import (
     WS_TYPE_PING,
     WS_TYPE_ROOM_UPDATE,
 )
-from .storage import WebInterfaceStorage
+from .storage import VisualInterfaceStorage
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def _get_storage(hass: HomeAssistant) -> WebInterfaceStorage:
+def _get_storage(hass: HomeAssistant) -> VisualInterfaceStorage:
     """Return integration storage instance."""
     return hass.data[DOMAIN]["storage"]
 
@@ -61,7 +61,7 @@ async def ws_layout_get(
     try:
         layout = await _get_storage(hass).async_load()
     except Exception as err:  # noqa: BLE001 - HA should receive clean WS error.
-        _LOGGER.exception("Failed to load web_interface layout")
+        _LOGGER.exception("Failed to load visual_interface layout")
         connection.send_error(msg["id"], "layout_load_failed", str(err))
         return
 
@@ -90,7 +90,7 @@ async def ws_layout_save(
     try:
         layout = await _get_storage(hass).async_save(msg["layout"])
     except Exception as err:  # noqa: BLE001
-        _LOGGER.exception("Failed to save web_interface layout")
+        _LOGGER.exception("Failed to save visual_interface layout")
         connection.send_error(msg["id"], "layout_save_failed", str(err))
         return
 
@@ -155,10 +155,10 @@ async def ws_device_update(
 
 def async_register_websocket_commands(hass: HomeAssistant) -> None:
     """Register all WebSocket commands exposed by the integration."""
-    _LOGGER.info("Registering web_interface WebSocket commands")
+    _LOGGER.info("Registering visual_interface WebSocket commands")
     websocket_api.async_register_command(hass, ws_ping)
     websocket_api.async_register_command(hass, ws_layout_get)
     websocket_api.async_register_command(hass, ws_layout_save)
     websocket_api.async_register_command(hass, ws_room_update)
     websocket_api.async_register_command(hass, ws_device_update)
-    _LOGGER.info("web_interface WebSocket commands registered")
+    _LOGGER.info("visual_interface WebSocket commands registered")
