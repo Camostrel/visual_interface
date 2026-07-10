@@ -49,7 +49,7 @@
 | `js/ha-ws.js` | `ArvidHaWebSocket` | WS-соединение, auth, `send`/`callService`/`subscribeStateChanged` | `ARVID_CONFIG`, `ARVID_LOG` |
 | `js/floorplan-storage.js` | `ArvidFloorplanStorage` | клиент нашего backend (`visual_interface/*`) | `ArvidHaWebSocket` |
 | `js/ha-registry.js` | `ArvidHaRegistry` | загрузка реестров + states, резолв area, апдейт по событию | `ArvidHaWebSocket` |
-| `js/health.js` | `ArvidHealth` | здоровье устройств от ядра DALI (`health_data`): снимок, раскладка по помещениям, поллинг | `ArvidHaWebSocket`, `ArvidHaRegistry` |
+| `js/health.js` | `ArvidHealth` | здоровье устройств от ядра DALI (`health_subscribe`, push): снимок, индексы area/device/entity, фолбэк-поллинг | `ArvidHaWebSocket`, `ArvidHaRegistry` |
 | `js/app-state.js` | `ARVID_APP`, `ARVID_RUNTIME` | синглтон runtime; инициализация; подписка; состав комнаты и группы света | всё выше |
 | `js/svg-utils.js` | `ArvidSvgUtils` | загрузка SVG, pan/zoom, экран↔viewBox, оверлей-слои | `ARVID_LOG` |
 | `js/device-ui.js` | `ArvidDeviceUi` | классификация сущностей скоупа (`light` / `sensor` / `panel`), иконки | — (чистые функции) |
@@ -147,27 +147,35 @@ health-снимок → ArvidHealth._onUpdate → applyHealthToUi()
 
 ### 3.5 Здоровье устройств (режим «Диагностика», «Предупреждения»)
 ```
-ArvidFloorPage.initHealth()
-  → ARVID_APP.health.refresh()
-    → WS arvid_dali_center/health_data      (read-only, без require_admin)
-       ядро: evaluator.refresh() → _compute() читает hass.states + devices_snapshot (RAM);
-       шину DALI НЕ опрашивает
-    → indexActive(): kind → severity (offline | anomaly | gateway), запись → area_id
-    → _onUpdate → applyZoneStateClasses() + renderFloorWarnings()
-  → startPolling(300 с; 30 с в «Диагностике»; пауза при hidden)
+ArvidFloorPage.initHealth() → ARVID_APP.health.start()
+  → WS arvid_dali_center/health_subscribe        (read-only, без require_admin, ядро ≥ v1.1.1)
+      снимок сразу + push на каждый пересчёт оценщика ядра. Таймеров нет.
+  → indexActive(): kind → severity (offline | anomaly | gateway)
+      byAreaId (зоны) · byDeviceId (маркер, пара ms_/il_) · byEntityId (сущность)
+  → _onUpdate → applyZoneStateClasses() + renderFloorWarnings()
+
+фолбэк (unknown_command = старое ядро):
+  → health_data + startPolling(300 с; 30 с в «Диагностике»; пауза при hidden)
+временная ошибка (not_found / обрыв):
+  → повтор подписки через 60 с
 ```
 
 **Своей логики offline у интерфейса нет** — таксономию ведёт ядро (его `docs/HEALTH.md`).
 
-Два свойства контракта, которые определяют дизайн:
-- **Push-канала нет** — только снимок, отсюда поллинг (D18).
-- **Грейс `interval_min` (5 мин)**: ядро намеренно не считает устройство сломанным сразу, чтобы
-  не ловить транзиенты рестарта. Поэтому опрашивать чаще бессмысленно — ошибка всё равно не
-  появится раньше. Учащение до 30 с в «Диагностике» ускоряет только *исчезновение* красного.
-- **`area` — имя, не `area_id`** → резолв через реестр; дубли имён не сопоставимы (см. H6 в DEBT).
+Свойства контракта, которые определяют дизайн:
+- **Подписка, а не поллинг.** `health_data` **форсирует полный пересчёт** здоровья на каждый
+  запрос (обход всех устройств всех шлюзов + резолв трёх реестров на каждое, синхронно в петле HA).
+  Две вкладки = два прохода. `health_subscribe` пересчёт не вызывает — отдаёт результат чужого.
+- **Грейс `interval_min` (5 мин) — только для УСТРОЙСТВ.** У `gw_offline` грейса нет: оценщик
+  ставит его через ~1.5 с после сигнала связи. Поэтому «шлюз упал» — срочное событие, и именно его
+  поллинг задерживал сильнее всего (до 300 с). Это была фактическая ошибка в нашем D18.
+- **Пара движение+люкс = одно устройство, две записи** (`0201`/`0202`): разные `entity_id`, общий
+  `device_id`. Маркер на плане один → сопоставлять по **`device_id`**.
+- **`area_id` есть** (ядро v1.1.1), но фолбэк резолва **по имени** оставлен: первые ≤15 с после
+  рестарта HA `active` отдаётся из персиста в старой форме, без новых полей.
 
-Ядра может не быть: `unknown_command` → модуль выключается, «Диагностика» без данных,
-остальные режимы работают. Обрыв WS — временная ошибка, поллинг продолжается.
+Ядра может не быть: `unknown_command` на обоих путях → модуль выключается, «Диагностика» без
+данных, остальные режимы работают.
 
 ## 4. Модель привязки «устройство → комната» (важно)
 
@@ -239,11 +247,11 @@ ArvidFloorPage.initHealth()
   `config/area_registry/list`, `config/entity_registry/list`, `config/device_registry/list`,
   `call_service`, `subscribe_events(state_changed)`.
 - **Наш backend** `visual_interface/*` (см. §5).
-- **arvid_dali_center** (ядро DALI): в основном косвенно — через стандартные сущности
-  `light./sensor./event.`, которые оно создаёт. **Прямой вызов один:** `health_data`
-  (read-only, без `require_admin`) — здоровье устройств для «Диагностики» и «Предупреждений».
+- **arvid_dali_center** (ядро DALI, требуется **≥ v1.1.1** для push): в основном косвенно — через
+  стандартные сущности `light./sensor./event.`. **Прямые вызовы:** `health_subscribe` (основной,
+  push) и `health_data` (фолбэк для старого ядра) — оба read-only, без `require_admin`.
   Остальной read-only WS (`gateways`, `groups`, `energy_*`, `events_subscribe`) не вызываем.
-  См. `WEB_INTERFACE_API.md` и `DEBT.md` (D14, H6).
+  См. `WEB_INTERFACE_API.md` и `DEBT.md` (D14).
 - Внешних JS-библиотек нет. View Transitions, WebSocket, SVG — нативные.
 
 ## 7. Ключевые инварианты

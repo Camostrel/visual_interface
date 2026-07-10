@@ -145,6 +145,37 @@ class ArvidHaWebSocket {
     });
   }
 
+  /**
+   * Подписка на произвольную WS-команду, которая шлёт push-события с тем же id
+   * (например arvid_dali_center/health_subscribe).
+   * Первый ответ — снимок (result), дальше приходят события в onEvent.
+   * Возвращает result снимка; при ошибке (нет команды) промис отклоняется.
+   */
+  subscribeCommand(command, onEvent) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN || !this.isAuthed) {
+      return Promise.reject(new Error("WebSocket is not connected or not authenticated"));
+    }
+
+    const id = this.messageId++;
+    const payload = { id, ...command };
+
+    ARVID_LOG.debug(this.logArea, "Subscribing to command", payload);
+    this.socket.send(JSON.stringify(payload));
+
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, {
+        type: command.type,
+        resolve: (result) => {
+          // Обработчик вешаем только после успешного ответа: если команды нет, событий не будет.
+          this.eventHandlers.set(id, onEvent);
+          ARVID_LOG.info(this.logArea, "Subscribed to command", { id, type: command.type });
+          resolve(result);
+        },
+        reject,
+      });
+    });
+  }
+
   subscribeStateChanged(handler) {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN || !this.isAuthed) {
       return Promise.reject(new Error("WebSocket is not connected or not authenticated"));

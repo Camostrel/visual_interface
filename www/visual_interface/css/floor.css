@@ -12,11 +12,12 @@
   touch-action: manipulation;
 }
 
-/* Наведение и активная (открыт Quick View) — лёгкая заливка акцентом + контур. */
+/* Наведение и активная — СИНИЙ выбор. Не акцент: акцент зелёный и путался бы
+   с режимом «Присутствие», где зелёный = движение (v0.8.2). */
 .room-zone:hover,
 .room-zone.is-active {
-  fill: color-mix(in srgb, var(--accent), transparent 84%);
-  stroke: color-mix(in srgb, var(--accent), transparent 25%);
+  fill: var(--zone-select);
+  stroke: var(--zone-select-line);
 }
 
 /* ── Режимы карты (v0.8.0) ────────────────────────────────────────────────────
@@ -32,22 +33,32 @@
   stroke: rgba(255, 150, 40, 0.45);
 }
 
+/* Свет — статичная заливка, поэтому hover может её усилить и добавить синий контур. */
 .svg-stage:not([data-map-mode]) .room-zone.has-light-on:hover,
 .svg-stage[data-map-mode="light"] .room-zone.has-light-on:hover,
 .svg-stage[data-map-mode="light"] .room-zone.has-light-on.is-active {
   fill: rgba(255, 150, 40, 0.30);
-  stroke: rgba(255, 150, 40, 0.65);
+  stroke: var(--zone-select-line);
 }
 
-/* «Присутствие» — свет игнорируется, зелёным горят зоны с движением. */
+/* «Присутствие» — свет игнорируется, зоны с движением ПУЛЬСИРУЮТ зелёным.
+   Пульс медленнее диагностического (2.6s против 1.7s): движение — это норма,
+   а не авария, и мигать оно должно спокойнее. */
 .svg-stage[data-map-mode="presence"] .room-zone.has-motion {
-  fill: rgba(52, 199, 123, 0.22);
-  stroke: rgba(52, 199, 123, 0.5);
+  stroke: rgba(52, 199, 123, 0.55);
+  animation: arvid-zone-motion-pulse 2.6s ease-in-out infinite;
 }
 
+/* Заливку пульсирующей зоны меняет анимация (она сильнее обычных правил),
+   поэтому выбор показываем синим КОНТУРОМ. */
 .svg-stage[data-map-mode="presence"] .room-zone.has-motion:hover {
-  fill: rgba(52, 199, 123, 0.32);
-  stroke: rgba(52, 199, 123, 0.7);
+  stroke: var(--zone-select-line);
+  stroke-width: 3;
+}
+
+@keyframes arvid-zone-motion-pulse {
+  0%, 100% { fill: rgba(52, 199, 123, 0.12); }
+  50%      { fill: rgba(52, 199, 123, 0.34); }
 }
 
 /* «Диагностика» — карта гасится до серого, цветом остаются только проблемы.
@@ -63,10 +74,20 @@
   animation: arvid-zone-offline-pulse 1.7s ease-in-out infinite;
 }
 
+.svg-stage[data-map-mode="diagnostics"] .room-zone.has-offline:hover {
+  stroke: var(--zone-select-line);
+  stroke-width: 3;
+}
+
 /* Устройство отвечает, но данные подозрительные (залипло движение, люкс не меняется). */
 .svg-stage[data-map-mode="diagnostics"] .room-zone.has-anomaly {
   fill: rgba(255, 186, 60, 0.20);
   stroke: rgba(255, 186, 60, 0.5);
+}
+
+.svg-stage[data-map-mode="diagnostics"] .room-zone.has-anomaly:hover {
+  fill: rgba(255, 186, 60, 0.30);
+  stroke: var(--zone-select-line);
 }
 
 @keyframes arvid-zone-offline-pulse {
@@ -74,10 +95,16 @@
   50%      { fill: rgba(255, 76, 76, 0.38); }
 }
 
+/* Пульс — только украшение: при reduce отдаём статичную заливку того же смысла. */
 @media (prefers-reduced-motion: reduce) {
   .svg-stage[data-map-mode="diagnostics"] .room-zone.has-offline {
     animation: none;
     fill: rgba(255, 76, 76, 0.30);
+  }
+
+  .svg-stage[data-map-mode="presence"] .room-zone.has-motion {
+    animation: none;
+    fill: rgba(52, 199, 123, 0.26);
   }
 }
 

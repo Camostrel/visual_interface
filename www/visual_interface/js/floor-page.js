@@ -1046,24 +1046,24 @@ class ArvidFloorPage {
   }
 
   /**
-   * Здоровье устройств приходит от ядра DALI (arvid_dali_center/health_data), своей логики
-   * offline мы не ведём. Первый снимок берём сразу, дальше — по таймеру.
+   * Здоровье устройств приходит от ядра DALI, своей логики offline мы не ведём.
+   * Основной путь — живая подписка health_subscribe (push, без поллинга);
+   * на старом ядре ArvidHealth сам уходит в фолбэк-поллинг health_data.
    */
   initHealth() {
     if (!ARVID_APP.health) return;
     ARVID_APP.health.setUpdateHandler(() => this.applyHealthToUi());
-    this.refreshHealth();
-    this.updateHealthPolling();
+    ARVID_APP.health.start();
   }
 
-  // UI обновится сам — через обработчик, поставленный в initHealth.
+  // Разовый снимок нужен только в фолбэк-режиме; в push-режиме метод — no-op.
   refreshHealth() {
     ARVID_APP.health?.refresh();
   }
 
   /**
-   * Частота опроса: ошибка не может появиться раньше грейса ядра (5 мин), поэтому в фоне
-   * опрашиваем раз в 5 минут. В «Диагностике» чаще — чтобы починенная зона гасла быстро.
+   * Только для фолбэк-поллинга (старое ядро): в «Диагностике» опрашиваем чаще,
+   * чтобы починенная зона гасла быстро. В push-режиме startPolling ничего не делает.
    */
   updateHealthPolling() {
     if (!ARVID_APP.health) return;
