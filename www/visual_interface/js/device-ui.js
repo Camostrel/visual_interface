@@ -119,6 +119,11 @@ class ArvidDeviceUi {
     return domain;
   }
 
+  /** Сущность входит в скоуп интерфейса (свет / датчик / панель). */
+  static isScoped(state) {
+    return ["light", "sensor", "panel"].includes(ArvidDeviceUi.markerKind(state));
+  }
+
   static iconText(kind) {
     const icons = {
       light: "💡",

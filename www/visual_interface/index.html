@@ -81,16 +81,16 @@
               </div>
               <div class="topbar-actions">
                 <select data-floor-select aria-label="Выбор этажа"></select>
-                <!-- Режим карты (слой подсветки полигонов). Логика — Фаза 2 ROADMAP. -->
-                <select data-map-mode aria-label="Режим карты" title="Режим карты">
-                  <option value="light">Освещение</option>
-                  <option value="presence">Присутствие</option>
-                  <option value="diagnostics">Диагностика</option>
-                </select>
               </div>
             </header>
 
             <section class="workspace">
+              <!-- Режим карты (слой подсветки полигонов) — табы над планом, одинаково на ПК и телефоне. -->
+              <div class="map-mode-switch" role="group" aria-label="Режим карты" data-map-mode-switch>
+                <button type="button" data-map-mode-option="light" aria-pressed="true">Освещение</button>
+                <button type="button" data-map-mode-option="presence" aria-pressed="false">Присутствие</button>
+                <button type="button" data-map-mode-option="diagnostics" aria-pressed="false">Диагностика</button>
+              </div>
               <div class="svg-stage" data-floor-svg></div>
               <div class="plan-toolbar" data-plan-toolbar aria-label="Управление планом">
                 <button data-plan-zoom-out aria-label="Отдалить план" title="Отдалить">−</button>
@@ -289,6 +289,7 @@
   <script src="js/ha-ws.js"></script>
   <script src="js/floorplan-storage.js"></script>
   <script src="js/ha-registry.js"></script>
+  <script src="js/health.js"></script>
   <script src="js/app-state.js"></script>
   <script src="js/svg-utils.js"></script>
   <script src="js/device-ui.js"></script>

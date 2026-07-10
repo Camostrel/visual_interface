@@ -19,16 +19,66 @@
   stroke: color-mix(in srgb, var(--accent), transparent 25%);
 }
 
-/* Включён свет в комнате — прозрачный оранжевый (перекрывает hover-заливку). */
-.room-zone.has-light-on {
+/* ── Режимы карты (v0.8.0) ────────────────────────────────────────────────────
+   JS вешает на зону сразу все классы состояния (has-light-on / has-motion /
+   has-offline / has-anomaly), а видимый слой выбирает режим на .svg-stage.
+   Поэтому переключение режима — один атрибут, без перерисовки. */
+
+/* «Освещение» — режим по умолчанию (на случай, если JS ещё не выставил атрибут).
+   Включён свет — прозрачный оранжевый, перекрывает hover-заливку. */
+.svg-stage:not([data-map-mode]) .room-zone.has-light-on,
+.svg-stage[data-map-mode="light"] .room-zone.has-light-on {
   fill: rgba(255, 150, 40, 0.20);
   stroke: rgba(255, 150, 40, 0.45);
 }
 
-.room-zone.has-light-on:hover,
-.room-zone.has-light-on.is-active {
+.svg-stage:not([data-map-mode]) .room-zone.has-light-on:hover,
+.svg-stage[data-map-mode="light"] .room-zone.has-light-on:hover,
+.svg-stage[data-map-mode="light"] .room-zone.has-light-on.is-active {
   fill: rgba(255, 150, 40, 0.30);
   stroke: rgba(255, 150, 40, 0.65);
+}
+
+/* «Присутствие» — свет игнорируется, зелёным горят зоны с движением. */
+.svg-stage[data-map-mode="presence"] .room-zone.has-motion {
+  fill: rgba(52, 199, 123, 0.22);
+  stroke: rgba(52, 199, 123, 0.5);
+}
+
+.svg-stage[data-map-mode="presence"] .room-zone.has-motion:hover {
+  fill: rgba(52, 199, 123, 0.32);
+  stroke: rgba(52, 199, 123, 0.7);
+}
+
+/* «Диагностика» — карта гасится до серого, цветом остаются только проблемы.
+   Серость даём цветом линий плана (они наследуют currentColor), а не filter: grayscale()
+   на контейнере: фильтр обесцветил бы и сам красный пульс. */
+.svg-stage[data-map-mode="diagnostics"] .arvid-svg-plan {
+  color: var(--muted);
+}
+
+/* Устройства не на связи — красный пульс (данные ядра DALI: health_data). */
+.svg-stage[data-map-mode="diagnostics"] .room-zone.has-offline {
+  stroke: rgba(255, 76, 76, 0.65);
+  animation: arvid-zone-offline-pulse 1.7s ease-in-out infinite;
+}
+
+/* Устройство отвечает, но данные подозрительные (залипло движение, люкс не меняется). */
+.svg-stage[data-map-mode="diagnostics"] .room-zone.has-anomaly {
+  fill: rgba(255, 186, 60, 0.20);
+  stroke: rgba(255, 186, 60, 0.5);
+}
+
+@keyframes arvid-zone-offline-pulse {
+  0%, 100% { fill: rgba(255, 76, 76, 0.12); }
+  50%      { fill: rgba(255, 76, 76, 0.38); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svg-stage[data-map-mode="diagnostics"] .room-zone.has-offline {
+    animation: none;
+    fill: rgba(255, 76, 76, 0.30);
+  }
 }
 
 /* Комната есть на плане, но не найдена в HA — не кликается и не подсвечивается. */
@@ -202,4 +252,100 @@
 /* Цвет SVG-плана берётся из темы, сам SVG остаётся без собственного фона. */
 .arvid-svg-plan {
   color: var(--svg-plan-line);
+}
+
+/* ── Переключатель режимов карты ──────────────────────────────────────────────
+   Плавающие табы над планом (как .plan-toolbar снизу). Живёт поверх .svg-stage,
+   а не в топбаре: на телефоне .topbar-actions скрыт, а режим нужен везде. */
+.map-mode-switch {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--panel-strong), transparent 8%);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.map-mode-switch button {
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.map-mode-switch button:hover {
+  color: var(--text);
+  background: var(--panel-soft);
+}
+
+.map-mode-switch button.is-active {
+  border-color: color-mix(in srgb, var(--accent), transparent 45%);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+/* Предупреждения этажа (данные health_data ядра DALI). */
+.floor-warning {
+  padding: 9px 11px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 10px;
+  background: var(--panel-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.floor-warning small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.floor-warning.is-critical {
+  border-left-color: rgba(255, 76, 76, 0.8);
+}
+
+.floor-warning.is-warning {
+  border-left-color: rgba(255, 186, 60, 0.8);
+}
+
+@media (max-width: 980px) and (orientation: landscape) {
+  .map-mode-switch {
+    top: 18px;
+    right: 18px;
+  }
+}
+
+/* На телефоне план узкий — растягиваем табы на всю ширину плана. */
+@media (max-width: 760px) and (orientation: portrait) {
+  .map-mode-switch {
+    top: 18px;
+    left: 18px;
+    right: 18px;
+    padding: 4px;
+    border-radius: 14px;
+  }
+
+  .map-mode-switch button {
+    flex: 1 1 0;
+    min-height: 34px;
+    padding: 7px 4px;
+    border-radius: 11px;
+    font-size: 12px;
+  }
 }

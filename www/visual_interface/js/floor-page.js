@@ -7,8 +7,9 @@ class ArvidFloorPage {
     this.svg = null;
     this.panZoom = null;
     this.mobileAccordionSections = [];
-    // Режим карты: light | presence | diagnostics. Пока влияет только на атрибут
-    // data-map-mode (логика подсветки по режимам — Фаза 2 ROADMAP).
+    // Режим карты: light | presence | diagnostics (v0.8.0).
+    // Зоны всегда несут все классы состояния; какой из них виден — решает CSS
+    // по data-map-mode на контейнере плана. Смена режима = один атрибут, без пересчёта.
     this.mapMode = "light";
     this.initialized = false;
   }
@@ -29,6 +30,7 @@ class ArvidFloorPage {
     this.renderFloors();
     this.renderModes();
     this.initMobileAccordions();
+    this.initHealth();
     ARVID_RUNTIME.addStateHandler(() => this.handleStateChanged());
 
     this.initialized = true;
@@ -60,7 +62,7 @@ class ArvidFloorPage {
     this._floorUpdateScheduled = true;
     window.requestAnimationFrame(() => {
       this._floorUpdateScheduled = false;
-      this.applyRoomLightHighlight();
+      this.applyZoneStateClasses();
       this.updateModeCards();
       this.renderFloorDashboard();
     });
@@ -86,12 +88,12 @@ class ArvidFloorPage {
       });
     });
 
-    // Селект режима карты. Логика подсветки по режимам — Фаза 2; пока фиксируем выбор.
-    const mapModeSelect = document.querySelector("[data-map-mode]");
-    if (mapModeSelect) {
-      mapModeSelect.value = this.mapMode;
-      mapModeSelect.addEventListener("change", (event) => this.setMapMode(event.target.value));
-    }
+    // Табы режима карты над планом (v0.8.0). Атрибут выставляем сразу, а не только по клику:
+    // до первого переключения плану нужен режим по умолчанию.
+    document.querySelectorAll("[data-map-mode-option]").forEach((tab) => {
+      tab.addEventListener("click", () => this.setMapMode(tab.dataset.mapModeOption));
+    });
+    this.setMapMode(this.mapMode);
 
     document.querySelector("[data-all-lights-on]")?.addEventListener("click", () => {
       this.setAllLights(true).catch((error) => {
@@ -567,20 +569,26 @@ class ArvidFloorPage {
     // Лампы-члены (сама групповая сущность light.<area_id> в счёт не идёт).
     const lights = this.getRoomMemberLights(areaId);
     const lightsOn = lights.filter((state) => state.state === "on");
-    const motionSensor = entities.find((state) => ArvidDeviceUi.isMotion(state));
+    const motionSensors = entities.filter((state) => ArvidDeviceUi.isMotion(state));
     const luxSensor = entities.find((state) => ArvidDeviceUi.isIlluminance(state));
 
     // Истина о «свет включён» — HA-группа комнаты, если она есть; иначе любая лампа.
     const group = ARVID_APP.lightGroupState(areaId);
     const hasLightOn = group ? group.state === "on" : lightsOn.length > 0;
 
+    // Здоровье устройств помещения — снимок ядра DALI (свою логику offline не ведём).
+    const health = ARVID_APP.health?.statsForArea(areaId) || { offline: 0, anomaly: 0 };
+
     return {
       lightsTotal: lights.length,
       hasLightOn,
       lightOnCount: lightsOn.length,
-      motionSensor,
-      motionActive: motionSensor ? ArvidDeviceUi.isMotionActive(motionSensor) : false,
+      // Движение есть, если сработал ЛЮБОЙ датчик помещения (а не только первый найденный).
+      motionSensor: motionSensors[0],
+      motionActive: motionSensors.some((state) => ArvidDeviceUi.isMotionActive(state)),
       luxSensor,
+      offlineCount: health.offline,
+      anomalyCount: health.anomaly,
     };
   }
 
@@ -851,13 +859,58 @@ class ArvidFloorPage {
     this.currentSummaryOptions = null;
   }
 
+  /**
+   * Предупреждения этажа — из снимка ядра DALI (health_data).
+   * Упавший шлюз к помещению не привязан, поэтому идёт отдельной строкой, а не подсветкой зоны.
+   */
   renderFloorWarnings() {
     const container = document.querySelector("[data-floor-warnings]");
     if (!container) return;
 
-    // Слот «Предупреждения» сохранён под сигналы нашего скоупа
-    // (недоступные устройства, зомби и т.п.) — наполнение спроектируем отдельно.
-    container.innerHTML = "<div class='muted-box'>Предупреждений нет</div>";
+    const health = ARVID_APP.health;
+    if (!health || health.available === false) {
+      container.innerHTML = "<div class='muted-box'>Данные о здоровье недоступны</div>";
+      return;
+    }
+
+    const areaIds = this.getAreasForCurrentFloor().map((area) => area.area_id);
+    const { offline, anomaly, rooms } = health.statsForAreas(areaIds);
+    const gateways = health.gatewayIssues;
+
+    if (!offline && !anomaly && !gateways.length) {
+      container.innerHTML = "<div class='muted-box'>Предупреждений нет</div>";
+      return;
+    }
+
+    // Имена устройств и помещений задают люди — собираем узлы, а не строку HTML.
+    container.innerHTML = "";
+    gateways.forEach((issue) => {
+      container.appendChild(this.buildFloorWarning("Шлюз не на связи", issue.name, "is-critical"));
+    });
+
+    rooms.forEach((room) => {
+      const areaName = ARVID_APP.registry.areas.find((area) => area.area_id === room.areaId)?.name || room.areaId;
+      const parts = [];
+      if (room.offline) parts.push(`не на связи: ${room.offline}`);
+      if (room.anomaly) parts.push(`аномалии: ${room.anomaly}`);
+      container.appendChild(this.buildFloorWarning(areaName, parts.join(" · "), room.offline ? "is-critical" : "is-warning"));
+    });
+
+    if (health.unmappedCount) {
+      container.appendChild(this.buildFloorWarning("Без помещения", `устройств: ${health.unmappedCount}`, ""));
+    }
+  }
+
+  buildFloorWarning(title, detail, severityClass) {
+    const row = document.createElement("div");
+    row.className = `floor-warning ${severityClass}`.trim();
+    row.textContent = title;
+
+    const small = document.createElement("small");
+    small.textContent = detail;
+    row.appendChild(small);
+
+    return row;
   }
 
   openRoomByArea(areaId) {
@@ -941,8 +994,8 @@ class ArvidFloorPage {
 
   /**
    * Режим карты (слой подсветки полигонов): light | presence | diagnostics.
-   * Пока только фиксируем выбор и выставляем data-map-mode на контейнере плана —
-   * подсветка по режимам появится в Фазе 2 (ROADMAP).
+   * Классы состояния на зонах уже стоят (applyZoneStateClasses) — здесь только переключаем
+   * атрибут, по которому CSS решает, какой слой показывать. Перерисовки нет.
    */
   setMapMode(mode) {
     this.mapMode = mode;
@@ -950,7 +1003,54 @@ class ArvidFloorPage {
     const stage = document.querySelector("[data-floor-svg]");
     if (stage) stage.dataset.mapMode = mode;
 
+    document.querySelectorAll("[data-map-mode-option]").forEach((tab) => {
+      const isActive = tab.dataset.mapModeOption === mode;
+      tab.setAttribute("aria-pressed", String(isActive));
+      tab.classList.toggle("is-active", isActive);
+    });
+
+    // В «Диагностике» снимок нужен сразу и обновляться должен чаще.
+    if (mode === "diagnostics") this.refreshHealth();
+    this.updateHealthPolling();
+
     ARVID_LOG.info(this.logArea, "Режим карты изменён", { mode });
+  }
+
+  /**
+   * Здоровье устройств приходит от ядра DALI (arvid_dali_center/health_data), своей логики
+   * offline мы не ведём. Первый снимок берём сразу, дальше — по таймеру.
+   */
+  initHealth() {
+    if (!ARVID_APP.health) return;
+    ARVID_APP.health.setUpdateHandler(() => this.applyHealthToUi());
+    this.refreshHealth();
+    this.updateHealthPolling();
+  }
+
+  // UI обновится сам — через обработчик, поставленный в initHealth.
+  refreshHealth() {
+    ARVID_APP.health?.refresh();
+  }
+
+  /**
+   * Частота опроса: ошибка не может появиться раньше грейса ядра (5 мин), поэтому в фоне
+   * опрашиваем раз в 5 минут. В «Диагностике» чаще — чтобы починенная зона гасла быстро.
+   */
+  updateHealthPolling() {
+    if (!ARVID_APP.health) return;
+
+    const interval = this.mapMode === "diagnostics"
+      ? ArvidHealth.ACTIVE_INTERVAL_MS
+      : ArvidHealth.IDLE_INTERVAL_MS;
+
+    ARVID_APP.health.startPolling(interval);
+  }
+
+  // Снимок здоровья влияет на классы зон (offline/аномалия) и на слот «Предупреждения».
+  applyHealthToUi() {
+    if (!this.initialized) return;
+    this.applyZoneStateClasses();
+    this.renderFloorWarnings();
   }
 
   /**
@@ -1018,7 +1118,7 @@ class ArvidFloorPage {
     // На плане: подсветка зон по состоянию + прямое управление тапом (см. bindRoomZones).
     if (!this.svg) return;
     this.bindRoomZones();
-    this.applyRoomLightHighlight();
+    this.applyZoneStateClasses();
 
     if (this.quickViewAreaId) {
       this.refreshRoomQuickView();
@@ -1026,15 +1126,23 @@ class ArvidFloorPage {
   }
 
   /**
-   * Красим зоны комнат, где включён свет, прозрачным оранжевым (класс has-light-on).
-   * Вызывается при загрузке плана и на каждый state_changed (через handleStateChanged).
+   * Классы состояния зон — сразу все, независимо от режима карты (v0.8.0):
+   *   has-light-on  — включён свет           (режим «Освещение»)
+   *   has-motion    — есть движение          (режим «Присутствие»)
+   *   has-offline   — устройства не на связи (режим «Диагностика», красный пульс)
+   *   has-anomaly   — залипший датчик и т.п. (режим «Диагностика», янтарный)
+   * Что из этого видно — решает CSS по data-map-mode. Так смена режима не требует пересчёта,
+   * а state_changed по-прежнему трогает только классы, не DOM.
+   * Вызывается при загрузке плана, на state_changed и после снимка health.
    */
-  applyRoomLightHighlight() {
+  applyZoneStateClasses() {
     if (!this.svg) return;
     this.svg.querySelectorAll(".room-zone[data-room-id]").forEach((zone) => {
-      const areaId = zone.dataset.roomId;
-      const hasLightOn = this.getRoomStats(areaId).hasLightOn;
-      zone.classList.toggle("has-light-on", hasLightOn);
+      const stats = this.getRoomStats(zone.dataset.roomId);
+      zone.classList.toggle("has-light-on", stats.hasLightOn);
+      zone.classList.toggle("has-motion", stats.motionActive);
+      zone.classList.toggle("has-offline", stats.offlineCount > 0);
+      zone.classList.toggle("has-anomaly", stats.offlineCount === 0 && stats.anomalyCount > 0);
     });
   }
 

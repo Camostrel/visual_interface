@@ -49,6 +49,7 @@
 | `js/ha-ws.js` | `ArvidHaWebSocket` | WS-соединение, auth, `send`/`callService`/`subscribeStateChanged` | `ARVID_CONFIG`, `ARVID_LOG` |
 | `js/floorplan-storage.js` | `ArvidFloorplanStorage` | клиент нашего backend (`visual_interface/*`) | `ArvidHaWebSocket` |
 | `js/ha-registry.js` | `ArvidHaRegistry` | загрузка реестров + states, резолв area, апдейт по событию | `ArvidHaWebSocket` |
+| `js/health.js` | `ArvidHealth` | здоровье устройств от ядра DALI (`health_data`): снимок, раскладка по помещениям, поллинг | `ArvidHaWebSocket`, `ArvidHaRegistry` |
 | `js/app-state.js` | `ARVID_APP`, `ARVID_RUNTIME` | синглтон runtime; инициализация; подписка; состав комнаты и группы света | всё выше |
 | `js/svg-utils.js` | `ArvidSvgUtils` | загрузка SVG, pan/zoom, экран↔viewBox, оверлей-слои | `ARVID_LOG` |
 | `js/device-ui.js` | `ArvidDeviceUi` | классификация сущностей скоупа (`light` / `sensor` / `panel`), иконки | — (чистые функции) |
@@ -65,6 +66,7 @@ ARVID_APP.ha        ArvidHaWebSocket   — одно WS-соединение на
 ARVID_APP.storage   ArvidFloorplanStorage
 ARVID_APP.registry  ArvidHaRegistry    — areas/floors/entities/devices/states
 ARVID_APP.layout    object             — layout из нашего backend
+ARVID_APP.health    ArvidHealth        — снимок здоровья от ядра DALI (health_data)
 
 ARVID_APP.entitiesForArea(areaId)        — СОСТАВ комнаты (истина HA)
 ARVID_APP.placedEntitiesForRoom(areaId)  — размещённые на плане (наш layout) → маркеры
@@ -117,17 +119,55 @@ index.html
     → backend пишет в стор visual_interface.layout
 ```
 
-### 3.4 Подсветка комнат по свету (на плане этажа)
+### 3.4 Подсветка зон и режимы карты (v0.8.0)
+
+Ключевая идея: **JS не знает о режиме**. Он всегда вешает на зону все классы состояния,
+а видимый слой выбирает CSS по `data-map-mode` на `.svg-stage`. Смена режима = один атрибут.
+
 ```
-state_changed → ArvidFloorPage.handleStateChanged()  (rAF-коалесценция)
-  → applyRoomLightHighlight()
-    → для каждой .room-zone[data-room-id]:
-        getRoomStats(areaId).hasLightOn
-          = группа light.<area_id>, если есть; иначе «горит хотя бы одна лампа состава»
-          (состав = ARVID_APP.entitiesForArea — истина HA)
-        → toggle класс .room-zone.has-light-on → floor.css красит прозрачным оранжевым
+state_changed → ArvidFloorPage.handleStateChanged()   (rAF-коалесценция)
+health-снимок → ArvidHealth._onUpdate → applyHealthToUi()
+  → applyZoneStateClasses()
+    → для каждой .room-zone[data-room-id] один вызов getRoomStats(areaId):
+        hasLightOn    → .has-light-on   группа light.<area_id>, иначе «горит любая лампа состава»
+        motionActive  → .has-motion     сработал ЛЮБОЙ датчик движения помещения
+        offlineCount  → .has-offline    health: lamp_offline/lamp_unknown/sensor_unknown/panel_unknown
+        anomalyCount  → .has-anomaly    health: motion_stuck/motion_idle/lux_stale
 ```
+
+| Режим (`data-map-mode`) | Что видно |
+|---|---|
+| `light` | `.has-light-on` — прозрачный оранжевый |
+| `presence` | `.has-motion` — зелёный (свет игнорируется) |
+| `diagnostics` | линии плана серые; `.has-offline` — красный пульс; `.has-anomaly` — янтарный |
+
+`gw_offline` к помещению не привязан → идёт строкой в «Предупреждения», не в зону.
+
 > `bindRoomZones()` вызывается только при загрузке плана, НЕ по `state_changed`.
+
+### 3.5 Здоровье устройств (режим «Диагностика», «Предупреждения»)
+```
+ArvidFloorPage.initHealth()
+  → ARVID_APP.health.refresh()
+    → WS arvid_dali_center/health_data      (read-only, без require_admin)
+       ядро: evaluator.refresh() → _compute() читает hass.states + devices_snapshot (RAM);
+       шину DALI НЕ опрашивает
+    → indexActive(): kind → severity (offline | anomaly | gateway), запись → area_id
+    → _onUpdate → applyZoneStateClasses() + renderFloorWarnings()
+  → startPolling(300 с; 30 с в «Диагностике»; пауза при hidden)
+```
+
+**Своей логики offline у интерфейса нет** — таксономию ведёт ядро (его `docs/HEALTH.md`).
+
+Два свойства контракта, которые определяют дизайн:
+- **Push-канала нет** — только снимок, отсюда поллинг (D18).
+- **Грейс `interval_min` (5 мин)**: ядро намеренно не считает устройство сломанным сразу, чтобы
+  не ловить транзиенты рестарта. Поэтому опрашивать чаще бессмысленно — ошибка всё равно не
+  появится раньше. Учащение до 30 с в «Диагностике» ускоряет только *исчезновение* красного.
+- **`area` — имя, не `area_id`** → резолв через реестр; дубли имён не сопоставимы (см. H6 в DEBT).
+
+Ядра может не быть: `unknown_command` → модуль выключается, «Диагностика» без данных,
+остальные режимы работают. Обрыв WS — временная ошибка, поллинг продолжается.
 
 ## 4. Модель привязки «устройство → комната» (важно)
 
@@ -199,10 +239,11 @@ state_changed → ArvidFloorPage.handleStateChanged()  (rAF-коалесценц
   `config/area_registry/list`, `config/entity_registry/list`, `config/device_registry/list`,
   `call_service`, `subscribe_events(state_changed)`.
 - **Наш backend** `visual_interface/*` (см. §5).
-- **arvid_dali_center** (ядро DALI): сейчас используется только косвенно — через стандартные
-  сущности `light./sensor./event.`, которые оно создаёт. Его read-only WS (`gateways`, `groups`,
-  `energy_*`, `health_*`, `events_subscribe`) **пока не вызываем**; план — точечно, когда
-  понадобится специфика (состав DALI-группы, живой поток событий панелей). См. `WEB_INTERFACE_API.md`.
+- **arvid_dali_center** (ядро DALI): в основном косвенно — через стандартные сущности
+  `light./sensor./event.`, которые оно создаёт. **Прямой вызов один:** `health_data`
+  (read-only, без `require_admin`) — здоровье устройств для «Диагностики» и «Предупреждений».
+  Остальной read-only WS (`gateways`, `groups`, `energy_*`, `events_subscribe`) не вызываем.
+  См. `WEB_INTERFACE_API.md` и `DEBT.md` (D14, H6).
 - Внешних JS-библиотек нет. View Transitions, WebSocket, SVG — нативные.
 
 ## 7. Ключевые инварианты
@@ -212,6 +253,10 @@ state_changed → ArvidFloorPage.handleStateChanged()  (rAF-коалесценц
 - **DOM не перестраивается по `state_changed`** — только значения и классы (v0.6.0).
 - **Состав комнаты — истина HA** (`entitiesForArea`), расстановка на плане — отдельно (v0.7.0).
 - **Свет — только через HA-группы** `light.<area_id|floor_id|all>`, не поиском ламп (v0.6.x).
+- **Здоровье устройств — истина ядра DALI** (`health_data`). Свою логику offline/аварий
+  не пишем: ядро уже следит за устройствами (v0.8.0).
+- **Режим карты — только CSS-слой.** JS вешает все классы состояния всегда; `data-map-mode`
+  выбирает видимый. Никакой ветки «если режим X — считать Y» в JS (v0.8.0).
 - **Координаты** — в системе viewBox SVG, не в пикселях экрана.
 - **REST** как основной путь не используем — только WebSocket.
 - **Скоуп**: `light` / `sensor` (пара ms_+il_) / `panel`. Вне-скоупные сущности не рисуются

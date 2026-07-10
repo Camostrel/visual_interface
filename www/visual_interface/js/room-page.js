@@ -286,7 +286,7 @@ class ArvidRoomPage {
   }
 
   isScopedState(state) {
-    return ["light", "sensor", "panel"].includes(ArvidDeviceUi.markerKind(state));
+    return ArvidDeviceUi.isScoped(state);
   }
 
   /**

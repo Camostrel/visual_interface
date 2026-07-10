@@ -7,6 +7,7 @@ window.ARVID_APP = {
   storage: null,
   registry: null,
   layout: null,
+  health: null,
   currentFloorId: null,
   currentAreaId: null,
 
@@ -101,6 +102,9 @@ window.ARVID_RUNTIME = {
     await ARVID_APP.storage.ping();
     ARVID_APP.registry = await new ArvidHaRegistry(ARVID_APP.ha).loadAll();
     ARVID_APP.layout = await ARVID_APP.storage.getLayout();
+    // Здоровье устройств берём у ядра DALI. Объект создаём сразу, снимок запрашивает страница
+    // (ядра может не быть — тогда модуль сам себя отключит, остальной интерфейс не страдает).
+    ARVID_APP.health = new ArvidHealth(ARVID_APP.ha, ARVID_APP.registry);
 
     ARVID_LOG.info(logArea, "Shared ARVID data loaded", {
       floors: ARVID_APP.registry.floors.length,
