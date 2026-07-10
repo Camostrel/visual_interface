@@ -31,6 +31,8 @@ class ArvidFloorPage {
     this.renderModes();
     this.initMobileAccordions();
     this.initHealth();
+    // Этаж реагирует на ЛЮБОЕ событие (фильтра «своих» нет — см. долг D19), поэтому event не нужен.
+    // В комнате наоборот: там event обязателен, иначе фильтр по entity_id молча отсекает всё.
     ARVID_RUNTIME.addStateHandler(() => this.handleStateChanged());
 
     this.initialized = true;
@@ -964,7 +966,7 @@ class ArvidFloorPage {
       zone.classList.toggle("is-disabled", !hasArea);
       zone.setAttribute("tabindex", hasArea ? "0" : "-1");
       zone.setAttribute("role", "button");
-      zone.setAttribute("aria-label", hasArea ? `Помещение ${areaId}: тап — свет, двойной тап — открыть` : `Помещение ${areaId} не найдено в Home Assistant`);
+      zone.dataset.hasArea = String(hasArea);
 
       if (!hasArea) return;
 
@@ -978,17 +980,41 @@ class ArvidFloorPage {
       zone.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          this.toggleRoomLights(areaId); // Enter/Пробел — основное действие (свет)
+          // Enter/Пробел — основное действие режима: свет в «Освещении», иначе переход в комнату.
+          if (this.canToggleLightsFromMap()) this.toggleRoomLights(areaId);
+          else this.openRoomByArea(areaId);
         }
       }, { signal: this.roomZoneAbortController.signal });
 
       bound += 1;
     });
 
+    this.updateZoneAriaLabels();
+
     ARVID_LOG.debug(this.logArea, "Room SVG zones bound", {
       total: zones.length,
       bound,
       floorId: ARVID_APP.currentFloorId,
+    });
+  }
+
+  /**
+   * Подпись зоны зависит от режима: в «Освещении» тап переключает свет, в остальных — нет.
+   * Обновляем и при загрузке плана, и при смене режима (bindRoomZones по режиму не зовём).
+   */
+  updateZoneAriaLabels() {
+    if (!this.svg) return;
+
+    const action = this.canToggleLightsFromMap()
+      ? "тап — свет, двойной тап — открыть"
+      : "двойной тап — открыть";
+
+    this.svg.querySelectorAll(".room-zone[data-room-id]").forEach((zone) => {
+      const areaId = zone.dataset.roomId;
+      const label = zone.dataset.hasArea === "true"
+        ? `Помещение ${areaId}: ${action}`
+        : `Помещение ${areaId} не найдено в Home Assistant`;
+      zone.setAttribute("aria-label", label);
     });
   }
 
@@ -1008,6 +1034,9 @@ class ArvidFloorPage {
       tab.setAttribute("aria-pressed", String(isActive));
       tab.classList.toggle("is-active", isActive);
     });
+
+    // Управление светом с карты живёт только в «Освещении» — подписи зон должны это отражать.
+    this.updateZoneAriaLabels();
 
     // В «Диагностике» снимок нужен сразу и обновляться должен чаще.
     if (mode === "diagnostics") this.refreshHealth();
@@ -1054,7 +1083,17 @@ class ArvidFloorPage {
   }
 
   /**
+   * Управлять светом с карты можно только в режиме «Освещение» (v0.8.1).
+   * В «Присутствии» и «Диагностике» карта — информационная: случайный тап по зоне
+   * не должен гасить свет в помещении, за которым наблюдают.
+   */
+  canToggleLightsFromMap() {
+    return this.mapMode === "light";
+  }
+
+  /**
    * Тап по зоне комнаты: различаем короткий (свет) и двойной (переход) по таймауту.
+   * Вне режима «Освещение» короткий тап не делает ничего, двойной по-прежнему открывает комнату.
    */
   handleZoneTap(areaId) {
     if (this._zoneTapTimer && this._zoneTapAreaId === areaId) {
@@ -1070,6 +1109,15 @@ class ArvidFloorPage {
     this._zoneTapTimer = window.setTimeout(() => {
       this._zoneTapTimer = null;
       this._zoneTapAreaId = null;
+
+      if (!this.canToggleLightsFromMap()) {
+        ARVID_LOG.debug(this.logArea, "Одиночный тап игнорируется: режим карты не «Освещение»", {
+          areaId,
+          mode: this.mapMode,
+        });
+        return;
+      }
+
       this.toggleRoomLights(areaId);
     }, 250);
   }

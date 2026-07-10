@@ -35,7 +35,8 @@ class ArvidRoomPage {
     ArvidShellUi.startClock();
 
     this.bindUi();
-    ARVID_RUNTIME.addStateHandler(() => this.handleStateChanged());
+    // Событие обязательно пробрасывать: handleStateChanged фильтрует по entity_id события.
+    ARVID_RUNTIME.addStateHandler((event) => this.handleStateChanged(event));
 
     this.initialized = true;
     await this.show(params);
@@ -50,6 +51,7 @@ class ArvidRoomPage {
   setRouteParams(params = {}) {
     this.areaId = params.area_id || new URLSearchParams(window.location.search).get("area_id");
     this.floorId = params.floor_id || new URLSearchParams(window.location.search).get("floor_id");
+    this.invalidateRoomEntityCache(); // сменилась комната — состав пересоберём лениво
   }
 
   async show(params = {}) {
@@ -95,8 +97,21 @@ class ArvidRoomPage {
     this.scheduleStateUpdate();
   }
 
+  /**
+   * Фильтр «своё событие». Подписка на state_changed глобальная, поэтому этот метод
+   * зовётся на КАЖДОЕ событие HA. Состав комнаты кешируем: без кеша тут был бы полный
+   * резолв area по всем сущностям на каждое событие (на объекте это тысячи сущностей).
+   * Кеш пересобирается при смене комнаты и полной перерисовке (см. invalidateRoomEntityCache).
+   */
   isRoomEntityId(entityId) {
-    return this.getRoomEntities().some((state) => state.entity_id === entityId);
+    if (!this._roomEntityIds) {
+      this._roomEntityIds = new Set(this.getRoomEntities().map((state) => state.entity_id));
+    }
+    return this._roomEntityIds.has(entityId);
+  }
+
+  invalidateRoomEntityCache() {
+    this._roomEntityIds = null;
   }
 
   // Коалесценция: пачку событий за кадр сливаем в одно обновление значений.
@@ -1210,6 +1225,7 @@ class ArvidRoomPage {
     try {
       ARVID_APP.layout = await ARVID_APP.storage.saveLayout(ARVID_APP.layout);
       this.editDirty = false;
+      this.invalidateRoomEntityCache(); // расстановка меняет набор «своих» сущностей
       this.setEditStatus("Разметка сохранена");
       ARVID_LOG.info(this.logArea, "Room layout saved from edit mode", { areaId: this.areaId });
     } catch (error) {

@@ -55,15 +55,21 @@ class ArvidDeviceUi {
   }
 
   /**
-   * Состояния движения по договорённости ядра:
-   * активно: motion, occupancy; неактивно: no_motion, vacant.
+   * Состояния движения — РУССКИЙ ТЕКСТ от ядра DALI (transport/decode.py, карта MOTION):
+   *   1 «нет движения» · 2 «ДВИЖЕНИЕ» · 3 «свободно» · 4 «занято» · 5 «пост.занято»
+   * Активными считаем 2/4/5.
+   *
+   * ⚠ Сравнивать только ПОЛНЫМ значением: «нет движения» содержит подстроку «движение»,
+   * поэтому любой includes()/startsWith() по «движ» даст ложное срабатывание.
    */
   static isMotionActive(state) {
     const value = String(state?.state || "").trim().toLowerCase();
+    if (["движение", "занято", "пост.занято"].includes(value)) return true;
+    if (["нет движения", "свободно"].includes(value)) return false;
+
+    // Совместимость, если датчик придёт как стандартный HA binary_sensor/sensor.
     if (["motion", "occupancy"].includes(value)) return true;
     if (["no_motion", "vacant"].includes(value)) return false;
-
-    // Совместимость с возможными HA-состояниями.
     if (["on", "detected", "occupied", "presence", "present", "1", "true"].includes(value)) return true;
     return false;
   }
