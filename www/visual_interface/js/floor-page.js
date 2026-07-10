@@ -7,6 +7,9 @@ class ArvidFloorPage {
     this.svg = null;
     this.panZoom = null;
     this.mobileAccordionSections = [];
+    // Режим карты: light | presence | diagnostics. Пока влияет только на атрибут
+    // data-map-mode (логика подсветки по режимам — Фаза 2 ROADMAP).
+    this.mapMode = "light";
     this.initialized = false;
   }
 
@@ -82,6 +85,13 @@ class ArvidFloorPage {
         ARVID_LOG.error(this.logArea, "Failed to turn off floor lights", error);
       });
     });
+
+    // Селект режима карты. Логика подсветки по режимам — Фаза 2; пока фиксируем выбор.
+    const mapModeSelect = document.querySelector("[data-map-mode]");
+    if (mapModeSelect) {
+      mapModeSelect.value = this.mapMode;
+      mapModeSelect.addEventListener("change", (event) => this.setMapMode(event.target.value));
+    }
 
     document.querySelector("[data-all-lights-on]")?.addEventListener("click", () => {
       this.setAllLights(true).catch((error) => {
@@ -491,25 +501,39 @@ class ArvidFloorPage {
     await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: entityIds });
   }
 
+  // Фолбэк: все light.* из реестра (когда HA-группы всего объекта ещё нет).
   getAllLightEntityIds() {
-    // Для быстрых действий берём все light.*, которые уже загружены из HA registry.
     return ARVID_APP.registry.states
       .filter((state) => state.entity_id?.startsWith("light."))
       .map((state) => state.entity_id);
   }
 
+  /**
+   * «Включить/выключить весь свет» (быстрые действия).
+   * Основной путь — HA-группа всего объекта light.all (v0.6.1).
+   * Фолбэк — все light.* из реестра, с предупреждением.
+   */
   async setAllLights(shouldTurnOn) {
+    const service = shouldTurnOn ? "turn_on" : "turn_off";
+    const group = ARVID_APP.lightGroupState("all");
+
+    if (group) {
+      await ARVID_APP.ha.callService("light", service, {}, { entity_id: group.entity_id });
+      ARVID_LOG.info(this.logArea, "All lights action via HA group", {
+        group: group.entity_id,
+        service,
+      });
+      return;
+    }
+
     const entityIds = this.getAllLightEntityIds();
     if (!entityIds.length) {
       ARVID_LOG.warn(this.logArea, "No light entities found for global light action");
       return;
     }
 
-    await ARVID_APP.ha.callService("light", shouldTurnOn ? "turn_on" : "turn_off", {}, { entity_id: entityIds });
-    ARVID_LOG.info(this.logArea, "Global light action completed", {
-      action: shouldTurnOn ? "turn_on" : "turn_off",
-      entityCount: entityIds.length,
-    });
+    ARVID_LOG.warn(this.logArea, "Нет HA-группы light.all — фолбэк на все light.* из реестра");
+    await ARVID_APP.ha.callService("light", service, {}, { entity_id: entityIds });
   }
 
   async turnOffRoomLights(areaId) {
@@ -913,6 +937,20 @@ class ArvidFloorPage {
       bound,
       floorId: ARVID_APP.currentFloorId,
     });
+  }
+
+  /**
+   * Режим карты (слой подсветки полигонов): light | presence | diagnostics.
+   * Пока только фиксируем выбор и выставляем data-map-mode на контейнере плана —
+   * подсветка по режимам появится в Фазе 2 (ROADMAP).
+   */
+  setMapMode(mode) {
+    this.mapMode = mode;
+
+    const stage = document.querySelector("[data-floor-svg]");
+    if (stage) stage.dataset.mapMode = mode;
+
+    ARVID_LOG.info(this.logArea, "Режим карты изменён", { mode });
   }
 
   /**
