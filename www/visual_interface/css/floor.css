@@ -37,43 +37,6 @@
   pointer-events: none;
 }
 
-/* Фиксированная кнопка «Выключить этаж» поверх карты (вне зум-зоны). */
-.floor-off-button {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 20;
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, #ff7a45, transparent 45%);
-  background: color-mix(in srgb, #ff7a45, var(--panel-strong) 58%);
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(8px);
-  transition: background 0.15s ease, transform 0.1s ease;
-  touch-action: manipulation;
-}
-
-.floor-off-button:hover {
-  background: color-mix(in srgb, #ff7a45, var(--panel-strong) 38%);
-}
-
-.floor-off-button:active {
-  transform: scale(0.97);
-}
-
-@media (max-width: 760px) {
-  .floor-off-button {
-    top: 8px;
-    right: 8px;
-    padding: 8px 12px;
-    font-size: 13px;
-  }
-}
-
 .room-badge {
   cursor: pointer;
 }

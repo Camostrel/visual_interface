@@ -1,7 +1,7 @@
 # ARCHITECTURE — ARVID Visual Interface
 
 Карта проекта: из чего состоит, кто куда обращается, какие зависимости. Держим в актуальном
-состоянии при изменениях (см. правило в [CLAUDE.md](CLAUDE.md)).
+состоянии при изменениях (см. правило в [CLAUDE.md](../CLAUDE.md)).
 
 ## 1. Что это
 
@@ -189,4 +189,4 @@ state_changed  → ArvidFloorPage.handleStateChanged() → syncRoomZones()
    (DWG→SVG) нужно читать `data-entity` и привязывать сущности напрямую из плана.
 3. **arvid_dali_center** не подключён (см. §6).
 
-Актуальный статус и приоритеты — в [CLAUDE.md](CLAUDE.md) «Статус и дальнейший путь».
+Актуальный статус и приоритеты — в [CLAUDE.md](../CLAUDE.md) «Статус и дальнейший путь».

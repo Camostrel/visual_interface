@@ -4,9 +4,13 @@
 
 Потребительский веб-интерфейс к системе умного здания на Home Assistant (ядро — DALI).
 **Форк** старого `web_interface` (база v0.9.2): проверенная мобильная вёрстка сохранена,
-функциональность вычищена под узкий скоуп. Текущая версия фронта: **v0.4.0**, backend **v0.1.0**.
+функциональность вычищена под узкий скоуп. Текущая версия фронта: **v0.6.0**, backend **v0.1.0**.
 
-Карта проекта (модули, потоки данных, зависимости, кто куда обращается) — [ARCHITECTURE.md](ARCHITECTURE.md).
+Документация — в папке [docs/](docs/):
+[ARCHITECTURE.md](docs/ARCHITECTURE.md) (модули, потоки, зависимости) ·
+[REQUIREMENTS.md](docs/REQUIREMENTS.md) (требование → как реализовано) ·
+[ROADMAP.md](docs/ROADMAP.md) (фазы) · [DESIGN.md](docs/DESIGN.md) ·
+[DEPLOY.md](docs/DEPLOY.md) · [CHANGELOG.md](docs/CHANGELOG.md).
 
 Работаем **только** в этом каталоге: `/home/user/nicksha/visual_interface/`.
 Старый `web_interface` — заморожен, используется только как справка (не менять!).
@@ -28,8 +32,8 @@
 
 Работаем поверх **стандартных HA-сущностей** (`subscribe_entities`, `light.*` сервисы)
 + узкого набора **read-only** WS-команд `arvid_dali_center/*`.
-Карта источников и эндпоинтов — [WEB_INTERFACE_API.md](WEB_INTERFACE_API.md).
-Контракт v1 и ключевые решения — [DESIGN.md](DESIGN.md).
+Карта источников и эндпоинтов — [WEB_INTERFACE_API.md](docs/WEB_INTERFACE_API.md).
+Контракт v1 и ключевые решения — [DESIGN.md](docs/DESIGN.md).
 Ядро DALI живёт в `/home/user/nicksha/arvid-ha-dali-center/` — только для чтения/справки.
 Admin-ядро пусконаладки (`arvid-dali-panel`) не трогаем.
 
@@ -128,10 +132,37 @@ ARVID_RUNTIME.addStateHandler(fn) // подписка на state_changed (без
 
 - **Короткий тап** по зоне комнаты = вкл/выкл света всего помещения (`toggleRoomLights`).
 - **Двойной тап** = переход на план комнаты (различение по таймауту 250 мс в `handleZoneTap`).
-- **Кнопка «Выключить этаж»** — фиксированная поверх карты (`[data-floor-off]`), гасит
-  `light.*` всех комнат этажа (`getFloorLightEntityIds` через `entitiesForRoom`).
+- **«Выключить свет этажа»** — быстрое действие правой панели (`[data-floor-lights-off]`).
+  Отдельной кнопки поверх карты нет (была в v0.5.0, удалена в v0.6.0 как дублирующая).
 - **Quick View отключён** (не вызывается из клика), код методов оставлен в `floor-page.js`
   на будущее — не удалять без причины.
+
+### Управление светом — только HA-группы (v0.6.0)
+
+Детерминированный путь: **не собираем лампы поиском**, а дёргаем заранее созданную HA-группу.
+
+```
+комната → light.<area_id>    (area «Офис» → light.ofis)
+этаж    → light.<floor_id>   (этаж «3 этаж» → light.3_etazh)
+```
+
+`ARVID_APP.lightGroupState(id)` возвращает состояние группы или `null`. Если группы нет —
+фолбэк на сборку ламп + `ARVID_LOG.warn`. Групповая сущность **исключается** из списка
+ламп-членов (счётчики «N/N включено»).
+
+### Обновление UI по state_changed (v0.6.0) — ВАЖНО
+
+**Не перерисовывать DOM на каждое событие.** Поток показаний люкс-датчика раньше заставлял
+кнопки и слайдер мигать (`renderControls` делал `innerHTML=""`).
+
+Правила:
+- `handleStateChanged(event)` — фильтрует чужие сущности и коалесцирует события
+  через `requestAnimationFrame`.
+- Обновляем **только значения и классы** по якорям: `data-entity` (маркеры),
+  `data-light-count`, `data-sensor-anchor`, `data-panel-entity`, `data-mode-entity`.
+- Слайдер яркости не трогаем, пока пользователь его держит (`_brightnessInteracting`) или он в фокусе.
+- `bindRoomZones()` вызывать только при загрузке плана, **не** по `state_changed`.
+- Полный `render*` — при смене комнаты/этажа, входе-выходе из редактирования, сохранении.
 
 ### CSS-переменные (только реальные!)
 
@@ -186,9 +217,12 @@ WS-команды: `visual_interface/ping`, `visual_interface/layout/get`,
 3. **Сохранять стиль и отступы** исходных файлов.
 4. **Версия:** формат `v0.1.0`; при изменении синхронно обновлять `js/config.js` и `CHANGELOG.md`
    (backend версионируется отдельно, только когда меняем его код).
-5. **CHANGELOG.md вести при каждом изменении**; метки фиксов — латиницей (Fix A/B/C).
-   При структурных изменениях (модули, потоки данных, backend, зависимости) — обновлять
-   **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+5. **Документацию вести при каждом изменении** (вся в `docs/`):
+   - [CHANGELOG.md](docs/CHANGELOG.md) — всегда; метки фиксов латиницей (Fix A/B/C).
+   - [REQUIREMENTS.md](docs/REQUIREMENTS.md) — когда меняется «как реализовано» требование.
+   - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — при структурных изменениях (модули, потоки, backend).
+   - [ROADMAP.md](docs/ROADMAP.md) — при закрытии/сдвиге фаз.
+   `CLAUDE.md` остаётся в корне (его читает Claude Code автоматически).
 6. **Мобильная вёрстка — святое:** проверять floor/room (+ режим редактирования) на телефоне при любых правках UI.
 7. **Не возвращать вычищенное** (климат/шторы/CO₂/сценарии) и удалённые механики базы
    (sessionStorage HA cache, preview в редакторе, room.html/editor.html).
@@ -209,7 +243,7 @@ WS-команды: `visual_interface/ping`, `visual_interface/layout/get`,
 
 ---
 
-## Деплой (кратко — детали в [DEPLOY.md](DEPLOY.md))
+## Деплой (кратко — детали в [DEPLOY.md](docs/DEPLOY.md))
 
 ```
 Frontend → /config/www/NickSha/visual_interface/

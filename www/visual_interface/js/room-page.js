@@ -79,13 +79,94 @@ class ArvidRoomPage {
     this.renderControls();
   }
 
-  handleStateChanged() {
+  /**
+   * Реакция на state_changed (v0.6.0).
+   * НЕ перестраиваем DOM: полная перерисовка карточек ломала взаимодействие
+   * (кнопки/слайдер мигали при потоке показаний люкс-датчика). Обновляем только значения.
+   */
+  handleStateChanged(event) {
     if (!this.initialized || !this.areaId) return;
-    // В режиме редактирования не перерисовываем по state_changed:
-    // перерисовка слоя убила бы активный drag и сбрасывала список устройств.
+    // В режиме редактирования состояние на разметку не влияет (и drag не должен дёргаться).
     if (this.editMode) return;
-    this.renderDeviceMarkers();
-    this.renderControls();
+
+    const entityId = event?.data?.entity_id;
+    if (!entityId || !this.isRoomEntityId(entityId)) return; // чужие сущности игнорируем
+
+    this.scheduleStateUpdate();
+  }
+
+  isRoomEntityId(entityId) {
+    return this.getRoomEntities().some((state) => state.entity_id === entityId);
+  }
+
+  // Коалесценция: пачку событий за кадр сливаем в одно обновление значений.
+  scheduleStateUpdate() {
+    if (this._updateScheduled) return;
+    this._updateScheduled = true;
+    window.requestAnimationFrame(() => {
+      this._updateScheduled = false;
+      this.updateDeviceMarkerStates();
+      this.updateControlValues();
+    });
+  }
+
+  // Маркеры на плане: только классы активности, без пересоздания SVG-элементов.
+  updateDeviceMarkerStates() {
+    if (!this.svg) return;
+    this.svg.querySelectorAll(".device-marker[data-entity]").forEach((group) => {
+      const state = ARVID_APP.registry.getState(group.getAttribute("data-entity"));
+      const active = ArvidDeviceUi.isActive(state);
+      group.classList.toggle("is-on", active);
+      group.classList.toggle("is-active", active);
+    });
+  }
+
+  /**
+   * Обновление значений в карточках без перестроения DOM.
+   * Слайдер яркости не трогаем, пока пользователь его двигает или он в фокусе.
+   */
+  updateControlValues() {
+    const container = document.querySelector("[data-room-controls]");
+    if (!container) return;
+
+    // Свет: счётчик включённых.
+    const lights = this.getRoomMemberLights();
+    const countEl = container.querySelector("[data-light-count]");
+    if (countEl) {
+      const onCount = lights.filter((state) => state.state === "on").length;
+      countEl.textContent = `${onCount}/${lights.length} включено`;
+    }
+
+    // Свет: слайдер яркости (только если пользователь его не удерживает).
+    const slider = container.querySelector("[data-light-brightness]");
+    const sliderLabel = container.querySelector("[data-light-brightness-label]");
+    if (slider && !this._brightnessInteracting && document.activeElement !== slider && lights.length) {
+      const pct = this.getAverageBrightnessPct(lights);
+      slider.value = pct;
+      if (sliderLabel) sliderLabel.textContent = `${pct}%`;
+    }
+
+    // Датчики: пересчитываем показания по якорю пары ms_/il_.
+    container.querySelectorAll("[data-sensor-anchor]").forEach((row) => {
+      const anchor = ARVID_APP.registry.getState(row.getAttribute("data-sensor-anchor"));
+      const valueEl = row.querySelector("strong");
+      if (anchor && valueEl) valueEl.textContent = this.formatSensorReadings(anchor);
+    });
+
+    // Панели: последнее событие.
+    container.querySelectorAll("[data-panel-entity]").forEach((row) => {
+      const state = ARVID_APP.registry.getState(row.getAttribute("data-panel-entity"));
+      const valueEl = row.querySelector("strong");
+      if (state && valueEl) valueEl.textContent = ArvidDeviceUi.panelEventText(state);
+    });
+  }
+
+  // Лампы-члены комнаты (без групповой сущности light.<area_id>).
+  getRoomMemberLights() {
+    const groupId = this.getRoomLightGroupId();
+    return this.getRoomEntities().filter((state) => (
+      state.entity_id.startsWith("light.") && state.entity_id !== groupId
+    ));
   }
 
   bindUi() {
@@ -278,6 +359,8 @@ class ArvidRoomPage {
         class: `device-marker marker-${marker} device-kind-${kind} ${ArvidDeviceUi.isActive(state) ? "is-on is-active" : ""} ${isSelected ? "is-selected" : ""} ${isHiddenOnPlan ? "is-hidden-on-plan" : ""}`,
         transform: `translate(${layout.x}, ${layout.y})`,
         tabindex: "0",
+        // Якорь для точечного обновления состояния без пересоздания маркера.
+        "data-entity": state.entity_id,
       });
 
       const iconUrl = marker === "icon" ? ArvidDeviceUi.iconAssetUrl(kind) : null;
@@ -618,7 +701,10 @@ class ArvidRoomPage {
     }
 
     const entities = this.getRoomEntities();
-    const lights = entities.filter((state) => state.entity_id.startsWith("light."));
+    // Лампы-члены: сама групповая сущность light.<area_id> в список не идёт (она — «Вся комната»).
+    const lights = entities.filter((state) => (
+      state.entity_id.startsWith("light.") && state.entity_id !== this.getRoomLightGroupId()
+    ));
     // Датчики схлопываем в точки: пара ms_/il_ = одна строка с двумя показаниями.
     const sensors = this.collapseToUnits(entities.filter((state) => ArvidDeviceUi.isSensor(state)));
     const panels = entities.filter((state) => ArvidDeviceUi.isPanelEvent(state));
@@ -655,13 +741,22 @@ class ArvidRoomPage {
     return `arvid.room.${this.areaId}.lightTarget`;
   }
 
+  // Формула HA-группы света комнаты: light.<area_id> (см. ARVID_APP.lightGroupState).
+  getRoomLightGroupId() {
+    return `light.${this.areaId}`;
+  }
+
   getLightTargetIds(card, lights) {
     const select = card.querySelector("[data-light-target]");
     const value = select?.value || sessionStorage.getItem(this.getLightTargetSessionKey()) || "all";
 
     if (value !== "all") return [value];
 
-    // Для всей комнаты отправляем все light.* помещения. Это работает и без групп.
+    // «Вся комната» — детерминированно через HA-группу light.<area_id>, если она есть.
+    const group = ARVID_APP.lightGroupState(this.areaId);
+    if (group) return [group.entity_id];
+
+    // Фолбэк (группы ещё нет): отправляем все лампы-члены помещения.
     return lights.map((item) => item.entity_id);
   }
 
@@ -688,7 +783,7 @@ class ArvidRoomPage {
     card.innerHTML = `
       <header>
         <h3>Освещение</h3>
-        <span>${onCount}/${lights.length} включено</span>
+        <span data-light-count>${onCount}/${lights.length} включено</span>
       </header>
       ${showGroupSelect ? `
         <label class="compact-field">
@@ -749,6 +844,13 @@ class ArvidRoomPage {
 
     const brightnessInput = card.querySelector("[data-light-brightness]");
     const brightnessLabel = card.querySelector("[data-light-brightness-label]");
+
+    // Пока пользователь держит слайдер — обновления по state_changed его не трогают.
+    brightnessInput.addEventListener("pointerdown", () => { this._brightnessInteracting = true; });
+    ["pointerup", "pointercancel", "blur"].forEach((eventName) => {
+      brightnessInput.addEventListener(eventName, () => { this._brightnessInteracting = false; });
+    });
+
     brightnessInput.addEventListener("input", (event) => {
       brightnessLabel.textContent = `${event.target.value}%`;
     });
@@ -788,6 +890,8 @@ class ArvidRoomPage {
   renderSensorStatusLine(anchorState) {
     const row = document.createElement("div");
     row.className = "sensor-status-line";
+    // Якорь для точечного обновления показаний (см. updateControlValues).
+    row.dataset.sensorAnchor = anchorState.entity_id;
 
     row.innerHTML = `
       <span>${ArvidDeviceUi.friendlyName(anchorState)}</span>
@@ -826,6 +930,8 @@ class ArvidRoomPage {
     panels.forEach((state) => {
       const row = document.createElement("div");
       row.className = "sensor-status-line";
+      // Якорь для точечного обновления последнего события панели.
+      row.dataset.panelEntity = state.entity_id;
       row.innerHTML = `
         <span>${ArvidDeviceUi.friendlyName(state)}</span>
         <strong>${ArvidDeviceUi.panelEventText(state)}</strong>

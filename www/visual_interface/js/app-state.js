@@ -35,6 +35,18 @@ window.ARVID_APP = {
 
     return [...result.values()];
   },
+
+  /**
+   * HA-группа света по формуле имени (v0.6.0):
+   *   комната → light.<area_id>   (например area «Офис» = ofis → light.ofis)
+   *   этаж    → light.<floor_id>  (например «3 этаж» = 3_etazh → light.3_etazh)
+   * Группы создаются в HA заранее (логические группы из DALI-групп) — это детерминированный
+   * путь управления. Если группы нет, вызывающий код падает в фолбэк-сборку ламп.
+   */
+  lightGroupState(objectId) {
+    if (!this.registry || !objectId) return null;
+    return this.registry.getState(`light.${objectId}`);
+  },
 };
 
 window.ARVID_RUNTIME = {
