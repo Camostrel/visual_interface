@@ -133,7 +133,14 @@ HA даёт лишь **бинарный** `require_admin` (админ / не-а�
   проработки модели прав (§6) и новых эндпоинтов (§5).
 
 ## 8. Связанные документы
-[WEBSOCKET_API](WEBSOCKET_API.md) (полный список команд/параметров) · [ENTITIES](ENTITIES.md)
-(сущности/состояние/имена) · [ENERGY](ENERGY.md) · [HEALTH](HEALTH.md) · [ARCHITECTURE](ARCHITECTURE.md).
-Долги, релевантные для потребителя: **E3** (общий резолв area/floor — под §5.2/5.3), **Z4** (gw_sn в
-unique_id — стабильность резолва), консолидация формулы `unique_id`.
+
+> Этот файл — копия спеки из **ядра DALI**. Документы ниже живут в репозитории ядра
+> `/home/user/nicksha/arvid-ha-dali-center/docs/` (только для чтения/справки), а не здесь:
+> `WEBSOCKET_API.md` (полный список команд/параметров) · `ENTITIES.md` (сущности/состояние/имена) ·
+> `ENERGY.md` · `HEALTH.md` · `ARCHITECTURE.md`.
+
+Документы **этого** проекта: [ARCHITECTURE.md](ARCHITECTURE.md) · [DEBT.md](DEBT.md) ·
+[REQUIREMENTS.md](REQUIREMENTS.md) · [ROADMAP.md](ROADMAP.md).
+
+Долги ядра, релевантные для потребителя: **E3** (общий резолв area/floor — под §5.2/5.3),
+**Z4** (gw_sn в unique_id — стабильность резолва), консолидация формулы `unique_id`.

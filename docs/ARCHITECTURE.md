@@ -49,11 +49,11 @@
 | `js/ha-ws.js` | `ArvidHaWebSocket` | WS-соединение, auth, `send`/`callService`/`subscribeStateChanged` | `ARVID_CONFIG`, `ARVID_LOG` |
 | `js/floorplan-storage.js` | `ArvidFloorplanStorage` | клиент нашего backend (`visual_interface/*`) | `ArvidHaWebSocket` |
 | `js/ha-registry.js` | `ArvidHaRegistry` | загрузка реестров + states, резолв area, апдейт по событию | `ArvidHaWebSocket` |
-| `js/app-state.js` | `ARVID_APP`, `ARVID_RUNTIME` | синглтон runtime; инициализация; подписка на события; `entitiesForRoom` | всё выше |
+| `js/app-state.js` | `ARVID_APP`, `ARVID_RUNTIME` | синглтон runtime; инициализация; подписка; состав комнаты и группы света | всё выше |
 | `js/svg-utils.js` | `ArvidSvgUtils` | загрузка SVG, pan/zoom, экран↔viewBox, оверлей-слои | `ARVID_LOG` |
-| `js/device-ui.js` | `ArvidDeviceUi` | классификация сущностей скоупа, иконки, тип маркера | — (чистые функции) |
+| `js/device-ui.js` | `ArvidDeviceUi` | классификация сущностей скоупа (`light` / `sensor` / `panel`), иконки | — (чистые функции) |
 | `js/shell-ui.js` | `ArvidShellUi` | тема, сворачивание панелей, часы, бренд | `ARVID_APP`, `ARVID_CONFIG` |
-| `js/floor-page.js` | `ArvidFloorPage` | план этажа: зоны, Quick View, сводка, подсветка света | `ARVID_APP`, `ArvidShellUi`, `ArvidSvgUtils`, `ArvidDeviceUi` |
+| `js/floor-page.js` | `ArvidFloorPage` | план этажа: зоны, тап/двойной тап, подсветка, сводка, режим карты | `ARVID_APP`, `ArvidShellUi`, `ArvidSvgUtils`, `ArvidDeviceUi` |
 | `js/room-page.js` | `ArvidRoomPage` | план комнаты: маркеры, управление, **режим редактирования** | то же + `ArvidFloorplanStorage` (через `ARVID_APP.storage`) |
 | `js/spa-router.js` | `ArvidSpaApp` | маршруты floor/room, History API, View Transitions | создаёт page-объекты |
 | `js/schedule-ui.js` | `ArvidScheduleUI` | popup расписания (унаследовано, вне скоупа v1) | `ARVID_APP` |
@@ -65,7 +65,13 @@ ARVID_APP.ha        ArvidHaWebSocket   — одно WS-соединение на
 ARVID_APP.storage   ArvidFloorplanStorage
 ARVID_APP.registry  ArvidHaRegistry    — areas/floors/entities/devices/states
 ARVID_APP.layout    object             — layout из нашего backend
-ARVID_APP.entitiesForRoom(areaId)      — устройства комнаты: HA area ∪ размещённые в layout
+
+ARVID_APP.entitiesForArea(areaId)        — СОСТАВ комнаты (истина HA)
+ARVID_APP.placedEntitiesForRoom(areaId)  — размещённые на плане (наш layout) → маркеры
+ARVID_APP.entitiesForRoom(areaId)        — объединение, ТОЛЬКО фильтр «свои события»
+ARVID_APP.isUnassignedInRoom(id, areaId) — стоит на плане, но в HA к комнате не привязано
+ARVID_APP.lightGroupState(objectId)      — HA-группа света: light.<area_id|floor_id|all>
+
 ARVID_RUNTIME.ensureData()             — ленивая инициализация (идемпотентна)
 ARVID_RUNTIME.addStateHandler(fn)      — подписка на state_changed без дублей
 ```
@@ -86,13 +92,19 @@ index.html
 
 ### 3.2 Управление светом (реальное состояние, без оптимистики)
 ```
-клик по маркеру/карточке
+тап по зоне комнаты / карточке / маркеру
+  → ARVID_APP.lightGroupState(area|floor|"all")  — детерминированная HA-группа
   → ARVID_APP.ha.callService("light", "turn_on|off|toggle", …)
   → HA выполняет, шлёт event state_changed
   → ArvidHaRegistry.updateStateFromEvent()      (обновляет states)
   → зарегистрированные handler'ы (addStateHandler)
-  → page.handleStateChanged() → перерисовка маркеров/карточек/подсветки
+  → page.handleStateChanged(event)              (v0.6.0: НЕ перерисовка)
+      фильтр «свои сущности» → коалесценция в кадр (rAF)
+      → update*(): только значения и классы по якорям data-*
 ```
+
+> **Правило (v0.6.0):** DOM не перестраивается по `state_changed`. Полный `render*` —
+> только при смене комнаты/этажа, входе-выходе из редактирования и сохранении разметки.
 
 ### 3.3 Расстановка устройств (режим редактирования в комнате)
 ```
@@ -107,12 +119,15 @@ index.html
 
 ### 3.4 Подсветка комнат по свету (на плане этажа)
 ```
-state_changed  → ArvidFloorPage.handleStateChanged() → syncRoomZones()
+state_changed → ArvidFloorPage.handleStateChanged()  (rAF-коалесценция)
   → applyRoomLightHighlight()
     → для каждой .room-zone[data-room-id]:
-        getRoomStats(areaId).hasLightOn  (свет = ARVID_APP.entitiesForRoom: area ∪ размещённые)
-        → toggle класс .room-zone.has-light-on  → floor.css красит прозрачным оранжевым
+        getRoomStats(areaId).hasLightOn
+          = группа light.<area_id>, если есть; иначе «горит хотя бы одна лампа состава»
+          (состав = ARVID_APP.entitiesForArea — истина HA)
+        → toggle класс .room-zone.has-light-on → floor.css красит прозрачным оранжевым
 ```
+> `bindRoomZones()` вызывается только при загрузке плана, НЕ по `state_changed`.
 
 ## 4. Модель привязки «устройство → комната» (важно)
 
@@ -194,19 +209,24 @@ state_changed  → ArvidFloorPage.handleStateChanged() → syncRoomZones()
 
 - **Одно WS-соединение** на весь SPA (в `ARVID_APP.ha`), одна подписка на `state_changed`.
 - **Реальное состояние** из HA, без оптимистичного UI (DESIGN реш. 12).
+- **DOM не перестраивается по `state_changed`** — только значения и классы (v0.6.0).
+- **Состав комнаты — истина HA** (`entitiesForArea`), расстановка на плане — отдельно (v0.7.0).
+- **Свет — только через HA-группы** `light.<area_id|floor_id|all>`, не поиском ламп (v0.6.x).
 - **Координаты** — в системе viewBox SVG, не в пикселях экрана.
 - **REST** как основной путь не используем — только WebSocket.
-- **Скоуп**: `light` / `motion` / `illuminance` / `panel`. Вне-скоупные сущности не рисуются
+- **Скоуп**: `light` / `sensor` (пара ms_+il_) / `panel`. Вне-скоупные сущности не рисуются
   (фильтр `getScopedEntities` / `isScopedState`).
 - **Токен** не хранится в репозитории (в `config.js` заглушка, подставляется на HA при деплое).
 
-## 8. Известный техдолг (влияет на архитектуру)
+## 8. Техдолг
 
-1. **Загрузка «всё сразу»**: `ArvidHaRegistry.loadAll()` тянет все `get_states` + глобальный
-   `subscribe_events(state_changed)`. На объекте ~4400 устройств — стоп-фактор. Целевое (DESIGN
-   реш. 13): `subscribe_entities` только на сущности текущего сегмента (их объявит `data-entity` в SVG).
-2. **`data-entity` из SVG не читается**: сейчас читаем только зоны `data-room-id`. Для Сценария 1
-   (DWG→SVG) нужно читать `data-entity` и привязывать сущности напрямую из плана.
-3. **arvid_dali_center** не подключён (см. §6).
+Полный реестр долгов и открытых вопросов — **[DEBT.md](DEBT.md)** (с приоритетами P1–P3
+и задачами на стороне HA).
 
-Актуальный статус и приоритеты — в [CLAUDE.md](../CLAUDE.md) «Статус и дальнейший путь».
+Архитектурно-значимые (P1):
+1. **D1 — загрузка «всё сразу»**: `loadAll()` + глобальный `subscribe_events(state_changed)`.
+   На ~4400 устройств стоп-фактор. Целевое (DESIGN реш. 13): `subscribe_entities` по сегменту.
+2. **D2 — `data-entity` из SVG не читается**: сейчас только зоны `data-room-id`.
+   Нужен для Сценария 1 (конвейер DWG→SVG).
+
+Фазы и приоритеты — в [ROADMAP.md](ROADMAP.md).
