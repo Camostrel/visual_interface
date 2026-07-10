@@ -572,6 +572,34 @@
   opacity: 0.42;
 }
 
+/* Устройство стоит на плане комнаты, но в HA к ней не привязано (v0.7.0):
+   показываем приглушённым — в состав комнаты и группу света оно не входит. */
+.device-marker.is-unassigned {
+  opacity: 0.5;
+}
+
+.device-marker.is-unassigned .device-marker-image {
+  filter: grayscale(0.75) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.22));
+}
+
+.unassigned-note {
+  border-color: color-mix(in srgb, #ff9f45, transparent 55%);
+  background: color-mix(in srgb, #ff9f45, var(--panel-soft) 86%);
+}
+
+.unassigned-note strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.unassigned-note small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .device-marker-selection {
   fill: transparent;
   stroke: transparent;

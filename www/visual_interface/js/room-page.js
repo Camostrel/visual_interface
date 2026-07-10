@@ -161,10 +161,10 @@ class ArvidRoomPage {
     });
   }
 
-  // Лампы-члены комнаты (без групповой сущности light.<area_id>).
+  // Лампы-члены комнаты по составу HA (без групповой сущности light.<area_id>).
   getRoomMemberLights() {
     const groupId = this.getRoomLightGroupId();
-    return this.getRoomEntities().filter((state) => (
+    return this.getRoomComposition().filter((state) => (
       state.entity_id.startsWith("light.") && state.entity_id !== groupId
     ));
   }
@@ -270,8 +270,18 @@ class ArvidRoomPage {
     });
   }
 
+  // СОСТАВ комнаты — истина HA (карточки, счётчики). См. ARVID_APP.entitiesForArea.
+  getRoomComposition() {
+    return ARVID_APP.entitiesForArea(this.areaId);
+  }
+
+  // РАЗМЕЩЁННЫЕ на плане (маркеры). Могут быть не привязаны к комнате в HA.
+  getPlacedEntities() {
+    return ARVID_APP.placedEntitiesForRoom(this.areaId);
+  }
+
+  // Объединение — только для фильтра «свои события» (не состав).
   getRoomEntities() {
-    // Устройства комнаты: HA area ∪ размещённые нами на её плане (см. ARVID_APP.entitiesForRoom).
     return ARVID_APP.entitiesForRoom(this.areaId);
   }
 
@@ -355,8 +365,10 @@ class ArvidRoomPage {
       const marker = layout.marker || "icon";
       const kind = layout.icon === "auto" || !layout.icon ? ArvidDeviceUi.markerKind(state) : layout.icon;
       const isSelected = this.editMode && state.entity_id === this.editSelectedEntityId;
+      // Устройство стоит на плане комнаты, но в HA к ней не привязано — помечаем.
+      const isUnassigned = ARVID_APP.isUnassignedInRoom(state.entity_id, this.areaId);
       const group = ArvidSvgUtils.createSvgElement("g", {
-        class: `device-marker marker-${marker} device-kind-${kind} ${ArvidDeviceUi.isActive(state) ? "is-on is-active" : ""} ${isSelected ? "is-selected" : ""} ${isHiddenOnPlan ? "is-hidden-on-plan" : ""}`,
+        class: `device-marker marker-${marker} device-kind-${kind} ${ArvidDeviceUi.isActive(state) ? "is-on is-active" : ""} ${isSelected ? "is-selected" : ""} ${isHiddenOnPlan ? "is-hidden-on-plan" : ""} ${isUnassigned ? "is-unassigned" : ""}`,
         transform: `translate(${layout.x}, ${layout.y})`,
         tabindex: "0",
         // Якорь для точечного обновления состояния без пересоздания маркера.
@@ -700,7 +712,8 @@ class ArvidRoomPage {
       return;
     }
 
-    const entities = this.getRoomEntities();
+    // Состав комнаты — истина HA (area), а не то, что расставлено на плане.
+    const entities = this.getRoomComposition();
     // Лампы-члены: сама групповая сущность light.<area_id> в список не идёт (она — «Вся комната»).
     const lights = entities.filter((state) => (
       state.entity_id.startsWith("light.") && state.entity_id !== this.getRoomLightGroupId()
@@ -710,6 +723,8 @@ class ArvidRoomPage {
     const panels = entities.filter((state) => ArvidDeviceUi.isPanelEvent(state));
 
     container.innerHTML = "";
+    const unassignedNote = this.buildUnassignedNote();
+    if (unassignedNote) container.appendChild(unassignedNote);
     if (lights.length) container.appendChild(this.renderLightCard(lights));
     if (sensors.length) container.appendChild(this.renderSensorCard(sensors));
     if (panels.length) container.appendChild(this.renderPanelCard(panels));
@@ -717,6 +732,27 @@ class ArvidRoomPage {
     if (!container.children.length) {
       container.innerHTML = "<div class='muted-box'>В этой комнате пока нет поддерживаемых устройств</div>";
     }
+  }
+
+  /**
+   * Плашка: устройства стоят на плане комнаты, но в HA не привязаны к ней.
+   * Они видны на плане приглушёнными, но в состав (карточки/счётчики) не входят.
+   */
+  buildUnassignedNote() {
+    const unassigned = this.getPlacedEntities()
+      .filter((state) => this.isScopedState(state))
+      .filter((state) => ARVID_APP.isUnassignedInRoom(state.entity_id, this.areaId));
+
+    if (!unassigned.length) return null;
+
+    const box = document.createElement("div");
+    box.className = "muted-box unassigned-note";
+    box.innerHTML = `
+      <strong>${unassigned.length} устр. на плане не привязано к помещению в HA</strong>
+      <small>Задайте им пространство «${this.getArea()?.name || this.areaId}» в Home Assistant,
+      иначе они не попадут в состав комнаты и в группу света.</small>
+    `;
+    return box;
   }
 
   isLightGroup(state) {
@@ -989,9 +1025,9 @@ class ArvidRoomPage {
   }
 
   getScopedEntities() {
-    // Устройства скоупа этой комнаты, схлопнутые в точки (пара датчика ms_/il_ = одна точка).
-    // Используется для маркеров на плане (обычный режим и редактирование).
-    return this.collapseToUnits(this.getRoomEntities().filter((state) => this.isScopedState(state)));
+    // Маркеры на плане рисуем по РАЗМЕЩЁННЫМ (у них есть координаты),
+    // схлопывая пару датчика ms_/il_ в одну точку.
+    return this.collapseToUnits(this.getPlacedEntities().filter((state) => this.isScopedState(state)));
   }
 
   matchesEditFilter(kind) {

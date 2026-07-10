@@ -147,6 +147,26 @@
 
 ---
 
+## 4.5 Состав комнаты: что откуда берётся (v0.7.0)
+
+Частый вопрос — «почему в комнате N устройств, хотя в HA привязано меньше».
+
+| Что | Источник | Метод |
+|---|---|---|
+| **Состав комнаты** (карточки, счётчик «N/N включено», статистика) | **только HA**: `entity.area_id` / `device.area_id` | `ARVID_APP.entitiesForArea()` |
+| **Маркеры на плане** | наш backend-стор: `layout.devices[id] = {x, y, area_id}` | `ARVID_APP.placedEntitiesForRoom()` |
+| Фильтр «свои события» (подписка) | объединение обоих | `ARVID_APP.entitiesForRoom()` |
+
+Если устройство **стоит на плане комнаты, но в HA к ней не привязано** — маркер рисуется
+**приглушённым и обесцвеченным**, а в карточках комнаты появляется плашка
+«N устр. на плане не привязано к помещению в HA». В состав и в группу света оно не входит.
+
+**Где:** `js/app-state.js → entitiesForArea / placedEntitiesForRoom / isUnassignedInRoom`;
+`js/room-page.js → getRoomComposition / getPlacedEntities / buildUnassignedNote`;
+`css/room.css` (`.device-marker.is-unassigned`, `.unassigned-note`).
+
+---
+
 ## 5. Управление светом — модель (v0.6.0)
 
 **Принцип: детерминированные HA-группы, а не поиск ламп.**

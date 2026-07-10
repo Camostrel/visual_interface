@@ -562,8 +562,8 @@ class ArvidFloorPage {
    * Собираем краткую сводку по помещению для Quick View и сводки этажа.
    */
   getRoomStats(areaId) {
-    // Устройства комнаты: HA area ∪ размещённые нами на её плане (работает без HA-area).
-    const entities = ARVID_APP.entitiesForRoom(areaId);
+    // Состав комнаты — истина HA (area), а не расстановка на плане (v0.7.0).
+    const entities = ARVID_APP.entitiesForArea(areaId);
     // Лампы-члены (сама групповая сущность light.<area_id> в счёт не идёт).
     const lights = this.getRoomMemberLights(areaId);
     const lightsOn = lights.filter((state) => state.state === "on");
@@ -1006,10 +1006,10 @@ class ArvidFloorPage {
     });
   }
 
-  // Лампы-члены комнаты (без самой групповой сущности light.<area_id>).
+  // Лампы-члены комнаты по составу HA (без самой групповой сущности light.<area_id>).
   getRoomMemberLights(areaId) {
     const groupId = `light.${areaId}`;
-    return ARVID_APP.entitiesForRoom(areaId).filter((state) => (
+    return ARVID_APP.entitiesForArea(areaId).filter((state) => (
       state.entity_id.startsWith("light.") && state.entity_id !== groupId
     ));
   }

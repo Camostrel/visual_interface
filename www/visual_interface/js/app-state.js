@@ -11,29 +11,47 @@ window.ARVID_APP = {
   currentAreaId: null,
 
   /**
-   * Устройства, относящиеся к комнате.
-   * Объединяем два источника привязки, чтобы работало и с назначенными в HA area,
-   * и на частных объектах, где area устройствам не заданы (v0.4.0):
-   *   1) сущности HA с этим area_id (стандартная привязка HA);
-   *   2) устройства, размещённые нами на плане этой комнаты (layout.devices[*].area_id).
-   * Так свет «в комнате» определяется даже без HA-area — по нашей расстановке.
+   * СОСТАВ комнаты — истина из Home Assistant (v0.7.0).
+   * Только сущности с этим area_id (напрямую или через устройство).
+   * По этому списку считаются карточки, счётчики «N/N включено» и статистика комнаты.
    */
-  entitiesForRoom(areaId) {
+  entitiesForArea(areaId) {
+    if (!this.registry || !areaId) return [];
+    return this.registry.getEntitiesForArea(areaId);
+  },
+
+  /**
+   * РАЗМЕЩЁННЫЕ на плане этой комнаты (наш layout: координаты + area_id).
+   * По этому списку рисуются маркеры. Устройство может быть размещено здесь,
+   * но НЕ иметь HA-area — тогда оно помечается как непривязанное (см. room-page).
+   */
+  placedEntitiesForRoom(areaId) {
     if (!this.registry || !areaId) return [];
 
-    const result = new Map();
-    this.registry.getEntitiesForArea(areaId).forEach((state) => {
-      result.set(state.entity_id, state);
-    });
-
     const devices = this.layout?.devices || {};
+    const result = [];
     Object.keys(devices).forEach((entityId) => {
       if (devices[entityId]?.area_id !== areaId) return;
       const state = this.registry.getState(entityId);
-      if (state) result.set(entityId, state);
+      if (state) result.push(state);
     });
+    return result;
+  },
 
+  /**
+   * Объединение состава и размещённых — нужно только для подписки на изменения
+   * (какие события считать «своими»), но НЕ для состава комнаты.
+   */
+  entitiesForRoom(areaId) {
+    const result = new Map();
+    this.entitiesForArea(areaId).forEach((state) => result.set(state.entity_id, state));
+    this.placedEntitiesForRoom(areaId).forEach((state) => result.set(state.entity_id, state));
     return [...result.values()];
+  },
+
+  // Устройство размещено в комнате, но в HA привязано не к ней (или ни к чему).
+  isUnassignedInRoom(entityId, areaId) {
+    return this.registry?.getAreaForEntity(entityId) !== areaId;
   },
 
   /**
