@@ -66,6 +66,29 @@ window.ARVID_APP = {
     if (!this.registry || !objectId) return null;
     return this.registry.getState(`light.${objectId}`);
   },
+
+  /**
+   * Сущность — ГРУППА света, а не физический светильник (v0.9.0).
+   * Группы не должны попадать ни в счётчик «N/N включено», ни в состав комнаты,
+   * ни на план: иначе одна и та же лампа считается дважды (сама и через группу).
+   *
+   * Два вида групп:
+   *  1. DALI-группа ядра (`DaliGroupLight`) — у её УСТРОЙСТВА в реестре HA
+   *     `model = "DALI Group"` (см. light.py ядра). Это надёжный признак: имя группы
+   *     произвольное («r2»), по entity_id её не отличить от лампы.
+   *  2. Группа/хелпер самого HA (light group) — состояния групп несут в атрибутах
+   *     список членов `entity_id: [...]`. Так ловятся light.<area_id>/<floor_id>/all,
+   *     заведённые в HA вручную.
+   */
+  isLightGroupState(state) {
+    const entityId = state?.entity_id || "";
+    if (!entityId.startsWith("light.")) return false;
+
+    if (this.registry?.getDeviceModel(entityId) === "DALI Group") return true;
+
+    // HA-группа света перечисляет своих членов в атрибуте entity_id.
+    return Array.isArray(state?.attributes?.entity_id);
+  },
 };
 
 window.ARVID_RUNTIME = {

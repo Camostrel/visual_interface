@@ -505,10 +505,13 @@ class ArvidFloorPage {
     await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: entityIds });
   }
 
-  // Фолбэк: все light.* из реестра (когда HA-группы всего объекта ещё нет).
+  /**
+   * Фолбэк: все лампы из реестра (когда HA-группы light.all ещё нет).
+   * Группы отсеиваем — иначе команда ушла бы и в группу, и в её же лампы (двойная работа).
+   */
   getAllLightEntityIds() {
     return ARVID_APP.registry.states
-      .filter((state) => state.entity_id?.startsWith("light."))
+      .filter((state) => state.entity_id?.startsWith("light.") && !ARVID_APP.isLightGroupState(state))
       .map((state) => state.entity_id);
   }
 
@@ -540,8 +543,24 @@ class ArvidFloorPage {
     await ARVID_APP.ha.callService("light", service, {}, { entity_id: entityIds });
   }
 
+  /**
+   * «Выключить свет» из сводки этажа. До v0.9.0 этот путь единственный шёл в обход
+   * HA-группы — собирал лампы поиском, нарушая инвариант «свет только через группы».
+   * Теперь как везде: группа light.<area_id>, фолбэк — лампы комнаты с предупреждением.
+   */
   async turnOffRoomLights(areaId) {
-    const entityIds = ARVID_APP.registry.getEntitiesByDomainForArea(areaId, ["light"])
+    const group = ARVID_APP.lightGroupState(areaId);
+
+    if (group) {
+      await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: group.entity_id });
+      ARVID_LOG.info(this.logArea, "Room lights turned off via HA group", {
+        areaId,
+        group: group.entity_id,
+      });
+      return;
+    }
+
+    const entityIds = this.getRoomMemberLights(areaId)
       .filter((state) => state.state === "on")
       .map((state) => state.entity_id);
 
@@ -550,8 +569,8 @@ class ArvidFloorPage {
       return;
     }
 
+    ARVID_LOG.warn(this.logArea, `Нет HA-группы light.${areaId} — фолбэк на сборку ламп`, { areaId });
     await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: entityIds });
-    ARVID_LOG.info(this.logArea, "Room lights turned off from floor summary", { areaId, entityCount: entityIds.length });
   }
 
   getAreasForCurrentFloor() {
@@ -1052,7 +1071,7 @@ class ArvidFloorPage {
    */
   initHealth() {
     if (!ARVID_APP.health) return;
-    ARVID_APP.health.setUpdateHandler(() => this.applyHealthToUi());
+    ARVID_APP.health.addUpdateHandler(() => this.applyHealthToUi());
     ARVID_APP.health.start();
   }
 
@@ -1154,11 +1173,14 @@ class ArvidFloorPage {
     });
   }
 
-  // Лампы-члены комнаты по составу HA (без самой групповой сущности light.<area_id>).
+  /**
+   * Лампы-члены комнаты по составу HA — только ФИЗИЧЕСКИЕ светильники (v0.9.0).
+   * Группы (light.<area_id> и DALI-группы ядра с моделью «DALI Group») исключаются:
+   * иначе одна лампа считается дважды — сама и через группу.
+   */
   getRoomMemberLights(areaId) {
-    const groupId = `light.${areaId}`;
     return ARVID_APP.entitiesForArea(areaId).filter((state) => (
-      state.entity_id.startsWith("light.") && state.entity_id !== groupId
+      state.entity_id.startsWith("light.") && !ARVID_APP.isLightGroupState(state)
     ));
   }
 

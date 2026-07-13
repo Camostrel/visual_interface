@@ -46,7 +46,7 @@ class ArvidHealth {
     this._inflight = null;
     this._timer = null;
     this._intervalMs = ArvidHealth.IDLE_INTERVAL_MS;
-    this._onUpdate = null;
+    this._updateHandlers = new Set();
     this._visibilityBound = false;
     this._resubscribeTimer = null;
   }
@@ -89,13 +89,23 @@ class ArvidHealth {
     return ArvidHealth.KIND_SEVERITY[kind] || "anomaly";
   }
 
-  /** Кого звать после каждого обновления снимка. */
-  setUpdateHandler(handler) {
-    this._onUpdate = handler;
+  /**
+   * Подписчики на обновление снимка. Их несколько (этаж и комната), поэтому Set,
+   * а не единственный обработчик: страницы живут одновременно в одном SPA.
+   */
+  addUpdateHandler(handler) {
+    if (typeof handler !== "function") return;
+    this._updateHandlers.add(handler);
   }
 
   notifyUpdate() {
-    if (this._onUpdate) this._onUpdate(this);
+    this._updateHandlers.forEach((handler) => {
+      try {
+        handler(this);
+      } catch (error) {
+        ARVID_LOG.error(this.logArea, "Обработчик обновления health упал", error);
+      }
+    });
   }
 
   /**

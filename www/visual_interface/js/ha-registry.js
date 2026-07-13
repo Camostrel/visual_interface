@@ -77,6 +77,16 @@ class ArvidHaRegistry {
     return this.entityById.get(entityId)?.device_id || null;
   }
 
+  getDevice(entityId) {
+    const deviceId = this.getDeviceId(entityId);
+    return deviceId ? this.deviceById.get(deviceId) || null : null;
+  }
+
+  // Модель устройства из реестра HA. У DALI-групп ядро ставит model = "DALI Group".
+  getDeviceModel(entityId) {
+    return this.getDevice(entityId)?.model || null;
+  }
+
   // Все сущности одного физического устройства (нужно для пары ms_/il_ одного датчика).
   getEntitiesForDevice(deviceId) {
     if (!deviceId) return [];

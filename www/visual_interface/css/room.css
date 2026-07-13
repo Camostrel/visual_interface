@@ -600,6 +600,71 @@
   line-height: 1.4;
 }
 
+/* ── Здоровье устройств в комнате (D6, v0.9.0) ────────────────────────────────
+   Источник — снимок ядра DALI (health_subscribe), а не наш state === 'unavailable'.
+   Маркер сопоставляется по device_id: пара ms_/il_ — одно устройство и один маркер. */
+
+/* Не на связи: маркер гаснет и метится красным кольцом. Пульс НЕ ставим —
+   в комнате маркеров много и мигание превратилось бы в шум (на этаже пульсирует зона). */
+.device-marker.is-offline {
+  opacity: 0.45;
+}
+
+.device-marker.is-offline .device-marker-image {
+  filter: grayscale(1) drop-shadow(0 0 6px rgba(255, 76, 76, 0.65));
+}
+
+.device-marker.is-offline .device-marker-hit {
+  fill: rgba(255, 76, 76, 0.14);
+  stroke: rgba(255, 76, 76, 0.6);
+  stroke-width: 1.5;
+}
+
+/* Аномалия (залипшее движение, «мёртвый» люкс) — устройство отвечает, только помечаем. */
+.device-marker.is-anomaly .device-marker-hit {
+  fill: rgba(255, 186, 60, 0.14);
+  stroke: rgba(255, 186, 60, 0.55);
+  stroke-width: 1.5;
+}
+
+/* Строка датчика/панели недоступного устройства. */
+.sensor-status-line.is-offline {
+  opacity: 0.55;
+}
+
+.sensor-status-line.is-offline strong {
+  color: var(--danger);
+}
+
+/* Управлять нечем: ни одна лампа комнаты не на связи. */
+.light-control-card.is-offline {
+  opacity: 0.6;
+}
+
+.light-control-card button:disabled,
+.light-control-card input:disabled,
+.light-control-card select:disabled {
+  cursor: not-allowed;
+}
+
+.offline-note {
+  border-color: color-mix(in srgb, var(--danger), transparent 55%);
+  background: color-mix(in srgb, var(--danger), var(--panel-soft) 88%);
+}
+
+.offline-note strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.offline-note small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .device-marker-selection {
   fill: transparent;
   stroke: transparent;

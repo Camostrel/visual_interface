@@ -38,6 +38,11 @@ class ArvidRoomPage {
     // Событие обязательно пробрасывать: handleStateChanged фильтрует по entity_id события.
     ARVID_RUNTIME.addStateHandler((event) => this.handleStateChanged(event));
 
+    // Здоровье устройств (D6): снимок приходит push'ем от ядра — обновляем маркеры и карточки.
+    // start() идемпотентен: комнату можно открыть прямой ссылкой, минуя план этажа.
+    ARVID_APP.health?.addUpdateHandler(() => this.handleHealthChanged());
+    ARVID_APP.health?.start();
+
     this.initialized = true;
     await this.show(params);
 
@@ -98,6 +103,37 @@ class ArvidRoomPage {
   }
 
   /**
+   * Новый снимок здоровья (D6). Плашку «не на связи» строит render, поэтому её обновляем
+   * полной перерисовкой карточек — но только когда состав недоступных РЕАЛЬНО изменился,
+   * иначе push'и дёргали бы DOM (инвариант «не перестраивать по потоку событий»).
+   * Маркеры и значения обновляются точечно всегда.
+   */
+  handleHealthChanged() {
+    if (!this.initialized || !this.areaId || this.editMode) return;
+
+    const signature = this.getOfflineSignature();
+    const changed = signature !== this._offlineSignature;
+    this._offlineSignature = signature;
+
+    if (changed) {
+      this.renderControls();   // плашка + состав «не на связи»
+      this.renderDeviceMarkers();
+      return;
+    }
+
+    this.scheduleStateUpdate();
+  }
+
+  // Отпечаток состава недоступных устройств комнаты — чтобы не перерисовывать зря.
+  getOfflineSignature() {
+    return this.getRoomComposition()
+      .filter((state) => this.isDeviceOffline(state))
+      .map((state) => state.entity_id)
+      .sort()
+      .join(",");
+  }
+
+  /**
    * Фильтр «своё событие». Подписка на state_changed глобальная, поэтому этот метод
    * зовётся на КАЖДОЕ событие HA. Состав комнаты кешируем: без кеша тут был бы полный
    * резолв area по всем сущностям на каждое событие (на объекте это тысячи сущностей).
@@ -125,14 +161,21 @@ class ArvidRoomPage {
     });
   }
 
-  // Маркеры на плане: только классы активности, без пересоздания SVG-элементов.
+  // Маркеры на плане: только классы (активность + здоровье), без пересоздания SVG-элементов.
   updateDeviceMarkerStates() {
     if (!this.svg) return;
     this.svg.querySelectorAll(".device-marker[data-entity]").forEach((group) => {
       const state = ARVID_APP.registry.getState(group.getAttribute("data-entity"));
+      if (!state) return;
+
       const active = ArvidDeviceUi.isActive(state);
       group.classList.toggle("is-on", active);
       group.classList.toggle("is-active", active);
+
+      const health = this.getHealthFor(state);
+      const isOffline = health.offline > 0;
+      group.classList.toggle("is-offline", isOffline);
+      group.classList.toggle("is-anomaly", !isOffline && health.anomaly > 0);
     });
   }
 
@@ -161,26 +204,42 @@ class ArvidRoomPage {
       if (sliderLabel) sliderLabel.textContent = `${pct}%`;
     }
 
-    // Датчики: пересчитываем показания по якорю пары ms_/il_.
+    // Датчики: пересчитываем показания по якорю пары ms_/il_ (+ статус связи).
     container.querySelectorAll("[data-sensor-anchor]").forEach((row) => {
       const anchor = ARVID_APP.registry.getState(row.getAttribute("data-sensor-anchor"));
       const valueEl = row.querySelector("strong");
-      if (anchor && valueEl) valueEl.textContent = this.formatSensorReadings(anchor);
+      if (!anchor || !valueEl) return;
+      valueEl.textContent = this.formatSensorReadings(anchor);
+      row.classList.toggle("is-offline", this.isDeviceOffline(anchor));
     });
 
-    // Панели: последнее событие.
+    // Панели: последнее событие (+ статус связи).
     container.querySelectorAll("[data-panel-entity]").forEach((row) => {
       const state = ARVID_APP.registry.getState(row.getAttribute("data-panel-entity"));
       const valueEl = row.querySelector("strong");
-      if (state && valueEl) valueEl.textContent = ArvidDeviceUi.panelEventText(state);
+      if (!state || !valueEl) return;
+
+      const offline = this.isDeviceOffline(state);
+      valueEl.textContent = offline ? "не на связи" : ArvidDeviceUi.panelEventText(state);
+      row.classList.toggle("is-offline", offline);
     });
+
+    // Свет: если ни одна лампа комнаты не на связи — управлять нечем, блокируем контролы (D6).
+    const allLightsOffline = lights.length > 0 && lights.every((state) => this.isDeviceOffline(state));
+    container.querySelectorAll(".light-control-card button, .light-control-card input, .light-control-card select")
+      .forEach((control) => { control.disabled = allLightsOffline; });
+    container.querySelector(".light-control-card")?.classList.toggle("is-offline", allLightsOffline);
   }
 
-  // Лампы-члены комнаты по составу HA (без групповой сущности light.<area_id>).
+  /**
+   * Лампы-члены комнаты по составу HA — только ФИЗИЧЕСКИЕ светильники.
+   * Любые группы света исключаются (v0.9.0): и light.<area_id>, и DALI-группы ядра
+   * («DALI Group» в модели устройства), у которых имя произвольное («r2») и по entity_id
+   * их от лампы не отличить. Иначе счётчик «N/N включено» считал бы лампы дважды.
+   */
   getRoomMemberLights() {
-    const groupId = this.getRoomLightGroupId();
     return this.getRoomComposition().filter((state) => (
-      state.entity_id.startsWith("light.") && state.entity_id !== groupId
+      state.entity_id.startsWith("light.") && !ARVID_APP.isLightGroupState(state)
     ));
   }
 
@@ -295,13 +354,41 @@ class ArvidRoomPage {
     return ARVID_APP.placedEntitiesForRoom(this.areaId);
   }
 
+  /**
+   * Здоровье устройства (D6, v0.9.0) — снимок ядра DALI, своей логики offline не ведём.
+   *
+   * ⚠ Ключ — device_id, а НЕ entity_id: пара движение+люкс это ОДНО устройство HA и ОДИН
+   * маркер на плане, но ДВЕ записи здоровья (0201/0202) с разными entity_id. Координата
+   * маркера лежит под ms_, поэтому ошибка люкса (sensor.il_*) по entity_id до него не доедет.
+   * Фолбэк по entity_id — на случай, если устройства нет в реестре.
+   *
+   * Возвращает {offline, anomaly, total, records}.
+   */
+  getHealthFor(state) {
+    const health = ARVID_APP.health;
+    if (!health || health.available === false) return { offline: 0, anomaly: 0, total: 0, records: [] };
+
+    const deviceId = ARVID_APP.registry.getDeviceId(state.entity_id);
+    if (deviceId) return health.statsForDevice(deviceId);
+    return health.statsForEntity(state.entity_id);
+  }
+
+  isDeviceOffline(state) {
+    return this.getHealthFor(state).offline > 0;
+  }
+
   // Объединение — только для фильтра «свои события» (не состав).
   getRoomEntities() {
     return ARVID_APP.entitiesForRoom(this.areaId);
   }
 
+  /**
+   * Скоуп интерфейса: свет / датчик / панель — но ГРУППЫ света исключаем (v0.9.0).
+   * Группа — не физическое устройство: её нельзя расставить на плане, у неё нет
+   * координаты и здоровья, а в счётчике она удваивала бы свои же лампы.
+   */
   isScopedState(state) {
-    return ArvidDeviceUi.isScoped(state);
+    return ArvidDeviceUi.isScoped(state) && !ARVID_APP.isLightGroupState(state);
   }
 
   /**
@@ -382,8 +469,12 @@ class ArvidRoomPage {
       const isSelected = this.editMode && state.entity_id === this.editSelectedEntityId;
       // Устройство стоит на плане комнаты, но в HA к ней не привязано — помечаем.
       const isUnassigned = ARVID_APP.isUnassignedInRoom(state.entity_id, this.areaId);
+      // Здоровье устройства (D6): не на связи — приглушаем и метим красным.
+      const health = this.getHealthFor(state);
+      const isOffline = health.offline > 0;
+      const hasAnomaly = !isOffline && health.anomaly > 0;
       const group = ArvidSvgUtils.createSvgElement("g", {
-        class: `device-marker marker-${marker} device-kind-${kind} ${ArvidDeviceUi.isActive(state) ? "is-on is-active" : ""} ${isSelected ? "is-selected" : ""} ${isHiddenOnPlan ? "is-hidden-on-plan" : ""} ${isUnassigned ? "is-unassigned" : ""}`,
+        class: `device-marker marker-${marker} device-kind-${kind} ${ArvidDeviceUi.isActive(state) ? "is-on is-active" : ""} ${isSelected ? "is-selected" : ""} ${isHiddenOnPlan ? "is-hidden-on-plan" : ""} ${isUnassigned ? "is-unassigned" : ""} ${isOffline ? "is-offline" : ""} ${hasAnomaly ? "is-anomaly" : ""}`,
         transform: `translate(${layout.x}, ${layout.y})`,
         tabindex: "0",
         // Якорь для точечного обновления состояния без пересоздания маркера.
@@ -729,15 +820,16 @@ class ArvidRoomPage {
 
     // Состав комнаты — истина HA (area), а не то, что расставлено на плане.
     const entities = this.getRoomComposition();
-    // Лампы-члены: сама групповая сущность light.<area_id> в список не идёт (она — «Вся комната»).
-    const lights = entities.filter((state) => (
-      state.entity_id.startsWith("light.") && state.entity_id !== this.getRoomLightGroupId()
-    ));
+    // Лампы — только физические светильники: любые группы света исключены (v0.9.0),
+    // иначе одна лампа считалась бы дважды — сама и через группу.
+    const lights = this.getRoomMemberLights();
     // Датчики схлопываем в точки: пара ms_/il_ = одна строка с двумя показаниями.
     const sensors = this.collapseToUnits(entities.filter((state) => ArvidDeviceUi.isSensor(state)));
     const panels = entities.filter((state) => ArvidDeviceUi.isPanelEvent(state));
 
     container.innerHTML = "";
+    const offlineNote = this.buildOfflineNote();
+    if (offlineNote) container.appendChild(offlineNote);
     const unassignedNote = this.buildUnassignedNote();
     if (unassignedNote) container.appendChild(unassignedNote);
     if (lights.length) container.appendChild(this.renderLightCard(lights));
@@ -747,6 +839,35 @@ class ArvidRoomPage {
     if (!container.children.length) {
       container.innerHTML = "<div class='muted-box'>В этой комнате пока нет поддерживаемых устройств</div>";
     }
+  }
+
+  /**
+   * Плашка «не на связи» (D6, v0.9.0): устройства комнаты, которые ядро DALI считает
+   * недоступными. Имена берём из состава комнаты, а не из записи здоровья: в записи имя
+   * устройства ядра, а пользователь видит friendly_name из HA.
+   */
+  buildOfflineNote() {
+    const offline = this.getRoomComposition()
+      .filter((state) => this.isScopedState(state))
+      .filter((state) => this.isDeviceOffline(state));
+
+    if (!offline.length) return null;
+
+    // Пара ms_/il_ — одно устройство: в перечислении не двоим.
+    const names = [...new Set(this.collapseToUnits(offline).map((state) => ArvidDeviceUi.friendlyName(state)))];
+
+    const box = document.createElement("div");
+    box.className = "muted-box offline-note";
+
+    const title = document.createElement("strong");
+    title.textContent = `${names.length} устр. не на связи`;
+    box.appendChild(title);
+
+    const detail = document.createElement("small");
+    detail.textContent = names.join(", ");
+    box.appendChild(detail);
+
+    return box;
   }
 
   /**
@@ -770,22 +891,17 @@ class ArvidRoomPage {
     return box;
   }
 
-  isLightGroup(state) {
-    const entityIds = state?.attributes?.entity_id;
-    const friendlyName = ArvidDeviceUi.friendlyName(state).toLowerCase();
-    const entityId = state?.entity_id?.toLowerCase() || "";
-
-    return Array.isArray(entityIds)
-      || entityId.includes("group")
-      || entityId.includes("all")
-      || friendlyName.includes("группа")
-      || friendlyName.includes("весь свет")
-      || friendlyName.includes("освещение")
-      || friendlyName.includes("group");
-  }
-
-  getLightGroups(lights) {
-    return lights.filter((state) => this.isLightGroup(state));
+  /**
+   * Группы света помещения — цели для селекта «Группа света» (v0.9.0).
+   * Раньше группы УГАДЫВАЛИСЬ по словам в имени («группа», «all», «освещение») среди ламп —
+   * это ловило лампу с именем «Освещение стола» и пропускало DALI-группу с именем «r2».
+   * Теперь признак честный (ARVID_APP.isLightGroupState: модель «DALI Group» либо список
+   * членов в атрибутах), а группы вообще не попадают в состав ламп.
+   */
+  getRoomLightGroups() {
+    return this.getRoomComposition().filter((state) => (
+      state.entity_id.startsWith("light.") && ARVID_APP.isLightGroupState(state)
+    ));
   }
 
   getLightTargetSessionKey() {
@@ -826,7 +942,7 @@ class ArvidRoomPage {
     const card = document.createElement("section");
     card.className = "control-card light-control-card";
 
-    const groups = this.getLightGroups(lights);
+    const groups = this.getRoomLightGroups();
     const onCount = lights.filter((state) => state.state === "on").length;
     const brightness = this.getAverageBrightnessPct(lights);
     const showGroupSelect = groups.length > 0;
@@ -941,6 +1057,8 @@ class ArvidRoomPage {
   renderSensorStatusLine(anchorState) {
     const row = document.createElement("div");
     row.className = "sensor-status-line";
+    // Не на связи (D6) — строку приглушаем (класс обновляется и в updateControlValues).
+    row.classList.toggle("is-offline", this.isDeviceOffline(anchorState));
     // Якорь для точечного обновления показаний (см. updateControlValues).
     row.dataset.sensorAnchor = anchorState.entity_id;
 
@@ -952,6 +1070,9 @@ class ArvidRoomPage {
   }
 
   formatSensorReadings(anchorState) {
+    // Устройство не на связи — показания устарели, честнее сказать это прямо (D6).
+    if (this.isDeviceOffline(anchorState)) return "не на связи";
+
     const { motion, lux } = this.getSensorReadings(anchorState);
     const parts = [];
     if (motion) parts.push(ArvidDeviceUi.isMotionActive(motion) ? "движение" : "нет движения");
@@ -979,13 +1100,15 @@ class ArvidRoomPage {
 
     const list = card.querySelector(".sensor-status-list");
     panels.forEach((state) => {
+      const offline = this.isDeviceOffline(state);   // не на связи (D6)
       const row = document.createElement("div");
       row.className = "sensor-status-line";
+      row.classList.toggle("is-offline", offline);
       // Якорь для точечного обновления последнего события панели.
       row.dataset.panelEntity = state.entity_id;
       row.innerHTML = `
         <span>${ArvidDeviceUi.friendlyName(state)}</span>
-        <strong>${ArvidDeviceUi.panelEventText(state)}</strong>
+        <strong>${offline ? "не на связи" : ArvidDeviceUi.panelEventText(state)}</strong>
       `;
       list.appendChild(row);
     });
