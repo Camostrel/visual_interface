@@ -281,6 +281,47 @@
   color: var(--svg-plan-line);
 }
 
+/* ── Планы из CAD (эталон, docs/SVG_PLAN_SPEC.md) ─────────────────────────────
+   Конвертер tools/plan_convert.py снимает с плана все цвета и оставляет классы.
+   Красит тема, а не файл, — один план работает и в светлой, и в тёмной.
+   fill:none обязателен: без него браузер зальёт контуры стен чёрным. */
+
+.plan-wall {
+  fill: none;
+  stroke: currentColor;
+  vector-effect: non-scaling-stroke;   /* стены не толстеют при зуме */
+}
+
+/* Устройство, объявленное самим планом (data-entity). Состояние вешает JS. */
+.device-node {
+  fill: none;
+  stroke: var(--muted);
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.18s ease, fill 0.18s ease;
+}
+
+.device-node.is-on {
+  stroke: rgba(255, 150, 40, 0.9);
+  fill: rgba(255, 150, 40, 0.25);
+}
+
+/* Датчик с движением — зелёный (как зона в режиме «Присутствие»). */
+.device-sensor.is-active {
+  stroke: rgba(52, 199, 123, 0.9);
+  fill: rgba(52, 199, 123, 0.25);
+}
+
+/* Здоровье: не на связи / аномалия (данные ядра DALI). */
+.device-node.is-offline {
+  stroke: rgba(255, 76, 76, 0.9);
+  fill: rgba(255, 76, 76, 0.2);
+}
+
+.device-node.is-anomaly {
+  stroke: rgba(255, 186, 60, 0.9);
+  fill: rgba(255, 186, 60, 0.2);
+}
+
 /* ── Переключатель режимов карты ──────────────────────────────────────────────
    Плавающие табы над планом (как .plan-toolbar снизу). Живёт поверх .svg-stage,
    а не в топбаре: на телефоне .topbar-actions скрыт, а режим нужен везде. */
