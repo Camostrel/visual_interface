@@ -4,7 +4,7 @@
 
 Потребительский веб-интерфейс к системе умного здания на Home Assistant (ядро — DALI).
 **Форк** старого `web_interface` (база v0.9.2): проверенная мобильная вёрстка сохранена,
-функциональность вычищена под узкий скоуп. Текущая версия фронта: **v0.10.1**, backend **v0.1.0**.
+функциональность вычищена под узкий скоуп. Текущая версия фронта: **v0.11.0**, backend **v0.2.0**.
 
 Документация — в папке [docs/](docs/):
 [ARCHITECTURE.md](docs/ARCHITECTURE.md) (модули, потоки, зависимости) ·
@@ -59,17 +59,17 @@ www/visual_interface/
     base.css
     themes.css
     shell.css            ← оболочка + анимации View Transitions
-    floor.css            ← план этажа: зоны, подсветка, сводка (+ мёртвые стили Quick View)
+    floor.css            ← план этажа: зоны, подсветка, сводка
     room.css             ← комната + режим редактирования расстановки
     schedule.css         ← popup расписания
 
   js/
     config.js            ← VERSION, HA_TOKEN (заглушка на диске, НЕ деплоить с токеном)
     logger.js
-    ha-ws.js             ← ArvidHaWebSocket
+    ha-ws.js             ← ArvidHaWebSocket (реконнект + восстановление подписок, v0.11.0)
     floorplan-storage.js
-    ha-registry.js       ← areas, floors, states, entities
-    health.js            ← ArvidHealth: здоровье устройств от ядра DALI (health_data)
+    ha-registry.js       ← areas, floors, states, entities + ИНДЕКСЫ area/device (v0.11.0)
+    health.js            ← ArvidHealth: здоровье устройств от ядра DALI (health_subscribe)
     app-state.js         ← ARVID_APP, ARVID_RUNTIME (синглтон)
     spa-router.js        ← ArvidSpaApp (маршрутизатор: floor / room)
     svg-utils.js
@@ -121,6 +121,10 @@ ARVID_APP.layout      // layout из HA .storage
 
 ARVID_RUNTIME.ensureData()        // ленивая инициализация, безопасно вызывать повторно
 ARVID_RUNTIME.addStateHandler(fn) // подписка на state_changed (без дублей)
+
+ARVID_APP.registry.addCompositionHandler(fn)  // v0.11.0: СОСТАВ изменился (не значение) —
+                                              // здесь полная перерисовка уместна
+ARVID_APP.ha.addStatusHandler(fn)             // v0.11.0: связь online/offline
 ```
 
 ### Анимации переходов
