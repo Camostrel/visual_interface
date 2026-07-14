@@ -182,12 +182,37 @@ class ArvidSpaApp {
     document.title = titles[view] || titles.floor;
   }
 
+  /**
+   * Ошибка маршрута НЕ уничтожает вёрстку (v0.11.0, долг D21).
+   *
+   * Раньше здесь стоял `activeView.innerHTML = "Ошибка…"` — один неудачный переход при
+   * недоступном HA (а он перезагружается) необратимо сносил разметку экрана: восстановиться
+   * можно было только через F5. Теперь показываем оверлей поверх живого интерфейса.
+   */
   handleRouteError(error) {
     ARVID_LOG.error(this.logArea, "Route failed", error);
-    const activeView = document.querySelector("[data-spa-view]:not([hidden])");
-    if (activeView) {
-      activeView.innerHTML = `<div class="arvid-error">Ошибка маршрута: ${error.message || error}</div>`;
+
+    let overlay = document.querySelector("[data-route-error]");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "arvid-error route-error";
+      overlay.dataset.routeError = "1";
+      document.body.appendChild(overlay);
     }
+
+    overlay.innerHTML = "";
+    const text = document.createElement("strong");
+    text.textContent = `Ошибка маршрута: ${error?.message || error}`;
+    overlay.appendChild(text);
+
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = "Повторить";
+    retry.addEventListener("click", () => {
+      overlay.remove();
+      this.routeFromLocation({ replace: true }).catch((err) => this.handleRouteError(err));
+    });
+    overlay.appendChild(retry);
   }
 }
 

@@ -21,6 +21,7 @@ class ArvidFloorPage {
 
     await this.initData();
     ArvidShellUi.initTheme(ARVID_APP.layout);
+    ArvidShellUi.initConnectionStatus();   // плашка «нет связи» (A3)
     ArvidShellUi.initViewportHeight();
     ArvidShellUi.renderBrand(ARVID_APP.layout);
     ArvidShellUi.initPanelToggles();
@@ -31,9 +32,12 @@ class ArvidFloorPage {
     this.renderModes();
     this.initMobileAccordions();
     this.initHealth();
-    // Этаж реагирует на ЛЮБОЕ событие (фильтра «своих» нет — см. долг D19), поэтому event не нужен.
-    // В комнате наоборот: там event обязателен, иначе фильтр по entity_id молча отсекает всё.
-    ARVID_RUNTIME.addStateHandler(() => this.handleStateChanged());
+    // Событие обязательно пробрасывать: handleStateChanged фильтрует по entity_id (D19).
+    ARVID_RUNTIME.addStateHandler((event) => this.handleStateChanged(event));
+
+    // Состав изменился в HA (устройству задали area, добавили лампу) — пересобираем
+    // набор «своих» сущностей и перерисовываем зоны и сводку (D5).
+    ARVID_APP.registry.addCompositionHandler(() => this.handleCompositionChanged());
 
     this.initialized = true;
     await this.show(params);
@@ -56,19 +60,51 @@ class ArvidFloorPage {
    * НЕ вызываем syncRoomZones (он перевешивал обработчики зон на каждое событие)
    * и не пересобираем кнопки режимов. Обновляем только классы и значения,
    * коалесцируя пачку событий в один кадр.
+   *
+   * v0.11.0: добавлен фильтр «своих» сущностей (D19) — чужие события до кадра не доходят.
    */
-  handleStateChanged() {
+  handleStateChanged(event) {
     if (!this.initialized) return;
+
+    const entityId = event?.data?.entity_id;
+    if (entityId && !this.isFloorEntityId(entityId)) return;   // чужая сущность — не наше дело
 
     if (this._floorUpdateScheduled) return;
     this._floorUpdateScheduled = true;
     window.requestAnimationFrame(() => {
       this._floorUpdateScheduled = false;
-      this.applyZoneStateClasses();
-      this.updatePlanDeviceStates();   // устройства, объявленные планом (data-entity)
-      this.updateModeCards();
-      this.renderFloorDashboard();
+      this.refreshFloorState();
     });
+  }
+
+  /**
+   * Один проход обновления за кадр (v0.11.0).
+   *
+   * Раньше getRoomStats() считался ДВАЖДЫ для каждой зоны: сначала в applyZoneStateClasses,
+   * потом заново в renderFloorDashboard. А каждый вызов резолвил состав помещения заново.
+   * Теперь статистика считается один раз и передаётся обоим потребителям.
+   */
+  refreshFloorState() {
+    const statsByArea = this.computeFloorStats();
+
+    this.applyZoneStateClasses(statsByArea);
+    this.updatePlanDeviceStates();   // устройства, объявленные планом (data-entity)
+    this.updateModeCards();
+    this.renderFloorDashboard(statsByArea);
+  }
+
+  /** Статистика по всем помещениям этажа — считается ОДИН раз за кадр. */
+  computeFloorStats() {
+    const statsByArea = new Map();
+    this.getAreasForCurrentFloor().forEach((area) => {
+      statsByArea.set(area.area_id, this.getRoomStats(area.area_id));
+    });
+    return statsByArea;
+  }
+
+  /** Статистика помещения: из кадрового снимка, иначе считаем на месте. */
+  statsFor(areaId, statsByArea) {
+    return statsByArea?.get(areaId) || this.getRoomStats(areaId);
   }
 
   bindUi() {
@@ -404,6 +440,7 @@ class ArvidFloorPage {
     }
 
     ARVID_APP.currentFloorId = floorId;
+    this.invalidateFloorEntityCache();   // сменился этаж — набор «своих» сущностей другой
     ARVID_LOG.info(this.logArea, "Selecting floor", floorId);
 
     document.querySelectorAll(".floor-item").forEach((item) => {
@@ -418,9 +455,23 @@ class ArvidFloorPage {
 
     const svgUrl = this.getFloorSvg(floorId);
     const container = document.querySelector("[data-floor-svg]");
-    this.svg = await ArvidSvgUtils.loadSvgInto(container, svgUrl, {
+
+    // Быстрое переключение этажей = две параллельные загрузки в один контейнер. Кто ответит
+    // последним, того план и останется в DOM — а currentFloorId будет от последнего клика.
+    // Токен: результат устаревшей загрузки просто выбрасываем (v0.11.0).
+    const token = Symbol("floor-load");
+    this._floorLoadToken = token;
+
+    const svg = await ArvidSvgUtils.loadSvgInto(container, svgUrl, {
       fallbackUrl: ARVID_CONFIG.DEFAULT_FLOOR_SVG,
     });
+
+    if (this._floorLoadToken !== token) {
+      ARVID_LOG.debug(this.logArea, "План этажа устарел, пока грузился — результат отброшен", { floorId });
+      return;
+    }
+
+    this.svg = svg;
 
     // Подключаем управление планом после загрузки SVG, потому что управление меняет viewBox конкретного SVG.
     this.panZoom = ArvidSvgUtils.setupPanZoom(container, this.svg, {
@@ -429,12 +480,48 @@ class ArvidFloorPage {
     });
 
     this.collectPlanDevices();          // устройства, объявленные самим планом (data-entity)
+    this.invalidateFloorEntityCache();  // устройства плана — тоже «свои» события
     this.updateMobilePlanLayout();
     this.bindResponsiveResize();
-    this.syncRoomZones();
-    this.updatePlanDeviceStates();
+    this.bindRoomZones();               // обработчики зон — только при загрузке плана
     this.applyZoomLevel(this.panZoom?.getZoomValue() ?? 1);
-    this.renderFloorDashboard();
+    this.renderFloorSummary();          // каркас сводки — только при смене этажа
+    this.refreshFloorState();           // классы зон, устройства, числа — один пересчёт
+  }
+
+  /**
+   * Фильтр «своё событие» (долг D19). Подписка на state_changed глобальная, поэтому этот метод
+   * зовётся на КАЖДОЕ событие HA — на объекте это тысячи сущностей и плотный поток люксов.
+   * Раньше фильтра не было вообще: любое чужое событие тянуло полный пересчёт зон и сводки.
+   *
+   * «Свои» — это: сущности помещений этажа, устройства, объявленные планом (data-entity),
+   * группы света (комнат, этажа, здания) и сущности режимов.
+   */
+  isFloorEntityId(entityId) {
+    if (!this._floorEntityIds) {
+      const ids = new Set();
+
+      this.getAreasForCurrentFloor().forEach((area) => {
+        ARVID_APP.entitiesForArea(area.area_id).forEach((state) => ids.add(state.entity_id));
+        ids.add(`light.${area.area_id}`);                       // группа света комнаты
+      });
+
+      (this.planDevices || []).forEach(({ entityId: id }) => ids.add(id));
+
+      if (ARVID_APP.currentFloorId) ids.add(`light.${ARVID_APP.currentFloorId}`);
+      ids.add("light.all");
+
+      this.getDisplayModes().forEach((mode) => ids.add(mode.entity_id));
+
+      this._floorEntityIds = ids;
+      ARVID_LOG.debug(this.logArea, "Набор «своих» сущностей этажа пересобран", { count: ids.size });
+    }
+
+    return this._floorEntityIds.has(entityId);
+  }
+
+  invalidateFloorEntityCache() {
+    this._floorEntityIds = null;
   }
 
   /**
@@ -688,26 +775,20 @@ class ArvidFloorPage {
     };
   }
 
-  getFloorRoomDashboardRows() {
-    return this.getAreasForCurrentFloor().map((area) => ({
+  /**
+   * Данные сводки этажа. Считаются из кадрового снимка статистики (см. computeFloorStats),
+   * а не пересчитывают состав помещений заново.
+   */
+  buildSummaryOptions(statsByArea) {
+    const rows = this.getAreasForCurrentFloor().map((area) => ({
       area,
-      stats: this.getRoomStats(area.area_id),
+      stats: this.statsFor(area.area_id, statsByArea),
     }));
-  }
 
-  renderFloorDashboard() {
-    this.renderFloorSummary();
-    this.renderFloorWarnings();
-  }
-
-  renderFloorSummary() {
-    const container = document.querySelector("[data-floor-summary]");
-    if (!container) return;
-
-    const rows = this.getFloorRoomDashboardRows();
     const lightsOnRooms = rows.filter((row) => row.stats.hasLightOn);
     const motionRooms = rows.filter((row) => row.stats.motionActive);
-    const summaryOptions = [
+
+    return [
       {
         type: "lights",
         title: "Включён свет",
@@ -727,20 +808,52 @@ class ArvidFloorPage {
         onAction: (areaId) => this.openRoomByArea(areaId),
       },
     ];
+  }
+
+  renderFloorDashboard(statsByArea) {
+    this.updateFloorSummary(statsByArea);
+    this.renderFloorWarnings();
+  }
+
+  /**
+   * КАРКАС сводки строится один раз — при смене этажа (v0.11.0, долг D10).
+   * Раньше `renderFloorSummary()` пересобирал DOM (`innerHTML = ""`) на каждый кадр обновления,
+   * то есть на каждый чих люкс-датчика. Не мигало только благодаря rAF-коалесценции.
+   */
+  renderFloorSummary() {
+    const container = document.querySelector("[data-floor-summary]");
+    if (!container) return;
 
     container.innerHTML = "";
-    summaryOptions.forEach((options) => {
+    this.buildSummaryOptions().forEach((options) => {
       container.appendChild(this.buildFloorSummaryCard(options));
     });
+  }
 
+  /** По событиям — только ЧИСЛА и состояние открытого списка. DOM не пересобираем. */
+  updateFloorSummary(statsByArea) {
+    const container = document.querySelector("[data-floor-summary]");
+    if (!container) return;
+
+    if (!container.children.length) {
+      this.renderFloorSummary();   // каркаса ещё нет (первый показ этажа)
+    }
+
+    const summaryOptions = this.buildSummaryOptions(statsByArea);
+
+    summaryOptions.forEach((options) => {
+      const counter = container.querySelector(`[data-summary-type="${options.type}"] strong`);
+      if (counter && counter.textContent !== String(options.count)) {
+        counter.textContent = String(options.count);
+      }
+    });
+
+    // Открытый список должен показывать актуальный состав помещений.
     if (this.openSummaryType && this.summaryPopover && !this.summaryPopover.hidden) {
       const options = summaryOptions.find((item) => item.type === this.openSummaryType);
       const trigger = container.querySelector(`[data-summary-type="${this.openSummaryType}"] .floor-summary-toggle`);
-      if (options && trigger) {
-        this.openFloorSummaryPopover(options, trigger);
-      } else {
-        this.closeFloorSummaryPopover();
-      }
+      if (options && trigger) this.openFloorSummaryPopover(options, trigger);
+      else this.closeFloorSummaryPopover();
     }
   }
 
@@ -756,7 +869,9 @@ class ArvidFloorPage {
     toggle.innerHTML = `<span>${options.title}</span><strong>${options.count}</strong>`;
     toggle.addEventListener("click", (event) => {
       event.stopPropagation();
-      this.toggleFloorSummaryPopover(options, toggle);
+      // Данные берём СВЕЖИЕ на момент клика: карточка живёт долго, состояние меняется.
+      const current = this.buildSummaryOptions().find((item) => item.type === options.type);
+      this.toggleFloorSummaryPopover(current || options, toggle);
     });
     wrapper.appendChild(toggle);
 
@@ -765,6 +880,19 @@ class ArvidFloorPage {
     }
 
     return wrapper;
+  }
+
+  /**
+   * Состав сущностей изменился в HA (D5): задали area, добавили лампу, переименовали датчик.
+   * Пересобираем «свои» сущности и перерисовываем то, что зависит от состава.
+   */
+  handleCompositionChanged() {
+    if (!this.initialized) return;
+
+    this.invalidateFloorEntityCache();
+    this.renderFloorSummary();   // список помещений этажа мог измениться
+    this.bindRoomZones();        // зона могла найтись/потеряться в HA → перепривязка
+    this.refreshFloorState();
   }
 
   toggleFloorSummaryPopover(options, trigger) {
@@ -1145,7 +1273,9 @@ class ArvidFloorPage {
   // Снимок здоровья влияет на классы зон (агрегат), устройств плана и слот «Предупреждения».
   applyHealthToUi() {
     if (!this.initialized) return;
-    this.applyZoneStateClasses();
+
+    const statsByArea = this.computeFloorStats();
+    this.applyZoneStateClasses(statsByArea);
     this.updatePlanDeviceStates();
     this.renderFloorWarnings();
   }
@@ -1233,13 +1363,6 @@ class ArvidFloorPage {
     ));
   }
 
-  syncRoomZones() {
-    // На плане: подсветка зон по состоянию + прямое управление тапом (см. bindRoomZones).
-    if (!this.svg) return;
-    this.bindRoomZones();
-    this.applyZoneStateClasses();
-  }
-
   /**
    * Классы состояния зон — сразу все, независимо от режима карты (v0.8.0):
    *   has-light-on  — включён свет           (режим «Освещение»)
@@ -1250,10 +1373,10 @@ class ArvidFloorPage {
    * а state_changed по-прежнему трогает только классы, не DOM.
    * Вызывается при загрузке плана, на state_changed и после снимка health.
    */
-  applyZoneStateClasses() {
+  applyZoneStateClasses(statsByArea) {
     if (!this.svg) return;
     this.svg.querySelectorAll(".room-zone[data-room-id]").forEach((zone) => {
-      const stats = this.getRoomStats(zone.dataset.roomId);
+      const stats = this.statsFor(zone.dataset.roomId, statsByArea);
       zone.classList.toggle("has-light-on", stats.hasLightOn);
       zone.classList.toggle("has-motion", stats.motionActive);
       zone.classList.toggle("has-offline", stats.offlineCount > 0);

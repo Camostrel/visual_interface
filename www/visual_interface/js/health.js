@@ -122,6 +122,9 @@ class ArvidHealth {
       const snapshot = await this.ha.subscribeCommand(
         { type: "arvid_dali_center/health_subscribe" },
         (event) => this.applySnapshot(event, "push-событие"),
+        // После реконнекта подписка оформляется заново, и её ОТВЕТ несёт актуальное здоровье.
+        // Без этого «Диагностика» ждала бы следующего пересчёта ядра (v0.11.0, A3).
+        { onSnapshot: (result) => this.applySnapshot(result, "снимок после реконнекта") },
       );
 
       this.mode = "push";

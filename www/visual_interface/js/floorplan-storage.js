@@ -22,13 +22,50 @@ class ArvidFloorplanStorage {
     return result.layout;
   }
 
+  /**
+   * Полная запись документа. Используется редко: у неё есть право затереть чужую работу,
+   * поэтому шлём base_rev — ревизию, на которой строили свою копию (A4).
+   * Backend отвечает ошибкой `layout_conflict`, если документ уже изменили.
+   */
   async saveLayout(layout) {
-    ARVID_LOG.info(this.logArea, "Saving full layout");
+    const baseRev = layout?.meta?.rev ?? null;
+    ARVID_LOG.info(this.logArea, "Saving full layout", { baseRev });
+
     const result = await this.ha.send({
       type: "visual_interface/layout/save",
       layout,
+      base_rev: baseRev,
     });
-    ARVID_LOG.info(this.logArea, "Full layout saved");
+    ARVID_LOG.info(this.logArea, "Full layout saved", { rev: result.layout?.meta?.rev });
+    return result.layout;
+  }
+
+  /**
+   * Точечная запись расстановки (A4): пишем ТОЛЬКО изменённые устройства.
+   * Правка с другого планшета при этом не теряется — в отличие от saveLayout,
+   * который отправлял весь документ снимком из своей вкладки.
+   */
+  async updateDevices(devices, remove = []) {
+    ARVID_LOG.info(this.logArea, "Updating device layout", {
+      updated: Object.keys(devices || {}).length,
+      removed: remove.length,
+    });
+
+    const result = await this.ha.send({
+      type: "visual_interface/layout/devices/update",
+      devices: devices || {},
+      remove,
+    });
+    return result.layout;
+  }
+
+  /** Точечная запись UI-настроек (тема). Координаты устройств не трогает (A4). */
+  async updateUi(ui) {
+    ARVID_LOG.info(this.logArea, "Updating UI settings", ui);
+    const result = await this.ha.send({
+      type: "visual_interface/layout/ui/update",
+      ui,
+    });
     return result.layout;
   }
 
@@ -38,16 +75,6 @@ class ArvidFloorplanStorage {
       type: "visual_interface/layout/room/update",
       area_id: areaId,
       room,
-    });
-    return result.layout;
-  }
-
-  async updateDevice(entityId, device) {
-    ARVID_LOG.info(this.logArea, "Updating device layout", { entityId, device });
-    const result = await this.ha.send({
-      type: "visual_interface/layout/device/update",
-      entity_id: entityId,
-      device,
     });
     return result.layout;
   }

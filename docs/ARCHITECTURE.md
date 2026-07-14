@@ -46,9 +46,9 @@
 |---|---|---|---|
 | `js/config.js` | `ARVID_CONFIG` | версия, HA-токен, базовый путь, резолв asset-URL | — |
 | `js/logger.js` | `ARVID_LOG` | логирование по уровням | `ARVID_CONFIG` |
-| `js/ha-ws.js` | `ArvidHaWebSocket` | WS-соединение, auth, `send`/`callService`/`subscribeStateChanged` | `ARVID_CONFIG`, `ARVID_LOG` |
-| `js/floorplan-storage.js` | `ArvidFloorplanStorage` | клиент нашего backend (`visual_interface/*`) | `ArvidHaWebSocket` |
-| `js/ha-registry.js` | `ArvidHaRegistry` | загрузка реестров + states, резолв area, апдейт по событию | `ArvidHaWebSocket` |
+| `js/ha-ws.js` | `ArvidHaWebSocket` | WS-соединение, auth, **реконнект + восстановление подписок** (v0.11.0), статус связи, `send`/`callService`/`subscribeCommand` | `ARVID_CONFIG`, `ARVID_LOG` |
+| `js/floorplan-storage.js` | `ArvidFloorplanStorage` | клиент нашего backend; **точечные записи** `updateUi`/`updateDevices` (v0.11.0) | `ArvidHaWebSocket` |
+| `js/ha-registry.js` | `ArvidHaRegistry` | реестры + states, **индексы `area_id`/`device_id`** (v0.11.0), подписка на изменения реестров, сигнал «состав изменился» | `ArvidHaWebSocket` |
 | `js/health.js` | `ArvidHealth` | здоровье устройств от ядра DALI (`health_subscribe`, push): снимок, индексы area/device/entity, фолбэк-поллинг | `ArvidHaWebSocket`, `ArvidHaRegistry` |
 | `js/app-state.js` | `ARVID_APP`, `ARVID_RUNTIME` | синглтон runtime; инициализация; подписка; состав комнаты и группы света | всё выше |
 | `js/svg-utils.js` | `ArvidSvgUtils` | загрузка SVG, pan/zoom, экран↔viewBox, оверлей-слои | `ARVID_LOG` |
@@ -233,10 +233,16 @@ ArvidFloorPage.initHealth() → ARVID_APP.health.start()
 | Команда | Права | Возвращает |
 |---|---|---|
 | `visual_interface/ping` | — | `{ok, domain, version}` |
-| `visual_interface/layout/get` | — | `{layout}` |
-| `visual_interface/layout/save` | admin | `{layout}` |
+| `visual_interface/layout/get` | — | `{layout}` (несёт `meta.rev` — ревизию документа) |
+| `visual_interface/layout/save` | admin | `{layout}`; принимает `base_rev` → при расхождении ошибка `layout_conflict` |
+| `visual_interface/layout/ui/update` | admin | `{layout}` — **только `ui`** (тема). v0.2.0 |
+| `visual_interface/layout/devices/update` | admin | `{layout}` — **только переданные устройства**. v0.2.0 |
 | `visual_interface/layout/room/update` | admin | `{layout}` |
-| `visual_interface/layout/device/update` | admin | `{layout}` |
+
+> **Почему точечные записи (v0.2.0, долг A4).** Раньше фронт всегда слал ВЕСЬ документ:
+> смена темы на планшете со старой вкладкой затирала расстановку, сохранённую с ноутбука.
+> Плюс backend делал read-modify-write без блокировки. Теперь: `asyncio.Lock`, ревизия `meta.rev`,
+> и запись только своих ключей.
 
 Стор `visual_interface.layout` (структура): `building`, `floors`, `rooms`, `devices` (координаты),
 `ui.theme`, `meta`. HA остаётся источником этажей/комнат/сущностей — backend их НЕ дублирует.

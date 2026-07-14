@@ -16,6 +16,43 @@ class ArvidShellUi {
     return Array.from(this.getActiveRoot().querySelectorAll(selector));
   }
 
+  /**
+   * Плашка «нет связи» (v0.11.0, долг A3).
+   *
+   * Главная опасность обрыва — не в том, что интерфейс перестаёт работать, а в том, что он
+   * продолжает УБЕДИТЕЛЬНО ВЫГЛЯДЕТЬ рабочим: зоны горят, датчики показывают последние значения.
+   * Диспетчер верит картинке, которой уже несколько часов. Поэтому состояние связи должно быть
+   * видно на экране, а не только в консоли.
+   */
+  static initConnectionStatus() {
+    if (this._connectionStatusReady || !window.ARVID_APP?.ha) return;
+    this._connectionStatusReady = true;
+
+    ARVID_APP.ha.addStatusHandler((status) => this.renderConnectionStatus(status));
+  }
+
+  static renderConnectionStatus(status) {
+    let banner = document.querySelector("[data-connection-banner]");
+
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.className = "connection-banner";
+      banner.dataset.connectionBanner = "1";
+      banner.setAttribute("role", "status");
+      document.body.appendChild(banner);
+    }
+
+    const isOffline = status === "offline";
+    banner.textContent = isOffline
+      ? "Нет связи с Home Assistant — данные на экране устарели"
+      : "";
+    banner.classList.toggle("is-visible", isOffline);
+
+    // Пока связи нет, экран не отражает реальность: гасим интерактив, чтобы тап
+    // не выглядел «сработавшим», хотя команда никуда не ушла.
+    document.documentElement.classList.toggle("is-ha-offline", isOffline);
+  }
+
   static initViewportHeight() {
     if (!this._viewportHandler) {
       // Храним обработчик, чтобы не плодить одинаковые подписки при повторной инициализации страницы.
@@ -86,12 +123,22 @@ class ArvidShellUi {
       persistToHa: Boolean(options.persistToHa),
     });
 
+    /**
+     * Сохраняем ТОЛЬКО тему (v0.11.0, долг A4).
+     *
+     * Раньше здесь звался `saveLayout(ARVID_APP.layout)` — то есть смена темы отправляла
+     * ВЕСЬ документ из своей вкладки. Если в это время кто-то расставил устройства с другого
+     * устройства, его работа затиралась снимком часовой давности. Молча.
+     *
+     * Ответ сервера в `ARVID_APP.layout` тоже больше не подменяем целиком: в объекте могут
+     * лежать несохранённые правки редактора — забирем только ревизию и ui.
+     */
     if (options.persistToHa && window.ARVID_APP?.storage && window.ARVID_APP?.layout) {
       window.clearTimeout(this.themeSaveTimer);
       this.themeSaveTimer = window.setTimeout(() => {
-        ARVID_APP.storage.saveLayout(ARVID_APP.layout)
+        ARVID_APP.storage.updateUi({ theme })
           .then((layout) => {
-            ARVID_APP.layout = layout;
+            if (ARVID_APP.layout?.meta) ARVID_APP.layout.meta = layout?.meta || ARVID_APP.layout.meta;
             ARVID_LOG.info("shell", "Theme saved to HA layout", theme);
           })
           .catch((error) => {

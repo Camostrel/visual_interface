@@ -29,6 +29,7 @@ class ArvidRoomPage {
 
     await this.initData();
     ArvidShellUi.initTheme(ARVID_APP.layout);
+    ArvidShellUi.initConnectionStatus();   // плашка «нет связи» (A3)
     ArvidShellUi.initViewportHeight();
     ArvidShellUi.renderBrand(ARVID_APP.layout);
     ArvidShellUi.initPanelToggles();
@@ -42,6 +43,10 @@ class ArvidRoomPage {
     // start() идемпотентен: комнату можно открыть прямой ссылкой, минуя план этажа.
     ARVID_APP.health?.addUpdateHandler(() => this.handleHealthChanged());
     ARVID_APP.health?.start();
+
+    // Состав комнаты изменился в HA (устройству задали area, добавили лампу) — D5.
+    // Значение состояния карточки не пересобирает, а вот появление устройства — обязано.
+    ARVID_APP.registry.addCompositionHandler(() => this.handleCompositionChanged());
 
     this.initialized = true;
     await this.show(params);
@@ -123,6 +128,28 @@ class ArvidRoomPage {
     }
 
     this.scheduleStateUpdate();
+  }
+
+  /**
+   * Состав комнаты изменился (D5): в HA появилось/исчезло устройство, поменялась area.
+   * Раньше карточки застывали до перехода в другую комнату и обратно — `render*` вызывался
+   * только при смене комнаты. Теперь пересобираем состав и рисуем заново.
+   *
+   * В режиме редактирования перерисовку откладываем: она снесла бы DOM-маркер, который тянут.
+   */
+  handleCompositionChanged() {
+    if (!this.initialized || !this.areaId) return;
+
+    this.invalidateRoomEntityCache();
+
+    if (this.editMode) {
+      this._compositionDirty = true;
+      return;
+    }
+
+    this.renderDeviceMarkers();
+    this.renderControls();
+    this.updatePlanDeviceStates();
   }
 
   // Отпечаток состава недоступных устройств комнаты — чтобы не перерисовывать зря.
@@ -339,9 +366,24 @@ class ArvidRoomPage {
     document.querySelector("[data-room-subtitle]").textContent = `${this.floorId || "этаж не выбран"} / ${this.areaId}`;
 
     const container = document.querySelector("[data-room-svg]");
-    this.svg = await ArvidSvgUtils.loadSvgInto(container, this.getRoomSvg(), {
+
+    // Быстрый переход между комнатами = две параллельные загрузки в один контейнер.
+    // Результат устаревшей выбрасываем, иначе в DOM останется план не той комнаты (v0.11.0).
+    const token = Symbol("room-load");
+    this._roomLoadToken = token;
+
+    const svg = await ArvidSvgUtils.loadSvgInto(container, this.getRoomSvg(), {
       fallbackUrl: ARVID_CONFIG.DEFAULT_ROOM_SVG,
     });
+
+    if (this._roomLoadToken !== token) {
+      ARVID_LOG.debug(this.logArea, "План комнаты устарел, пока грузился — результат отброшен", {
+        areaId: this.areaId,
+      });
+      return;
+    }
+
+    this.svg = svg;
 
     // Управление планом комнаты: колесо, drag плана, pinch и кнопки +/-.
     this.panZoom = ArvidSvgUtils.setupPanZoom(container, this.svg, {
@@ -1213,6 +1255,12 @@ class ArvidRoomPage {
 
     ARVID_LOG.info(this.logArea, "Room edit mode toggled", { enabled, areaId: this.areaId });
 
+    // Пока редактировали, состав мог измениться в HA — догоняем на выходе (см. D5).
+    if (!enabled && this._compositionDirty) {
+      this._compositionDirty = false;
+      this.invalidateRoomEntityCache();
+    }
+
     if (options.skipRender) return;
     this.renderDeviceMarkers();
     this.renderControls();
@@ -1381,12 +1429,21 @@ class ArvidRoomPage {
     this.renderControls();
   }
 
-  markEditDirty(reason) {
+  /**
+   * Пометить правку. `entityId` копится в _editTouched: при сохранении отправим ТОЛЬКО эти
+   * устройства, а не весь документ (A4).
+   */
+  markEditDirty(reason, entityId = null) {
     this.editDirty = true;
+    if (entityId) {
+      this._editTouched = this._editTouched || new Set();
+      this._editTouched.add(entityId);
+    }
+
     this.setEditStatus("Есть несохранённые изменения");
     const saveButton = document.querySelector("[data-edit-save]");
     if (saveButton) saveButton.disabled = false;
-    ARVID_LOG.debug(this.logArea, "Room layout marked dirty", { reason });
+    ARVID_LOG.debug(this.logArea, "Room layout marked dirty", { reason, entityId });
   }
 
   setEditStatus(text) {
@@ -1399,26 +1456,60 @@ class ArvidRoomPage {
     if (status) status.textContent = this.editStatusText;
   }
 
+  /**
+   * Сохранение разметки — ТОЧЕЧНОЕ (v0.11.0, долг A4).
+   *
+   * Раньше уходил `saveLayout(ARVID_APP.layout)` — весь документ снимком из этой вкладки.
+   * Расстановка, сделанная параллельно с другого устройства, затиралась молча. Теперь шлём
+   * только те entity_id, которые правили в этой сессии редактирования.
+   */
   async saveEditChanges() {
+    const touched = [...(this._editTouched || [])];
+
+    if (!touched.length) {
+      this.editDirty = false;
+      this.setEditStatus("Изменений нет");
+      return;
+    }
+
     this.setEditStatus("Сохраняю разметку...");
+
+    const devices = {};
+    touched.forEach((entityId) => {
+      const device = ARVID_APP.layout?.devices?.[entityId];
+      if (device) devices[entityId] = device;
+    });
+
     try {
-      ARVID_APP.layout = await ARVID_APP.storage.saveLayout(ARVID_APP.layout);
+      const layout = await ARVID_APP.storage.updateDevices(devices);
+
+      // Сервер вернул актуальный документ (в нём и чужие правки) — принимаем его целиком.
+      ARVID_APP.layout = layout;
+      this._editTouched = new Set();
       this.editDirty = false;
       this.invalidateRoomEntityCache(); // расстановка меняет набор «своих» сущностей
       this.setEditStatus("Разметка сохранена");
-      ARVID_LOG.info(this.logArea, "Room layout saved from edit mode", { areaId: this.areaId });
+      ARVID_LOG.info(this.logArea, "Room layout saved from edit mode", {
+        areaId: this.areaId,
+        devices: touched.length,
+      });
     } catch (error) {
       this.setEditStatus("Ошибка сохранения разметки");
       ARVID_LOG.error(this.logArea, "Failed to save room layout", error);
       throw error;
     }
-    if (this.editMode) this.renderControls();
+    if (this.editMode) {
+      this.renderDeviceMarkers();
+      this.renderControls();
+    }
   }
 
   async discardEditChanges() {
     // Отбрасываем несохранённые правки: перечитываем layout из HA storage.
     ARVID_APP.layout = await ARVID_APP.storage.getLayout();
+    this._editTouched = new Set();
     this.editDirty = false;
+    this.invalidateRoomEntityCache();   // состав «своих» вернулся к сохранённому
     this.setEditStatus("Изменения отменены");
     ARVID_LOG.info(this.logArea, "Room layout changes discarded", { areaId: this.areaId });
   }
@@ -1452,7 +1543,7 @@ class ArvidRoomPage {
     layout.y = Math.round(y * 10) / 10;
     layout.visible = true;
 
-    this.markEditDirty(reason);
+    this.markEditDirty(reason, entityId);
     this.renderDeviceMarkers();
     this.renderControls();
 
@@ -1484,7 +1575,7 @@ class ArvidRoomPage {
     const layout = this.ensureDeviceLayout(this.editSelectedEntityId);
     layout.visible = false;
 
-    this.markEditDirty("устройство убрано с плана");
+    this.markEditDirty("устройство убрано с плана", this.editSelectedEntityId);
     this.renderDeviceMarkers();
     this.renderControls();
   }
@@ -1554,7 +1645,7 @@ class ArvidRoomPage {
     this.deviceDrag = null;
 
     if (moved) {
-      this.markEditDirty("маркер перенесён перетаскиванием");
+      this.markEditDirty("маркер перенесён перетаскиванием", entityId);
       ARVID_LOG.info(this.logArea, "Device drag finished", { entityId });
     }
 

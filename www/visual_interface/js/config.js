@@ -40,7 +40,7 @@
   }
 
   window.ARVID_CONFIG = {
-    VERSION: "v0.10.2",
+    VERSION: "v0.11.0",
 
     // If empty, current browser origin is used, for example http://homeassistant.local:8123
     HA_BASE_URL: "",
@@ -60,6 +60,9 @@
     resolveAssetUrl,
 
     // Logging: debug | info | warn | error
-    LOG_LEVEL: "debug",
+    // На объекте — "warn": уровень debug логировал КАЖДОЕ событие HA (включая поток люксов)
+    // в самом горячем пути. Для отладки поднимается без правки файла:
+    //   localStorage.setItem("arvid.logLevel", "debug")
+    LOG_LEVEL: "warn",
   };
 })();

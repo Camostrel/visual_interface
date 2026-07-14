@@ -124,10 +124,18 @@ window.ARVID_RUNTIME = {
     ARVID_APP.storage = new ArvidFloorplanStorage(ARVID_APP.ha);
     await ARVID_APP.storage.ping();
     ARVID_APP.registry = await new ArvidHaRegistry(ARVID_APP.ha).loadAll();
+    // Состав (сущности/устройства/области) меняется в HA и без нашего участия: задали area,
+    // переименовали лампу, добавили датчик. Слушаем реестры, чтобы не застывать до F5 (D5).
+    await ARVID_APP.registry.subscribeRegistryUpdates();
     ARVID_APP.layout = await ARVID_APP.storage.getLayout();
     // Здоровье устройств берём у ядра DALI. Объект создаём сразу, снимок запрашивает страница
     // (ядра может не быть — тогда модуль сам себя отключит, остальной интерфейс не страдает).
     ARVID_APP.health = new ArvidHealth(ARVID_APP.ha, ARVID_APP.registry);
+
+    // Реконнект: пока связи не было, свет могли включить, датчики — сработать. Наши состояния
+    // устарели, а событий за время обрыва нам никто не перешлёт. Поэтому после восстановления
+    // связи перечитываем снимок целиком (v0.11.0, A3).
+    ARVID_APP.ha.addStatusHandler((status) => this.handleConnectionStatus(status));
 
     ARVID_LOG.info(logArea, "Shared ARVID data loaded", {
       floors: ARVID_APP.registry.floors.length,
@@ -136,6 +144,29 @@ window.ARVID_RUNTIME = {
     });
 
     return ARVID_APP;
+  },
+
+  handleConnectionStatus(status) {
+    const wasOffline = this._connectionLost === true;
+
+    if (status === "offline") {
+      this._connectionLost = true;
+      return;
+    }
+
+    if (status !== "online" || !wasOffline) return;
+
+    this._connectionLost = false;
+    ARVID_LOG.info("runtime", "Связь восстановлена — перечитываем состояния HA");
+
+    ARVID_APP.registry.loadAll()
+      .then(() => {
+        // Состав/состояния могли измениться за время обрыва — просим страницы перерисоваться.
+        ARVID_APP.registry.notifyComposition("связь восстановлена");
+      })
+      .catch((error) => {
+        ARVID_LOG.error("runtime", "Не удалось перечитать состояния после реконнекта", error);
+      });
   },
 
   addStateHandler(handler) {

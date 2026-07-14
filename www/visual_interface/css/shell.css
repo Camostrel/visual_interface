@@ -1055,3 +1055,49 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+/* ── Плашка «нет связи» (v0.11.0, долг A3) ────────────────────────────────────
+   Обрыв связи опасен не тем, что интерфейс не работает, а тем, что он продолжает
+   убедительно ВЫГЛЯДЕТЬ рабочим: зоны горят, датчики показывают последние значения.
+   Диспетчер поверит картинке, которой уже несколько часов. Поэтому — видимая плашка. */
+.connection-banner {
+  position: fixed;
+  z-index: 4000;
+  left: 50%;
+  top: 12px;
+  transform: translate(-50%, -140%);
+  max-width: calc(100vw - 24px);
+  padding: 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger), transparent 45%);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger), var(--panel-strong) 78%);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+  transition: transform 220ms ease, opacity 220ms ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.connection-banner.is-visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+/* Нет связи — команда всё равно никуда не уйдёт. Гасим органы управления, чтобы тап
+   не выглядел «сработавшим»: показания на экране устарели, врать о них нельзя. */
+.is-ha-offline .room-zone,
+.is-ha-offline .device-marker,
+.is-ha-offline .panel-action,
+.is-ha-offline .control-card button,
+.is-ha-offline .control-card input {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connection-banner {
+    transition-duration: 0.01ms;
+  }
+}
