@@ -40,7 +40,7 @@
   }
 
   window.ARVID_CONFIG = {
-    VERSION: "v0.9.0",
+    VERSION: "v0.9.1",
 
     // If empty, current browser origin is used, for example http://homeassistant.local:8123
     HA_BASE_URL: "",

@@ -1,23 +1,43 @@
 /* Floor page markers and cards. */
 
-/* Интерактивные зоны комнат на плане этажа (v0.4.0).
-   Сам SVG задаёт .room-zone прозрачными; подсветку рисуем здесь. */
+/* Зоны помещений. Сам SVG задаёт .room-zone прозрачными; вид рисуем здесь.
+
+   ⚠ Зона живёт в ДВУХ планах, и ведёт себя в них ПО-РАЗНОМУ (v0.9.1):
+     • на плане ЭТАЖА  — это орган управления: наводится, тапается (свет),
+       двойным тапом открывает комнату, красится по режиму карты;
+     • в плане КОМНАТЫ — это просто контур помещения. Управление здесь точечное,
+       по устройствам, поэтому подсвечивать всю комнату при наведении незачем:
+       клик по ней ничего не делает, а курсор-палец обещает действие, которого нет.
+   Поэтому интерактивные правила скоупим на [data-floor-svg], а не на .room-zone вообще:
+   контейнер .svg-stage общий у обоих планов, и без скоупа комната ловила бы hover этажа. */
 .room-zone {
-  cursor: pointer;
   fill: transparent;
   stroke: transparent;
   stroke-width: 2;
   transition: fill 0.18s ease, stroke 0.18s ease;
+}
+
+/* ── План ЭТАЖА: зона интерактивна ──────────────────────────────────────────── */
+[data-floor-svg] .room-zone {
+  cursor: pointer;
   /* Убираем double-tap-zoom браузера: двойной тап — наш жест перехода в комнату. */
   touch-action: manipulation;
 }
 
 /* Наведение и активная — СИНИЙ выбор. Не акцент: акцент зелёный и путался бы
    с режимом «Присутствие», где зелёный = движение (v0.8.2). */
-.room-zone:hover,
-.room-zone.is-active {
+[data-floor-svg] .room-zone:hover,
+[data-floor-svg] .room-zone.is-active {
   fill: var(--zone-select);
   stroke: var(--zone-select-line);
+}
+
+/* ── План КОМНАТЫ: зона — только контур, кликов не ловит ────────────────────── */
+[data-room-svg] .room-zone {
+  pointer-events: none;
+  fill: transparent;
+  stroke: color-mix(in srgb, currentColor, transparent 82%);
+  stroke-width: 1;
 }
 
 /* ── Режимы карты (v0.8.0) ────────────────────────────────────────────────────
@@ -27,16 +47,16 @@
 
 /* «Освещение» — режим по умолчанию (на случай, если JS ещё не выставил атрибут).
    Включён свет — прозрачный оранжевый, перекрывает hover-заливку. */
-.svg-stage:not([data-map-mode]) .room-zone.has-light-on,
-.svg-stage[data-map-mode="light"] .room-zone.has-light-on {
+[data-floor-svg]:not([data-map-mode]) .room-zone.has-light-on,
+[data-floor-svg][data-map-mode="light"] .room-zone.has-light-on {
   fill: rgba(255, 150, 40, 0.20);
   stroke: rgba(255, 150, 40, 0.45);
 }
 
 /* Свет — статичная заливка, поэтому hover может её усилить и добавить синий контур. */
-.svg-stage:not([data-map-mode]) .room-zone.has-light-on:hover,
-.svg-stage[data-map-mode="light"] .room-zone.has-light-on:hover,
-.svg-stage[data-map-mode="light"] .room-zone.has-light-on.is-active {
+[data-floor-svg]:not([data-map-mode]) .room-zone.has-light-on:hover,
+[data-floor-svg][data-map-mode="light"] .room-zone.has-light-on:hover,
+[data-floor-svg][data-map-mode="light"] .room-zone.has-light-on.is-active {
   fill: rgba(255, 150, 40, 0.30);
   stroke: var(--zone-select-line);
 }
@@ -44,14 +64,14 @@
 /* «Присутствие» — свет игнорируется, зоны с движением ПУЛЬСИРУЮТ зелёным.
    Пульс медленнее диагностического (2.6s против 1.7s): движение — это норма,
    а не авария, и мигать оно должно спокойнее. */
-.svg-stage[data-map-mode="presence"] .room-zone.has-motion {
+[data-floor-svg][data-map-mode="presence"] .room-zone.has-motion {
   stroke: rgba(52, 199, 123, 0.55);
   animation: arvid-zone-motion-pulse 2.6s ease-in-out infinite;
 }
 
 /* Заливку пульсирующей зоны меняет анимация (она сильнее обычных правил),
    поэтому выбор показываем синим КОНТУРОМ. */
-.svg-stage[data-map-mode="presence"] .room-zone.has-motion:hover {
+[data-floor-svg][data-map-mode="presence"] .room-zone.has-motion:hover {
   stroke: var(--zone-select-line);
   stroke-width: 3;
 }
@@ -64,28 +84,28 @@
 /* «Диагностика» — карта гасится до серого, цветом остаются только проблемы.
    Серость даём цветом линий плана (они наследуют currentColor), а не filter: grayscale()
    на контейнере: фильтр обесцветил бы и сам красный пульс. */
-.svg-stage[data-map-mode="diagnostics"] .arvid-svg-plan {
+[data-floor-svg][data-map-mode="diagnostics"] .arvid-svg-plan {
   color: var(--muted);
 }
 
 /* Устройства не на связи — красный пульс (данные ядра DALI: health_data). */
-.svg-stage[data-map-mode="diagnostics"] .room-zone.has-offline {
+[data-floor-svg][data-map-mode="diagnostics"] .room-zone.has-offline {
   stroke: rgba(255, 76, 76, 0.65);
   animation: arvid-zone-offline-pulse 1.7s ease-in-out infinite;
 }
 
-.svg-stage[data-map-mode="diagnostics"] .room-zone.has-offline:hover {
+[data-floor-svg][data-map-mode="diagnostics"] .room-zone.has-offline:hover {
   stroke: var(--zone-select-line);
   stroke-width: 3;
 }
 
 /* Устройство отвечает, но данные подозрительные (залипло движение, люкс не меняется). */
-.svg-stage[data-map-mode="diagnostics"] .room-zone.has-anomaly {
+[data-floor-svg][data-map-mode="diagnostics"] .room-zone.has-anomaly {
   fill: rgba(255, 186, 60, 0.20);
   stroke: rgba(255, 186, 60, 0.5);
 }
 
-.svg-stage[data-map-mode="diagnostics"] .room-zone.has-anomaly:hover {
+[data-floor-svg][data-map-mode="diagnostics"] .room-zone.has-anomaly:hover {
   fill: rgba(255, 186, 60, 0.30);
   stroke: var(--zone-select-line);
 }
@@ -97,12 +117,12 @@
 
 /* Пульс — только украшение: при reduce отдаём статичную заливку того же смысла. */
 @media (prefers-reduced-motion: reduce) {
-  .svg-stage[data-map-mode="diagnostics"] .room-zone.has-offline {
+  [data-floor-svg][data-map-mode="diagnostics"] .room-zone.has-offline {
     animation: none;
     fill: rgba(255, 76, 76, 0.30);
   }
 
-  .svg-stage[data-map-mode="presence"] .room-zone.has-motion {
+  [data-floor-svg][data-map-mode="presence"] .room-zone.has-motion {
     animation: none;
     fill: rgba(52, 199, 123, 0.26);
   }
