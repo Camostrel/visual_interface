@@ -10,7 +10,9 @@
   --faint: rgba(236, 247, 244, 0.36);
   --accent: #27d09a;
   --accent-soft: rgba(39, 208, 154, 0.16);
-  --warning: #f5a524;
+  /* Тёмный конец акцентного градиента (кнопки-действия). Без него linear-gradient
+     становился невалидным и кнопка теряла фон (v0.10.2). */
+  --accent-strong: #12a97a;
   --danger: #ff6b5f;
   --shadow: 0 20px 60px rgba(0, 0, 0, 0.42);
   --svg-plan-line: rgba(210, 226, 238, 0.82);
@@ -31,7 +33,7 @@
   --faint: rgba(16, 32, 41, 0.38);
   --accent: #0d9f75;
   --accent-soft: rgba(13, 159, 117, 0.12);
-  --warning: #b97500;
+  --accent-strong: #0a7f5e;
   --danger: #cc392f;
   --shadow: 0 20px 60px rgba(30, 65, 78, 0.16);
   --svg-plan-line: rgba(58, 75, 92, 0.78);

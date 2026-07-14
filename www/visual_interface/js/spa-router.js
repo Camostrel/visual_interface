@@ -149,7 +149,6 @@ class ArvidSpaApp {
   }
 
   beforeViewChange() {
-    this.pages.floor?.closeRoomQuickView?.();
     this.pages.floor?.closeMobileAccordionOverlay?.();
     this.pages.room?.closeDevicePopup?.();
   }

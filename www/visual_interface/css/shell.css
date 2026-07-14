@@ -80,9 +80,7 @@
   letter-spacing: 0.05em;
 }
 
-.brand small,
-.entity-line small,
-.entity-control-line small {
+.brand small {
   display: block;
   margin-top: 3px;
   color: var(--faint);
@@ -261,10 +259,6 @@
   line-height: 1.3;
 }
 
-.floor-summary-list {
-  display: none;
-}
-
 .floor-summary-card.is-open .floor-summary-toggle {
   border-color: color-mix(in srgb, var(--accent), transparent 35%);
   background: var(--accent-soft);
@@ -318,8 +312,7 @@
   letter-spacing: 0;
 }
 
-.floor-summary-room,
-.warning-item {
+.floor-summary-room {
   width: 100%;
   min-height: 44px;
   display: flex;
@@ -337,44 +330,22 @@
 }
 
 .floor-summary-room:hover,
-.warning-item:hover,
 .floor-summary-toggle:hover {
   border-color: color-mix(in srgb, var(--accent), transparent 40%);
   background: var(--accent-soft);
 }
 
 .floor-summary-room small,
-.warning-item small,
-.warning-item span,
 .mode-card.is-demo small {
   color: var(--faint);
 }
 
-.warning-item strong {
-  font-size: 13px;
-}
-
-.warning-item span {
-  font-size: 12px;
-}
-
 .floor-summary-room span,
-.floor-summary-room small,
-.warning-item strong,
-.warning-item span,
-.warning-item small {
+.floor-summary-room small {
   width: 100%;
   display: block;
   white-space: normal;
   overflow-wrap: anywhere;
-}
-
-.warning-high {
-  border-color: color-mix(in srgb, #ff8c42, transparent 45%);
-}
-
-.warning-low {
-  border-color: color-mix(in srgb, #62a8ff, transparent 45%);
 }
 
 .mode-card.is-demo {
@@ -979,15 +950,10 @@
   .right-panel .mode-card,
   .right-panel .panel-action,
   .right-panel .floor-summary-toggle,
-  .right-panel .floor-summary-room,
-  .right-panel .warning-item {
+  .right-panel .floor-summary-room {
     min-height: 40px;
     padding: 8px 10px;
     border-radius: 12px;
-  }
-
-  .floor-summary-list {
-    display: none;
   }
 
   .floor-summary-popover {
@@ -1004,7 +970,6 @@
   .right-panel .panel-action,
   .right-panel .floor-summary-toggle,
   .right-panel .floor-summary-room,
-  .right-panel .warning-item,
   .right-panel .mobile-accordion-toggle {
     line-height: 1.3;
   }
@@ -1030,21 +995,6 @@
   margin: 0 auto;
 }
 
-@media (max-width: 760px) and (orientation: portrait) {
-  .right-panel.is-collapsed .brand {
-    justify-content: space-between;
-  }
-
-  .right-panel.is-collapsed .brand-spacer {
-    display: block;
-  }
-
-  .right-panel.is-collapsed .panel-toggle-button {
-    margin-left: auto;
-    margin-right: 0;
-  }
-}
-
 /* SPA: каждый экран живёт в своём view-контейнере, скрытые views не занимают место. */
 .arvid-spa,
 .spa-view {
@@ -1061,26 +1011,6 @@
 /* Лого не видно когда левая панель свёрнута */
 .side-panel.is-collapsed [data-company-logo] {
   display: none;
-}
-
-/* Карточки предупреждений: восстанавливаем колоночный layout и сбрасываем стиль strong-бейджа */
-.warning-item.floor-summary-toggle {
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 4px;
-}
-
-.warning-item.floor-summary-toggle strong {
-  display: block;
-  min-width: 0;
-  min-height: 0;
-  background: none;
-  border-radius: 0;
-  color: inherit;
-  font-size: 13px;
-  letter-spacing: inherit;
-  line-height: 1.3;
 }
 
 /* v0.9.0: анимации SPA-переходов через View Transitions API */

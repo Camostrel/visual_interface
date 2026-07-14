@@ -118,9 +118,7 @@
   text-align: right;
 }
 
-.segmented-actions,
-.mini-actions,
-.control-row {
+.segmented-actions {
   display: flex;
   gap: 8px;
 }
@@ -147,22 +145,15 @@
   flex: 1;
 }
 
-.compact-status-list,
 .sensor-status-list {
   display: grid;
   gap: 8px;
 }
 
-.compact-status-list {
-  grid-template-columns: auto 1fr;
-}
-
-.compact-status-list span,
 .sensor-status-line span {
   color: var(--muted);
 }
 
-.compact-status-list strong,
 .sensor-status-line strong {
   color: var(--accent);
   text-align: right;
@@ -181,53 +172,8 @@
   border-bottom: 0;
 }
 
-.entity-line,
-.entity-control-line {
-  padding: 10px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--panel-soft), transparent 20%);
-  border: 1px solid var(--border);
-}
-
-.entity-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.entity-line span {
-  color: var(--accent);
-}
-
-.entity-control-line em {
-  display: block;
-  margin-top: 6px;
-  color: var(--muted);
-  font-style: normal;
-}
-
 .device-marker {
   cursor: pointer;
-}
-
-.device-marker circle,
-.device-marker rect:not(.device-marker-hit):not(.device-marker-selection) {
-  fill: color-mix(in srgb, var(--panel-strong), transparent 5%);
-  stroke: color-mix(in srgb, var(--muted), transparent 40%);
-  stroke-width: 1.8;
-}
-
-.device-marker.is-on circle,
-.device-marker.is-on rect:not(.device-marker-hit):not(.device-marker-selection) {
-  stroke: var(--accent);
-  fill: var(--accent-soft);
-}
-
-.device-marker-icon {
-  fill: var(--text);
-  font-size: 13px;
-  font-weight: 700;
-  pointer-events: none;
 }
 
 @media (max-width: 1200px) {
@@ -377,9 +323,7 @@
     font-size: 12px;
   }
 
-  .segmented-actions,
-  .mini-actions,
-  .control-row {
+  .segmented-actions {
     gap: 6px;
   }
 
@@ -394,7 +338,6 @@
     font-size: 13px;
   }
 
-  .compact-status-list,
   .sensor-status-list {
     gap: 5px;
     font-size: 12px;
@@ -535,11 +478,6 @@
 
 .device-marker.device-kind-panel {
   --device-marker-accent: #b48fd6;
-}
-
-.device-marker.device-kind-motion,
-.device-marker.device-kind-illuminance {
-  --device-marker-accent: #7ab0d0;
 }
 
 .device-marker circle,
@@ -815,11 +753,7 @@
   fill: color-mix(in srgb, var(--device-marker-accent), #ffffff 45%);
   font-size: 14px;
   font-weight: 800;
-}
-
-/* Цвет SVG-плана берётся из темы, сам SVG остаётся без собственного фона. */
-.arvid-svg-plan {
-  color: var(--svg-plan-line);
+  pointer-events: none;
 }
 
 .device-marker-image {
@@ -911,8 +845,7 @@
   margin-top: 12px;
 }
 
-.device-popup-actions button,
-.device-popup-stepper button {
+.device-popup-actions button {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--panel-soft);
@@ -931,18 +864,5 @@
 .device-popup-metric strong {
   display: block;
   margin-top: 4px;
-  font-size: 22px;
-}
-
-.device-popup-stepper {
-  display: grid;
-  grid-template-columns: 44px 1fr 44px;
-  gap: 8px;
-  align-items: center;
-  margin-top: 12px;
-}
-
-.device-popup-stepper strong {
-  text-align: center;
   font-size: 22px;
 }

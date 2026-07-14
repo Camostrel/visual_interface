@@ -403,7 +403,6 @@ class ArvidFloorPage {
       return;
     }
 
-    this.closeRoomQuickView();
     ARVID_APP.currentFloorId = floorId;
     ARVID_LOG.info(this.logArea, "Selecting floor", floorId);
 
@@ -1017,33 +1016,6 @@ class ArvidFloorPage {
     window.ARVID_SPA?.navigate("room", Object.fromEntries(params.entries()));
   }
 
-  formatRoomMetricValue(state, fallbackUnit = "") {
-    if (!state) return "—";
-    const unit = state.attributes?.unit_of_measurement || fallbackUnit;
-    return `${state.state}${unit ? ` ${unit}` : ""}`;
-  }
-
-  getRoomQuickViewMetrics(stats) {
-    // Карточка «Свет» должна оставаться первой: клик по ней переключает свет помещения.
-    return [
-      {
-        label: "Свет",
-        value: stats.lightsTotal ? `${stats.lightOnCount}/${stats.lightsTotal}` : "нет",
-        active: stats.hasLightOn,
-      },
-      {
-        label: "Движение",
-        value: stats.motionActive ? "есть" : "нет",
-        active: stats.motionActive,
-      },
-      {
-        label: "Освещённость",
-        value: this.formatRoomMetricValue(stats.luxSensor, "lx"),
-        active: Boolean(stats.luxSensor),
-      },
-    ];
-  }
-
   bindRoomZones() {
     if (!this.svg) return;
 
@@ -1266,10 +1238,6 @@ class ArvidFloorPage {
     if (!this.svg) return;
     this.bindRoomZones();
     this.applyZoneStateClasses();
-
-    if (this.quickViewAreaId) {
-      this.refreshRoomQuickView();
-    }
   }
 
   /**
@@ -1291,184 +1259,6 @@ class ArvidFloorPage {
       zone.classList.toggle("has-offline", stats.offlineCount > 0);
       zone.classList.toggle("has-anomaly", stats.offlineCount === 0 && stats.anomalyCount > 0);
     });
-  }
-
-  getRoomZoneCenter(areaId) {
-    const zone = this.svg?.querySelector(`.room-zone[data-room-id="${CSS.escape(areaId)}"]`);
-    if (!zone || typeof zone.getBBox !== "function") return null;
-
-    try {
-      const box = zone.getBBox();
-      const point = this.svg.createSVGPoint();
-      point.x = box.x + box.width / 2;
-      point.y = box.y + box.height / 2;
-      const screenPoint = point.matrixTransform(this.svg.getScreenCTM());
-      return { x: screenPoint.x, y: screenPoint.y };
-    } catch (error) {
-      ARVID_LOG.warn(this.logArea, "Failed to calculate room zone center", { areaId, error });
-      return null;
-    }
-  }
-
-  getQuickViewPosition(areaId, event) {
-    // При обновлении состояния (event=null) сохраняем текущую позицию без пересчёта.
-    if (!event && this.quickView?.classList.contains("is-open")) {
-      return {
-        left: parseFloat(this.quickView.style.getPropertyValue("--quick-view-left")) || 16,
-        top: parseFloat(this.quickView.style.getPropertyValue("--quick-view-top")) || 16,
-        width: parseFloat(this.quickView.style.getPropertyValue("--quick-view-width")) || 320,
-      };
-    }
-
-    const viewportWidth = window.visualViewport?.width || window.innerWidth;
-    const viewportHeight = window.visualViewport?.height || window.innerHeight;
-    const viewportLeft = window.visualViewport?.offsetLeft || 0;
-    const viewportTop = window.visualViewport?.offsetTop || 0;
-    const padding = 12;
-    const width = Math.min(320, viewportWidth - padding * 2);
-    const height = 290;
-    const anchor = event?.clientX !== undefined
-      ? { x: event.clientX, y: event.clientY }
-      : this.getRoomZoneCenter(areaId) || { x: viewportLeft + viewportWidth / 2, y: viewportTop + viewportHeight / 2 };
-
-    let left = anchor.x + 14;
-    let top = anchor.y + 14;
-
-    if (left + width > viewportLeft + viewportWidth - padding) {
-      left = anchor.x - width - 14;
-    }
-
-    if (top + height > viewportTop + viewportHeight - padding) {
-      top = anchor.y - height - 14;
-    }
-
-    left = Math.max(viewportLeft + padding, Math.min(left, viewportLeft + viewportWidth - width - padding));
-    top = Math.max(viewportTop + padding, Math.min(top, viewportTop + viewportHeight - height - padding));
-
-    return { left, top, width };
-  }
-
-  ensureRoomQuickView() {
-    if (this.quickView) return this.quickView;
-
-    const quickView = document.createElement("aside");
-    quickView.className = "floor-room-quick-view";
-    quickView.setAttribute("role", "dialog");
-    quickView.setAttribute("aria-live", "polite");
-    document.body.appendChild(quickView);
-
-    if (!this._quickViewCloseBound) {
-      this._quickViewCloseBound = true;
-
-      document.addEventListener("pointerdown", (event) => {
-        if (!this.quickView?.classList.contains("is-open")) return;
-        if (this.quickView.contains(event.target)) return;
-        if (event.target.closest?.(".room-zone")) return;
-        this.closeRoomQuickView();
-      }, true);
-
-      document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") this.closeRoomQuickView();
-      });
-    }
-
-    this.quickView = quickView;
-    return quickView;
-  }
-
-  openRoomQuickView(areaId, event = null) {
-    const area = ARVID_APP.registry.areas.find((item) => item.area_id === areaId);
-    if (!area) {
-      ARVID_LOG.warn(this.logArea, "Room quick view skipped: area not found", { areaId });
-      return;
-    }
-
-    this.quickViewAreaId = areaId;
-    this.svg?.querySelectorAll(".room-zone").forEach((zone) => {
-      zone.classList.toggle("is-active", zone.dataset.roomId === areaId);
-    });
-
-    this.refreshRoomQuickView(event);
-
-    ARVID_LOG.info(this.logArea, "Room quick view opened", {
-      areaId,
-      floorId: ARVID_APP.currentFloorId,
-    });
-  }
-
-  refreshRoomQuickView(event = null) {
-    if (!this.quickViewAreaId) return;
-
-    const areaId = this.quickViewAreaId;
-    const area = ARVID_APP.registry.areas.find((item) => item.area_id === areaId);
-    if (!area) {
-      this.closeRoomQuickView();
-      return;
-    }
-
-    const stats = this.getRoomStats(areaId);
-    const metrics = this.getRoomQuickViewMetrics(stats);
-    const params = new URLSearchParams();
-    params.set("area_id", areaId);
-    params.set("floor_id", ARVID_APP.currentFloorId);
-
-    const quickView = this.ensureRoomQuickView();
-    quickView.innerHTML = `
-      <div class="floor-room-quick-view__header">
-        <div>
-          <span>Помещение</span>
-          <strong>${area.name || areaId}</strong>
-        </div>
-        <button type="button" data-quick-view-close aria-label="Закрыть">×</button>
-      </div>
-      <div class="floor-room-quick-view__metrics">
-        ${metrics.map((metric, index) => `
-          <div class="floor-room-quick-view__metric ${metric.active ? "is-active" : ""} ${index === 0 && stats.lightsTotal > 0 ? "is-clickable" : ""}" ${index === 0 && stats.lightsTotal > 0 ? "data-quick-view-light-toggle" : ""}>
-            <span>${metric.label}</span>
-            <strong>${metric.value}</strong>
-          </div>
-        `).join("")}
-      </div>
-      <a class="floor-room-quick-view__open" href="index.html?view=room&${params.toString()}" data-spa-link>Открыть помещение</a>
-    `;
-
-    quickView.querySelector("[data-quick-view-close]")?.addEventListener("click", () => this.closeRoomQuickView());
-    quickView.querySelector("[data-quick-view-light-toggle]")?.addEventListener("click", () => {
-      const lightEntityIds = ARVID_APP.registry.getEntitiesByDomainForArea(areaId, ["light"])
-        .map((state) => state.entity_id);
-      if (!lightEntityIds.length) return;
-      const action = stats.hasLightOn ? "turn_off" : "turn_on";
-      ARVID_APP.ha.callService("light", action, {}, { entity_id: lightEntityIds })
-        .catch((err) => ARVID_LOG.error(this.logArea, "Quick View: ошибка переключения света", err));
-    });
-
-    const position = this.getQuickViewPosition(areaId, event);
-    quickView.style.setProperty("--quick-view-left", `${position.left}px`);
-    quickView.style.setProperty("--quick-view-top", `${position.top}px`);
-    quickView.style.setProperty("--quick-view-width", `${position.width}px`);
-
-    // Точка раскрытия Quick View — позиция клика относительно карточки.
-    const anchor = event?.clientX !== undefined
-      ? { x: event.clientX, y: event.clientY }
-      : { x: position.left, y: position.top };
-    quickView.style.setProperty("--quick-view-origin-x", `${Math.max(0, Math.min(anchor.x - position.left, position.width))}px`);
-    quickView.style.setProperty("--quick-view-origin-y", `${Math.max(0, Math.min(anchor.y - position.top, 290))}px`);
-
-    // Сбрасываем в закрытое состояние и форсируем reflow — анимация запускается каждый раз.
-    quickView.classList.remove("is-open");
-    quickView.getBoundingClientRect();
-    quickView.classList.add("is-open");
-  }
-
-  closeRoomQuickView() {
-    if (!this.quickView?.classList.contains("is-open")) return;
-
-    const areaId = this.quickViewAreaId;
-    this.quickView.classList.remove("is-open");
-    this.quickViewAreaId = null;
-    this.svg?.querySelectorAll(".room-zone.is-active").forEach((zone) => zone.classList.remove("is-active"));
-
-    ARVID_LOG.debug(this.logArea, "Room quick view closed", { areaId });
   }
 
   getDisplayModes() {

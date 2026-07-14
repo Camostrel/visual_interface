@@ -55,26 +55,10 @@ class ArvidSvgUtils {
 
 
   static async fetchSvgText(svgUrl) {
-    // v0.8.2: убрали sessionStorage-кэш SVG.
-    // Браузерный HTTP cache оставляем через fetch cache=force-cache.
-    ArvidSvgUtils.cleanupLegacySvgCache();
+    // v0.8.2: своего кэша SVG нет — полагаемся на HTTP-кэш браузера.
     const response = await fetch(svgUrl, { cache: "force-cache" });
     if (!response.ok) throw new Error(`SVG HTTP ${response.status}`);
     return response.text();
-  }
-
-
-  static cleanupLegacySvgCache() {
-    if (ArvidSvgUtils._legacySvgCacheCleaned) return;
-    ArvidSvgUtils._legacySvgCacheCleaned = true;
-
-    try {
-      Object.keys(sessionStorage)
-        .filter((key) => key.startsWith("arvid.svg.cache."))
-        .forEach((key) => sessionStorage.removeItem(key));
-    } catch (error) {
-      ARVID_LOG.debug("svg", "Legacy SVG cache cleanup skipped", error);
-    }
   }
 
   static clientPointToSvg(svg, clientX, clientY) {
@@ -255,7 +239,7 @@ class ArvidSvgPanZoom {
     if (event.button !== undefined && event.button !== 0) return;
 
     // Не начинаем перемещение плана, когда пользователь нажал на интерактивный маркер.
-    if (event.target.closest?.(".room-badge, .room-zone, .floor-room-quick-view, .device-marker")) return;
+    if (event.target.closest?.(".room-zone, .device-marker")) return;
 
     this.svg.setPointerCapture?.(event.pointerId);
     this.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });

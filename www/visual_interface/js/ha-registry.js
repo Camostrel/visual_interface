@@ -18,7 +18,6 @@ class ArvidHaRegistry {
   }
 
   async loadAll() {
-    this.cleanupLegacyCache();
     ARVID_LOG.info(this.logArea, "Loading HA floors, areas, registries and states");
 
     const [floors, areas, entities, devices, states] = await Promise.all([
@@ -54,14 +53,6 @@ class ArvidHaRegistry {
     this.deviceById = new Map(this.devices.map((device) => [device.id, device]));
   }
 
-
-  cleanupLegacyCache() {
-    try {
-      sessionStorage.removeItem("arvid.haRegistry.cache.v1");
-    } catch (error) {
-      ARVID_LOG.debug(this.logArea, "Legacy HA cache cleanup skipped", error);
-    }
-  }
 
   getState(entityId) {
     return this.stateById.get(entityId) || null;
@@ -109,14 +100,6 @@ class ArvidHaRegistry {
 
   getEntitiesForArea(areaId) {
     return this.states.filter((state) => this.getAreaForEntity(state.entity_id) === areaId);
-  }
-
-  getEntitiesByDomainForArea(areaId, domains) {
-    const domainSet = new Set(domains);
-    return this.getEntitiesForArea(areaId).filter((state) => {
-      const domain = state.entity_id.split(".")[0];
-      return domainSet.has(domain);
-    });
   }
 
   updateStateFromEvent(event) {
