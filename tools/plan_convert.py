@@ -451,6 +451,10 @@ def clean_attrs(el):
         if key.startswith(f"{{{INKSCAPE_NS}}}") or key.startswith(f"{{{SODIPODI_NS}}}"):
             del el.attrib[key]
 
+    # clipPath из CAD мы удаляем вместе с <defs>, поэтому ссылку тоже надо снять:
+    # битый clip-path="url(#…)" — не «просто мусор», такой элемент браузер НЕ ОТРИСУЕТ.
+    el.attrib.pop("clip-path", None)
+
 
 def convert(tree, max_distance, verbose=False):
     root = tree.getroot()
@@ -533,6 +537,17 @@ def convert(tree, max_distance, verbose=False):
         layer.attrib.pop("transform", None)   # координаты уже абсолютные
 
     # --- 3. Чистка мусора CAD/Inkscape ----------------------------------------------
+    # Весь текст из плана убираем: имена устройств переехали в data-entity, а обозначения
+    # типа («MS» рядом со значком) интерфейс рисует сам иконкой. Текст на плане только
+    # мешает — он не масштабируется вместе с зумом и не знает о теме.
+    removed_text = 0
+    for parent in list(root.iter()):
+        for el in list(parent):
+            if el.tag.split("}")[-1] == "text":
+                parent.remove(el)
+                removed_text += 1
+    report["removed_text"] = removed_text
+
     for tag in ("namedview", "metadata"):
         for el in root.findall(f"{{{SODIPODI_NS}}}{tag}") + root.findall(f"{{{SVG_NS}}}{tag}"):
             root.remove(el)

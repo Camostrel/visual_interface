@@ -1,0 +1,95 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="314.00 73.00 78.00 59.00"><g id="room-zones"><rect id="kab_303" x="452.43" y="154.89" width="54.00" height="35.00" transform="matrix(1,0,0,1,-126.427,-69.8933)" class="room-zone" data-room-id="kab_303" />
+  </g><g id="walls"><path id="path12" d="M 325.52,86.00 L 325.52,86.00" class="plan-wall" stroke-width="0.48" />
+    <path id="path13" d="M 325.52,83.92 L 325.52,83.92" class="plan-wall" stroke-width="0.48" />
+    <path id="path14" d="M 325.52,15.92 L 325.52,83.92 L 325.52,86.00 L 325.52,83.92" class="plan-wall" stroke-width="0.80" />
+    <path id="path15" d="M 323.12,15.92 L 323.12,113.20" class="plan-wall" stroke-width="0.80" />
+    <path id="path16" d="M 325.52,113.20 L 325.52,86.00" class="plan-wall" stroke-width="0.80" />
+    <path id="path17" d="M 322.96,15.92 L 322.96,113.20" class="plan-wall" stroke-width="0.80" />
+    <path id="path18" d="M 325.52,113.20 L 325.52,86.32" class="plan-wall" stroke-width="0.80" />
+    <path id="path19" d="M 325.52,83.76 L 325.52,15.92" class="plan-wall" stroke-width="0.80" />
+    <path id="path20" d="M 321.68,117.68 L 311.28,117.68" class="plan-wall" stroke-width="0.80" />
+    <path id="path22" d="M 311.28,120.08 L 321.68,120.08" class="plan-wall" stroke-width="0.80" />
+    <path id="path32" d="M 311.28,120.08 L 311.28,120.24 L 321.68,120.24" class="plan-wall" stroke-width="0.80" />
+    <path id="path33" d="M 321.68,117.52 L 311.28,117.52" class="plan-wall" stroke-width="0.80" />
+    <path id="path141" d="M 378.48,117.84 L 376.72,117.84" class="plan-wall" stroke-width="0.48" />
+    <path id="path142" d="M 359.28,117.84 L 326.96,117.84" class="plan-wall" stroke-width="0.48" />
+    <path id="path143" d="M 376.72,119.92 L 378.48,119.92" class="plan-wall" stroke-width="0.48" />
+    <path id="path144" d="M 326.96,119.92 L 359.28,119.92" class="plan-wall" stroke-width="0.48" />
+    <path id="path145" d="M 377.36,117.52 L 376.72,117.52 L 377.36,117.52" class="plan-wall" stroke-width="0.80" />
+    <path id="path146" d="M 377.36,117.52 L 376.72,117.52 L 376.72,117.84 L 376.72,118.16 L 376.72,117.84 L 376.72,117.52" class="plan-wall" stroke-width="0.80" />
+    <path id="path147" d="M 376.72,120.24 L 376.72,119.92 L 376.72,120.24 L 377.36,120.24 L 376.72,120.24 L 378.48,120.24" class="plan-wall" stroke-width="0.80" />
+    <path id="path148" d="M 376.72,117.52 L 376.72,117.84 L 376.72,118.16 L 376.72,119.92 L 376.72,118.16" class="plan-wall" stroke-width="0.80" />
+    <path id="path149" d="M 326.96,117.52 L 359.28,117.52 L 358.64,117.52 L 359.28,117.52 L 359.28,117.84 L 359.28,118.16 L 359.28,117.84 L 359.28,117.52 L 358.64,117.52" class="plan-wall" stroke-width="0.80" />
+    <path id="path150" d="M 359.28,117.52 L 359.28,117.84 L 359.28,118.16 L 359.28,119.92 L 359.28,118.16 L 359.28,119.92 L 359.28,120.24 L 359.28,119.92 L 359.28,120.24 L 358.64,120.24 L 359.28,120.24 L 358.64,120.24" class="plan-wall" stroke-width="0.80" />
+    <path id="path151" d="M 378.48,120.24 L 378.48,119.92 L 378.48,117.84 L 378.48,117.52 L 376.72,117.52" class="plan-wall" stroke-width="0.80" />
+    <path id="path152" d="M 326.96,120.24 L 359.28,120.24" class="plan-wall" stroke-width="0.80" />
+    <path id="path153" d="M 359.76,118.16 L 359.76,117.52 L 359.28,117.52 L 359.28,118.16 L 359.76,118.16" class="plan-wall" stroke-width="0.48" />
+    <path id="path154" d="M 359.60,117.20 L 358.64,117.20 L 358.64,117.52 L 359.60,117.52 L 359.60,117.20" class="plan-wall" stroke-width="0.48" />
+    <path id="path155" d="M 376.72,118.16 L 376.72,117.52 L 376.24,117.52 L 376.24,118.16 L 376.72,118.16" class="plan-wall" stroke-width="0.48" />
+    <path id="path156" d="M 376.56,117.52 L 377.36,117.52 L 377.36,117.20 L 376.56,117.20 L 376.56,117.52" class="plan-wall" stroke-width="0.48" />
+    <path id="path157" d="M 359.60,120.24 L 358.64,120.24 L 358.64,120.56 L 359.60,120.56 L 359.60,120.24" class="plan-wall" stroke-width="0.48" />
+    <path id="path158" d="M 376.56,120.56 L 377.36,120.56 L 377.36,120.24 L 376.56,120.24 L 376.56,120.56" class="plan-wall" stroke-width="0.48" />
+    <path id="path159" d="M 360.08,118.16 L 360.08,119.44 L 359.76,119.44 L 359.76,120.24 L 359.28,120.24 L 359.28,118.16 L 360.08,118.16" class="plan-wall" stroke-width="1.12" />
+    <path id="path160" d="M 376.72,118.16 L 376.72,120.24 L 376.24,120.24 L 376.24,119.44 L 376.08,119.44 L 376.08,118.16 L 376.72,118.16" class="plan-wall" stroke-width="1.12" />
+    <path id="path161" d="M 377.36,120.24 L 376.72,120.24 L 376.72,119.92 L 376.72,118.16" class="plan-wall" stroke-width="0.80" />
+    <path id="path816" d="M 380.72,117.52 L 380.72,117.84 L 380.72,117.52" class="plan-wall" stroke-width="0.48" />
+    <path id="path817" d="M 378.48,117.84 L 378.64,117.84 L 378.64,117.52 L 378.64,117.84" class="plan-wall" stroke-width="0.48" />
+    <path id="path818" d="M 378.64,86.32 L 378.64,86.00 L 378.64,86.32" class="plan-wall" stroke-width="0.48" />
+    <path id="path819" d="M 380.72,86.00 L 380.72,86.32 L 380.72,86.00" class="plan-wall" stroke-width="0.48" />
+    <path id="path820" d="M 380.72,83.76 L 380.72,83.92 L 380.72,83.76" class="plan-wall" stroke-width="0.48" />
+    <path id="path821" d="M 378.64,83.92 L 378.64,83.76 L 378.64,83.92" class="plan-wall" stroke-width="0.48" />
+    <path id="path822" d="M 378.64,8.88 L 378.64,83.76" class="plan-wall" stroke-width="0.48" />
+    <path id="path823" d="M 380.72,83.76 L 380.72,8.88" class="plan-wall" stroke-width="0.48" />
+    <path id="path824" d="M 378.64,86.32 L 378.64,117.52" class="plan-wall" stroke-width="0.48" />
+    <path id="path825" d="M 380.72,117.52 L 380.72,86.32" class="plan-wall" stroke-width="0.48" />
+    <path id="path826" d="M 381.04,8.88 L 380.72,8.88 L 378.64,8.88 L 378.48,8.88 L 378.48,83.76" class="plan-wall" stroke-width="0.80" />
+    <path id="path827" d="M 378.48,86.32 L 378.48,117.52" class="plan-wall" stroke-width="0.80" />
+    <path id="path828" d="M 381.04,117.52 L 381.04,86.32" class="plan-wall" stroke-width="0.80" />
+    <path id="path829" d="M 381.04,83.76 L 381.04,8.88" class="plan-wall" stroke-width="0.80" />
+    <path id="path865" d="M 359.28,83.92 L 325.52,83.92" class="plan-wall" stroke-width="0.48" />
+    <path id="path866" d="M 378.64,83.92 L 376.72,83.92" class="plan-wall" stroke-width="0.48" />
+    <path id="path867" d="M 325.52,86.00 L 359.28,86.00" class="plan-wall" stroke-width="0.48" />
+    <path id="path868" d="M 376.72,86.00 L 378.64,86.00" class="plan-wall" stroke-width="0.48" />
+    <path id="path870" d="M 391.44,83.92 L 380.72,83.92" class="plan-wall" stroke-width="0.48" />
+    <path id="path872" d="M 380.72,86.00 L 391.44,86.00" class="plan-wall" stroke-width="0.48" />
+    <path id="path875" d="M 377.36,83.76 L 376.72,83.76 L 377.36,83.76" class="plan-wall" stroke-width="0.80" />
+    <path id="path876" d="M 377.36,83.76 L 376.72,83.76 L 376.72,83.92 L 376.72,84.24 L 376.72,83.92 L 376.72,83.76" class="plan-wall" stroke-width="0.80" />
+    <path id="path877" d="M 376.72,86.32 L 376.72,86.00 L 376.72,86.32 L 377.36,86.32 L 376.72,86.32 L 378.48,86.32" class="plan-wall" stroke-width="0.80" />
+    <path id="path878" d="M 376.72,83.76 L 376.72,83.92 L 376.72,84.24 L 376.72,86.00 L 376.72,84.24" class="plan-wall" stroke-width="0.80" />
+    <path id="path879" d="M 325.52,83.76 L 359.28,83.76 L 358.64,83.76 L 359.28,83.76 L 359.28,83.92 L 359.28,84.24 L 359.28,83.92 L 359.28,83.76 L 358.64,83.76" class="plan-wall" stroke-width="0.80" />
+    <path id="path880" d="M 359.28,83.76 L 359.28,83.92 L 359.28,84.24 L 359.28,86.00 L 359.28,84.24 L 359.28,86.00 L 359.28,86.32 L 359.28,86.00 L 359.28,86.32 L 358.64,86.32 L 359.28,86.32 L 358.64,86.32" class="plan-wall" stroke-width="0.80" />
+    <path id="path881" d="M 381.04,83.76 L 391.44,83.76 L 390.80,83.76 L 391.44,83.76 L 391.44,83.92 L 391.44,84.24 L 391.44,83.92 L 391.44,83.76 L 390.80,83.76" class="plan-wall" stroke-width="0.80" />
+    <path id="path882" d="M 391.44,83.76 L 391.44,83.92 L 391.44,84.24 L 391.44,86.00 L 391.44,84.24 L 391.44,86.00 L 391.44,86.32 L 391.44,86.00 L 391.44,86.32 L 390.80,86.32 L 391.44,86.32 L 390.80,86.32" class="plan-wall" stroke-width="0.80" />
+    <path id="path887" d="M 325.52,86.32 L 359.28,86.32" class="plan-wall" stroke-width="0.80" />
+    <path id="path888" d="M 381.04,86.32 L 391.44,86.32" class="plan-wall" stroke-width="0.80" />
+    <path id="path891" d="M 378.48,83.76 L 376.72,83.76" class="plan-wall" stroke-width="0.80" />
+    <path id="path892" d="M 359.76,84.24 L 359.76,83.76 L 359.28,83.76 L 359.28,84.24 L 359.76,84.24" class="plan-wall" stroke-width="0.48" />
+    <path id="path893" d="M 359.60,83.28 L 358.64,83.28 L 358.64,83.76 L 359.60,83.76 L 359.60,83.28" class="plan-wall" stroke-width="0.48" />
+    <path id="path894" d="M 376.72,84.24 L 376.72,83.76 L 376.24,83.76 L 376.24,84.24 L 376.72,84.24" class="plan-wall" stroke-width="0.48" />
+    <path id="path895" d="M 376.56,83.76 L 377.36,83.76 L 377.36,83.28 L 376.56,83.28 L 376.56,83.76" class="plan-wall" stroke-width="0.48" />
+    <path id="path896" d="M 359.60,86.32 L 358.64,86.32 L 358.64,86.64 L 359.60,86.64 L 359.60,86.32" class="plan-wall" stroke-width="0.48" />
+    <path id="path897" d="M 376.56,86.64 L 377.36,86.64 L 377.36,86.32 L 376.56,86.32 L 376.56,86.64" class="plan-wall" stroke-width="0.48" />
+    <path id="path898" d="M 360.08,84.24 L 360.08,85.52 L 359.76,85.52 L 359.76,86.32 L 359.28,86.32 L 359.28,84.24 L 360.08,84.24" class="plan-wall" stroke-width="1.12" />
+    <path id="path899" d="M 376.72,84.24 L 376.72,86.32 L 376.24,86.32 L 376.24,85.52 L 376.08,85.52 L 376.08,84.24 L 376.72,84.24" class="plan-wall" stroke-width="1.12" />
+    <path id="path900" d="M 377.36,86.32 L 376.72,86.32 L 376.72,86.00 L 376.72,84.24" class="plan-wall" stroke-width="0.80" />
+    <path id="path903" d="M 391.44,84.24 L 391.44,83.76 L 391.92,83.76 L 391.92,84.24 L 391.44,84.24" class="plan-wall" stroke-width="0.48" />
+    <path id="path904" d="M 391.76,83.76 L 390.80,83.76 L 390.80,83.28 L 391.76,83.28 L 391.76,83.76" class="plan-wall" stroke-width="0.48" />
+    <path id="path906" d="M 391.76,86.64 L 390.80,86.64 L 390.80,86.32 L 391.76,86.32 L 391.76,86.64" class="plan-wall" stroke-width="0.48" />
+    <path id="path908" d="M 391.44,84.24 L 391.44,86.32 L 391.92,86.32 L 391.92,85.52 L 392.24,85.52 L 392.24,84.24 L 391.44,84.24" class="plan-wall" stroke-width="1.12" />
+    <path id="path1171" d="M 330.16,83.76 L 330.16,63.92" class="plan-wall" stroke-width="0.48" />
+    <path id="path1172" d="M 330.00,83.76 L 330.00,63.92" class="plan-wall" stroke-width="0.80" />
+    <path id="path1173" d="M 329.04,63.92 L 329.04,83.76" class="plan-wall" stroke-width="0.48" />
+    <path id="path1174" d="M 330.32,63.92 L 330.32,83.76 L 330.16,83.76 L 330.00,83.76" class="plan-wall" stroke-width="0.80" />
+    <path id="path1175" d="M 330.00,83.76 L 329.04,83.76" class="plan-wall" stroke-width="0.48" />
+    <path id="path1256" d="M 378.48,119.92 L 378.64,119.92 L 380.72,119.92" class="plan-wall" stroke-width="0.48" />
+    <path id="path1257" d="M 394.96,117.84 L 380.72,117.84" class="plan-wall" stroke-width="0.48" />
+    <path id="path1261" d="M 380.72,119.92 L 394.96,119.92" class="plan-wall" stroke-width="0.48" />
+    <path id="path1265" d="M 381.04,117.52 L 394.96,117.52 L 394.32,117.52 L 394.96,117.52 L 394.96,117.84 L 394.96,118.16 L 394.96,117.84 L 394.96,117.52 L 394.32,117.52" class="plan-wall" stroke-width="0.80" />
+    <path id="path1277" d="M 378.48,117.52 L 378.48,117.84 L 378.48,119.92 L 378.48,120.24 L 394.96,120.24" class="plan-wall" stroke-width="0.80" />
+    <path id="path1407" d="M 390.00,117.52 L 389.04,117.52" class="plan-wall" stroke-width="0.48" />
+    <path id="path1502" d="M 321.68,113.20 L 321.68,120.24 L 326.96,120.24 L 326.96,113.20 L 321.68,113.20" class="plan-wall" stroke-width="0.48" />
+    </g><g id="devices"><path id="l_1_13_6" d="M 365.20,94.64 L 362.16,94.64 L 362.16,105.04 L 365.20,105.04 L 365.20,94.64" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_13_6" />
+    <path id="l_1_13_5" d="M 344.24,105.04 L 344.24,94.64 L 341.20,94.64 L 341.20,105.04 L 344.24,105.04" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_13_5" />
+    <path id="ms_1_13_4" d="M 351.92,99.68 C 351.92,98.66 351.10,97.84 350.08,97.84 C 349.06,97.84 348.24,98.66 348.24,99.68 C 348.24,100.70 349.06,101.52 350.08,101.52 C 351.10,101.52 351.92,100.70 351.92,99.68" class="device-node device-sensor" stroke-width="0.16" data-entity="sensor.ms_1_13_4" />
+    </g></svg>
