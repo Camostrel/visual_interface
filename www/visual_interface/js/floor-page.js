@@ -65,6 +65,7 @@ class ArvidFloorPage {
     window.requestAnimationFrame(() => {
       this._floorUpdateScheduled = false;
       this.applyZoneStateClasses();
+      this.updatePlanDeviceStates();   // устройства, объявленные планом (data-entity)
       this.updateModeCards();
       this.renderFloorDashboard();
     });
@@ -425,12 +426,97 @@ class ArvidFloorPage {
     // Подключаем управление планом после загрузки SVG, потому что управление меняет viewBox конкретного SVG.
     this.panZoom = ArvidSvgUtils.setupPanZoom(container, this.svg, {
       logArea: this.logArea,
+      onZoom: (zoom) => this.applyZoomLevel(zoom),
     });
 
+    this.collectPlanDevices();          // устройства, объявленные самим планом (data-entity)
     this.updateMobilePlanLayout();
     this.bindResponsiveResize();
     this.syncRoomZones();
+    this.updatePlanDeviceStates();
+    this.applyZoomLevel(this.panZoom?.getZoomValue() ?? 1);
     this.renderFloorDashboard();
+  }
+
+  /**
+   * D2: устройства читаются ИЗ САМОГО ПЛАНА (data-entity), а не из нашего стора координат.
+   * Так работают планы из CAD (docs/SVG_PLAN_SPEC.md): конвертер вешает data-entity прямо
+   * на геометрию светильника. Ручная расстановка (layout.devices) остаётся для частных
+   * объектов и здесь не используется — на этаже её координат нет.
+   */
+  collectPlanDevices() {
+    this.planDevices = [];
+    if (!this.svg) return;
+
+    this.svg.querySelectorAll("[data-entity]").forEach((el) => {
+      this.planDevices.push({ entityId: el.getAttribute("data-entity"), element: el });
+    });
+
+    ARVID_LOG.info(this.logArea, "Устройства прочитаны из плана", {
+      floorId: ARVID_APP.currentFloorId,
+      count: this.planDevices.length,
+    });
+  }
+
+  /**
+   * Состояние устройств плана: только классы, без перестроения DOM (инвариант v0.6.0).
+   * Здоровье сопоставляем по device_id: пара ms_/il_ — одно устройство и один значок,
+   * но ДВЕ записи здоровья с разными entity_id (см. health.js).
+   */
+  updatePlanDeviceStates() {
+    if (!this.planDevices?.length) return;
+
+    const health = ARVID_APP.health;
+
+    this.planDevices.forEach(({ entityId, element }) => {
+      const state = ARVID_APP.registry.getState(entityId);
+
+      // Устройства нет в HA (план богаче объекта) — гасим, чтобы не выдавать за рабочее.
+      element.classList.toggle("is-unknown", !state);
+      if (!state) return;
+
+      element.classList.toggle("is-on", ArvidDeviceUi.isOn(state));
+      element.classList.toggle("is-active", ArvidDeviceUi.isActive(state));
+
+      let offline = 0;
+      let anomaly = 0;
+      if (health && health.available !== false) {
+        const deviceId = ARVID_APP.registry.getDeviceId(entityId);
+        const stats = deviceId ? health.statsForDevice(deviceId) : health.statsForEntity(entityId);
+        offline = stats.offline;
+        anomaly = stats.anomaly;
+      }
+
+      element.classList.toggle("is-offline", offline > 0);
+      element.classList.toggle("is-anomaly", offline === 0 && anomaly > 0);
+    });
+  }
+
+  /**
+   * Фаза 3.5 (просьба заказчика): пока план далеко — помещение показывает АГРЕГАТ (зона
+   * мигает/красится). Стоит приблизить — зона уступает место конкретным светильникам,
+   * и проблемное устройство видно поимённо, без захода в комнату.
+   *
+   * Сами элементы устройств уже в DOM (их принёс SVG), поэтому переключение — это класс,
+   * а не перерисовка: ни создания узлов, ни пересчёта координат.
+   */
+  applyZoomLevel(zoom) {
+    const stage = document.querySelector("[data-floor-svg]");
+    if (!stage) return;
+
+    const zoomedIn = zoom >= ArvidFloorPage.DEVICE_ZOOM_THRESHOLD;
+    if (stage.classList.contains("is-zoomed") === zoomedIn) return;   // ничего не изменилось
+
+    stage.classList.toggle("is-zoomed", zoomedIn);
+    ARVID_LOG.debug(this.logArea, "Масштаб плана", {
+      zoom: Math.round(zoom * 100) / 100,
+      devicesVisible: zoomedIn,
+    });
+  }
+
+  /** Порог, за которым помещение «разбивается» на устройства. */
+  static get DEVICE_ZOOM_THRESHOLD() {
+    return 2.2;
   }
 
   bindResponsiveResize() {
@@ -1094,10 +1180,11 @@ class ArvidFloorPage {
     ARVID_APP.health.startPolling(interval);
   }
 
-  // Снимок здоровья влияет на классы зон (offline/аномалия) и на слот «Предупреждения».
+  // Снимок здоровья влияет на классы зон (агрегат), устройств плана и слот «Предупреждения».
   applyHealthToUi() {
     if (!this.initialized) return;
     this.applyZoneStateClasses();
+    this.updatePlanDeviceStates();
     this.renderFloorWarnings();
   }
 

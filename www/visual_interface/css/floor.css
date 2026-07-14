@@ -342,6 +342,57 @@
   fill: rgba(255, 186, 60, 0.2);
 }
 
+/* Устройство нарисовано на плане, но в HA его нет (план богаче объекта).
+   Не выдаём его за рабочее: еле видно, состояния не показываем. */
+.device-node.is-unknown {
+  stroke: color-mix(in srgb, currentColor, transparent 78%);
+  fill: none;
+}
+
+/* ── Устройства этажа появляются ПРИ ЗУМЕ (Фаза 3.5, просьба заказчика) ────────
+   Издалека помещение показывает АГРЕГАТ (зона мигает/красится) — 166 значков на
+   этаже с высоты этажа читались бы как шум. Приблизил — зона уступает место
+   светильникам, и проблемное устройство видно поимённо, без захода в комнату.
+
+   Элементы уже в DOM (их принёс SVG), поэтому переключение — класс на контейнере,
+   а не перерисовка: ни создания узлов, ни пересчёта координат. */
+[data-floor-svg] .device-node {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease, stroke 0.18s ease, fill 0.18s ease;
+}
+
+[data-floor-svg].is-zoomed .device-node {
+  opacity: 1;
+}
+
+/* Приблизились — зона больше не солирует: гасим заливку и пульс, чтобы они не спорили
+   с устройствами. Контур помещения остаётся (границы видно), тап по зоне тоже работает. */
+[data-floor-svg].is-zoomed .room-zone.has-light-on,
+[data-floor-svg].is-zoomed .room-zone.has-motion,
+[data-floor-svg].is-zoomed .room-zone.has-offline,
+[data-floor-svg].is-zoomed .room-zone.has-anomaly {
+  animation: none;
+  fill: transparent;
+  stroke: color-mix(in srgb, currentColor, transparent 80%);
+}
+
+/* Проблемное устройство при зуме пульсирует — это и есть «красным выделяются
+   проблемные зоны» из ТЗ, только точечно. */
+[data-floor-svg].is-zoomed .device-node.is-offline {
+  animation: arvid-zone-offline-pulse 1.7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-floor-svg].is-zoomed .device-node.is-offline {
+    animation: none;
+  }
+
+  [data-floor-svg] .device-node {
+    transition: none;
+  }
+}
+
 /* ── Переключатель режимов карты ──────────────────────────────────────────────
    Плавающие табы над планом (как .plan-toolbar снизу). Живёт поверх .svg-stage,
    а не в топбаре: на телефоне .topbar-actions скрыт, а режим нужен везде. */

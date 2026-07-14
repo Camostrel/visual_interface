@@ -176,6 +176,9 @@ class ArvidSvgPanZoom {
     this.activePointers = new Map();
     this.lastPointerPoint = null;
     this.lastPinchDistance = null;
+    // Колбэк смены масштаба: по нему план этажа показывает устройства при зуме (Фаза 3.5).
+    // Зовётся только при изменении масштаба, не при панорамировании.
+    this.onZoom = typeof options.onZoom === "function" ? options.onZoom : null;
     this.baseViewBox = this.readInitialViewBox();
     this.currentViewBox = { ...this.baseViewBox };
   }
@@ -388,6 +391,9 @@ class ArvidSvgPanZoom {
     const root = this.container.closest(".workspace, .room-plan-area, .room-layout, .main-panel") || viewRoot;
     const label = root.querySelector("[data-plan-zoom-value]") || viewRoot.querySelector("[data-plan-zoom-value]");
     if (label) label.textContent = `${Math.round(this.getZoomValue() * 100)}%`;
+
+    // Единая точка «масштаб изменился»: сюда сходятся колесо, кнопки, pinch и сброс.
+    if (this.onZoom) this.onZoom(this.getZoomValue());
   }
 
   clamp(value, min, max) {

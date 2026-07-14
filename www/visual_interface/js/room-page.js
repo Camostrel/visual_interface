@@ -116,8 +116,9 @@ class ArvidRoomPage {
     this._offlineSignature = signature;
 
     if (changed) {
-      this.renderControls();   // плашка + состав «не на связи»
+      this.renderControls();        // плашка + состав «не на связи»
       this.renderDeviceMarkers();
+      this.updatePlanDeviceStates(); // элементы плана не пересоздаются — обновляем классы
       return;
     }
 
@@ -142,6 +143,10 @@ class ArvidRoomPage {
   isRoomEntityId(entityId) {
     if (!this._roomEntityIds) {
       this._roomEntityIds = new Set(this.getRoomEntities().map((state) => state.entity_id));
+      // Устройства, объявленные планом (data-entity), тоже «свои»: без этого их события
+      // отсеялись бы, и лампа на плане не меняла бы состояние. В составе комнаты (area HA)
+      // их может не быть — план знает о них раньше, чем HA.
+      (this.planDevices || []).forEach(({ entityId: id }) => this._roomEntityIds.add(id));
     }
     return this._roomEntityIds.has(entityId);
   }
@@ -157,7 +162,52 @@ class ArvidRoomPage {
     window.requestAnimationFrame(() => {
       this._updateScheduled = false;
       this.updateDeviceMarkerStates();
+      this.updatePlanDeviceStates();   // устройства, объявленные планом (data-entity)
       this.updateControlValues();
+    });
+  }
+
+  /**
+   * D2: устройства, объявленные САМИМ планом (data-entity) — планы из CAD.
+   * Отличать от маркеров расстановки (.device-marker), которые рисуются по нашему стору
+   * координат: это два независимых пути, и они могут сосуществовать на одном плане.
+   */
+  collectPlanDevices() {
+    this.planDevices = [];
+    if (!this.svg) return;
+
+    this.svg.querySelectorAll("[data-entity]").forEach((el) => {
+      // Маркеры расстановки тоже несут data-entity — их обновляет updateDeviceMarkerStates.
+      if (el.classList.contains("device-marker")) return;
+      this.planDevices.push({ entityId: el.getAttribute("data-entity"), element: el });
+    });
+
+    if (this.planDevices.length) {
+      ARVID_LOG.info(this.logArea, "Устройства прочитаны из плана комнаты", {
+        areaId: this.areaId,
+        count: this.planDevices.length,
+      });
+    }
+  }
+
+  // Состояние устройств плана: только классы (инвариант — DOM не перестраиваем).
+  updatePlanDeviceStates() {
+    if (!this.planDevices?.length) return;
+
+    this.planDevices.forEach(({ entityId, element }) => {
+      const state = ARVID_APP.registry.getState(entityId);
+
+      // План богаче объекта: устройство нарисовано, но в HA его нет — гасим.
+      element.classList.toggle("is-unknown", !state);
+      if (!state) return;
+
+      element.classList.toggle("is-on", ArvidDeviceUi.isOn(state));
+      element.classList.toggle("is-active", ArvidDeviceUi.isActive(state));
+
+      const health = this.getHealthFor(state);   // по device_id: пара ms_/il_ = одно устройство
+      const offline = health.offline > 0;
+      element.classList.toggle("is-offline", offline);
+      element.classList.toggle("is-anomaly", !offline && health.anomaly > 0);
     });
   }
 
@@ -297,6 +347,12 @@ class ArvidRoomPage {
     this.panZoom = ArvidSvgUtils.setupPanZoom(container, this.svg, {
       logArea: this.logArea,
     });
+
+    // D2: устройства, объявленные самим планом (data-entity) — планы из CAD.
+    // В комнате они видны всегда: порог зума нужен только этажу, где их сотни.
+    this.collectPlanDevices();
+    this.invalidateRoomEntityCache();   // фильтр «свои события» должен узнать о них
+    this.updatePlanDeviceStates();
 
     // Щелчок/тап по плану в режиме редактирования размещает выбранное устройство.
     // Запоминаем точку нажатия, чтобы отличить клик от панорамирования (см. handleEditPlanClick).
