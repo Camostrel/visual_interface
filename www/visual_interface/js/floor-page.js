@@ -528,30 +528,20 @@ class ArvidFloorPage {
     window.visualViewport?.addEventListener("resize", refresh);
   }
 
+  /**
+   * Высоту плана на телефоне задаёт CSS (flex), а не JS (v0.10.1).
+   *
+   * Раньше здесь считалась высота по пропорциям чертежа: `ширина × ratio`. На плоском плане
+   * этажа (857×233, ratio 0.27) контейнер схлопывался до минимума — под ним зияла пустота,
+   * а панорамировать было некуда: план тут же уезжал за край.
+   *
+   * Метод оставлен как точка пересчёта после смены ориентации/размера: убираем инлайн-высоту,
+   * если она осталась от прошлой версии в кеше браузера.
+   */
   updateMobilePlanLayout() {
     const stage = document.querySelector("[data-floor-svg]");
-    if (!stage || !this.svg) return;
-
-    if (!window.matchMedia("(max-width: 760px) and (orientation: portrait)").matches) {
-      stage.style.removeProperty("--floor-plan-height");
-      return;
-    }
-
-    const metrics = ArvidSvgUtils.getViewBoxMetrics(this.svg);
-    const stageWidth = stage.clientWidth || document.querySelector(".workspace")?.clientWidth || 320;
-    const viewportHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--arvid-app-height"), 10)
-      || Math.round(window.visualViewport?.height || window.innerHeight || 0);
-    const desiredHeight = Math.round(stageWidth * (metrics?.ratio || 0.4) + 20);
-    const maxHeight = Math.max(220, Math.round(viewportHeight * 0.35));
-    const nextHeight = Math.max(180, Math.min(desiredHeight, maxHeight));
-
-    stage.style.setProperty("--floor-plan-height", `${nextHeight}px`);
-    ARVID_LOG.debug(this.logArea, "Mobile floor plan height updated", {
-      stageWidth,
-      desiredHeight,
-      nextHeight,
-      viewportHeight,
-    });
+    if (!stage) return;
+    stage.style.removeProperty("--floor-plan-height");
   }
 
   // Фолбэк: все лампы этажа по комнатам (когда HA-группы этажа ещё нет).
