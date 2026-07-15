@@ -150,6 +150,13 @@ ssh -i ~/.ssh/id_ed25519 -p 2222 -o Ciphers=aes256-ctr -o MACs=hmac-sha2-256-etm
 - `js/config.js` с реальным токеном — на диске и в репозитории лежит заглушка
   (`PASTE_LONG_LIVED_ACCESS_TOKEN_HERE`); токен подставляется только на HA.
 
+  **Как обновлять `VERSION`, не заливая файл** — правим строку на месте (токен цел):
+  ```bash
+  ssh … root@office.arvid-cloud.ru \
+    "sed -i -E 's/(VERSION: \")v[0-9.]+(\")/\1vX.Y.Z\2/' /config/www/NickSha/visual_interface/js/config.js"
+  ```
+  Проверка, что заглушка НЕ залита: `grep -q PASTE_LONG_LIVED … && echo ЗАГЛУШКА || echo OK`.
+
 ---
 
 ## После деплоя backend

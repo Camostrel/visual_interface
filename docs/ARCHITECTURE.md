@@ -66,7 +66,7 @@ ARVID_APP.ha        ArvidHaWebSocket   — одно WS-соединение на
 ARVID_APP.storage   ArvidFloorplanStorage
 ARVID_APP.registry  ArvidHaRegistry    — areas/floors/entities/devices/states
 ARVID_APP.layout    object             — layout из нашего backend
-ARVID_APP.health    ArvidHealth        — снимок здоровья от ядра DALI (health_data)
+ARVID_APP.health    ArvidHealth        — снимок здоровья от ядра DALI (push health_subscribe)
 
 ARVID_APP.entitiesForArea(areaId)        — СОСТАВ комнаты (истина HA)
 ARVID_APP.placedEntitiesForRoom(areaId)  — размещённые на плане (наш layout) → маркеры
@@ -294,8 +294,8 @@ AutoCAD → PDF → SVG (Inkscape)
 - **Свет — только через HA-группы** `light.<area_id|floor_id|all>`, не поиском ламп (v0.6.x).
 - **Группы света — не устройства** (v0.9.0): не лампы, не в карточках, не на плане.
   Признак — `model === "DALI Group"` у устройства либо список членов в атрибутах.
-- **Здоровье устройств — истина ядра DALI** (`health_data`). Свою логику offline/аварий
-  не пишем: ядро уже следит за устройствами (v0.8.0).
+- **Здоровье устройств — истина ядра DALI** (push `health_subscribe`, фолбэк `health_data`).
+  Свою логику offline/аварий не пишем: ядро уже следит за устройствами (v0.8.0).
 - **Режим карты — только CSS-слой.** JS вешает все классы состояния всегда; `data-map-mode`
   выбирает видимый. Никакой ветки «если режим X — считать Y» в JS (v0.8.0).
 - **Координаты** — в системе viewBox SVG, не в пикселях экрана.
@@ -303,6 +303,17 @@ AutoCAD → PDF → SVG (Inkscape)
 - **Скоуп**: `light` / `sensor` (пара ms_+il_) / `panel`. Вне-скоупные сущности не рисуются
   (фильтр `getScopedEntities` / `isScopedState`).
 - **Токен** не хранится в репозитории (в `config.js` заглушка, подставляется на HA при деплое).
+- **Резолв area/device — через индексы реестра** (`entityIdsByArea`/`entityIdsByDevice`), не
+  `states.filter(...)`: на объекте это O(N) в горячем пути, в цикле — O(N²) (v0.11.0, D20).
+- **Состав ≠ состояние.** Значение меняется потоком (`state_changed`, без перестроения DOM);
+  СОСТАВ (появление/пропажа сущности, смена area) — редко, через `addCompositionHandler`,
+  и там полная перерисовка уместна (v0.11.0, D5).
+- **Не отправлять весь layout.** Тема → `layout/ui/update`, расстановка → `layout/devices/update`
+  (только изменённые `entity_id`). Полная запись обязана слать `base_rev` (v0.11.0, A4).
+- **Связь с HA переживает обрыв** (v0.11.0, A3): реконнект, восстановление подписок, видимая
+  плашка «нет связи». Застывшая картинка, которая выглядит рабочей, опаснее честного отказа.
+- **Тап vs перетаскивание — по сдвигу пальца** (порог 8px), а не по цели нажатия (v0.11.1):
+  зоны и лампы плана тапабельны И перетаскиваемы. Полламповый тап на плане КОМНАТЫ = toggle лампы.
 
 ## 8. Техдолг
 
