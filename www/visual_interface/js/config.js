@@ -6,6 +6,9 @@
  * - missing user SVG plans can fall back to bundled default SVGs.
  */
 (function initArvidConfig() {
+  // Единственный источник версии. Деплой правит ЭТУ строку (и такую же метку ?v= в index.html).
+  const APP_VERSION = "v0.11.3";
+
   const scriptUrl = document.currentScript?.src || new URL("js/config.js", window.location.href).href;
   const scriptPath = new URL(scriptUrl, window.location.href).pathname;
 
@@ -17,8 +20,19 @@
   const manualLocalBasePath = "";
   const localBasePath = (manualLocalBasePath || detectedLocalBasePath).replace(/\/$/, "");
 
+  /**
+   * Разбиватель кеша (v0.11.3). HA отдаёт /local/ с `Cache-Control: max-age=2678400` (31 день),
+   * поэтому браузер держит старые JS/CSS/SVG месяц. Меняем URL при каждом деплое (?v=версия) —
+   * для браузера это новый файл, тянет свежий. В пределах версии кеш работает (быстро), при
+   * смене версии — обновляется. Планы больше НЕ грузятся с force-cache (см. svg-utils.js).
+   */
+  function withVersion(url) {
+    if (!url || /[?&]v=/.test(url)) return url;   // не двоим метку
+    return `${url}${url.includes("?") ? "&" : "?"}v=${APP_VERSION}`;
+  }
+
   function localAsset(relativePath) {
-    return `${localBasePath}/${String(relativePath).replace(/^\/+/, "")}`;
+    return withVersion(`${localBasePath}/${String(relativePath).replace(/^\/+/, "")}`);
   }
 
   function resolveAssetUrl(value, fallbackRelativePath) {
@@ -28,7 +42,7 @@
 
     // Compatibility with v0.1 defaults if they were already saved in HA storage.
     if (typeof value === "string" && value.startsWith("/local/web_interface/")) {
-      return value.replace("/local/web_interface", localBasePath);
+      return withVersion(value.replace("/local/web_interface", localBasePath));
     }
 
     // Allow storage values like "assets/floors/1_etazh.svg".
@@ -36,11 +50,14 @@
       return localAsset(value);
     }
 
+    // Абсолютный локальный путь из стора — тоже версионируем; внешние http(s) не трогаем.
+    if (typeof value === "string" && value.startsWith("/")) return withVersion(value);
+
     return value;
   }
 
   window.ARVID_CONFIG = {
-    VERSION: "v0.11.2",
+    VERSION: APP_VERSION,
 
     // If empty, current browser origin is used, for example http://homeassistant.local:8123
     HA_BASE_URL: "",

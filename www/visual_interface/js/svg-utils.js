@@ -55,8 +55,10 @@ class ArvidSvgUtils {
 
 
   static async fetchSvgText(svgUrl) {
-    // v0.8.2: своего кэша SVG нет — полагаемся на HTTP-кэш браузера.
-    const response = await fetch(svgUrl, { cache: "force-cache" });
+    // v0.11.3: убран force-cache — именно он держал план старым (браузер брал из кеша без
+    // ревалидации). Свежесть теперь обеспечивает ?v=версия в URL (config.localAsset): сменилась
+    // версия — сменился URL — план перезагрузится. В пределах версии работает HTTP-кэш браузера.
+    const response = await fetch(svgUrl);
     if (!response.ok) throw new Error(`SVG HTTP ${response.status}`);
     return response.text();
   }
