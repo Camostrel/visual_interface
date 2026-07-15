@@ -439,6 +439,17 @@ class ArvidFloorPage {
       return;
     }
 
+    // Тот же этаж уже показан (клик «Главная», повторный выбор этажа, возврат из комнаты) —
+    // НЕ пересобираем план: SVG уже в DOM, панель осталась. Иначе каждый такой клик заново
+    // грузил/парсил/вставлял чертёж и pan/zoom — это и есть видимая «перерисовка» (v0.11.6).
+    // Живые значения освежаем точечно, DOM не трогаем.
+    if (floorId === this._loadedFloorId && this.svg) {
+      ARVID_APP.currentFloorId = floorId;
+      ARVID_LOG.debug(this.logArea, "Этаж уже показан — план не пересобираем", { floorId });
+      this.refreshFloorState();
+      return;
+    }
+
     ARVID_APP.currentFloorId = floorId;
     this.invalidateFloorEntityCache();   // сменился этаж — набор «своих» сущностей другой
     ARVID_LOG.info(this.logArea, "Selecting floor", floorId);
@@ -472,6 +483,7 @@ class ArvidFloorPage {
     }
 
     this.svg = svg;
+    this._loadedFloorId = floorId;   // этот этаж теперь реально в DOM (для guard'а выше)
 
     // Подключаем управление планом после загрузки SVG, потому что управление меняет viewBox конкретного SVG.
     this.panZoom = ArvidSvgUtils.setupPanZoom(container, this.svg, {

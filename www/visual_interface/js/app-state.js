@@ -111,9 +111,6 @@ window.ARVID_RUNTIME = {
     return this.dataPromise;
   },
 
-  // Ключ снимка для мгновенной отрисовки (v0.11.4). Схема привязана к версии приложения.
-  snapshotKey: "arvid.snapshot.v1",
-
   async loadData(logArea) {
     const config = window.ARVID_CONFIG;
 
@@ -123,11 +120,14 @@ window.ARVID_RUNTIME = {
     }
 
     ARVID_LOG.info(logArea, "Loading shared ARVID data for SPA");
-    // WS поднимаем всегда и первым: коннект быстрый, а без него ни управлять светом, ни получать
-    // живые данные нельзя. Тяжёлый loadAll (снимок всех состояний+реестров) откладываем.
     ARVID_APP.ha = await new ArvidHaWebSocket(config).connect();
     ARVID_APP.storage = new ArvidFloorplanStorage(ARVID_APP.ha);
-    ARVID_APP.registry = new ArvidHaRegistry(ARVID_APP.ha);
+    await ARVID_APP.storage.ping();
+    ARVID_APP.registry = await new ArvidHaRegistry(ARVID_APP.ha).loadAll();
+    // Состав (сущности/устройства/области) меняется в HA и без нашего участия: задали area,
+    // переименовали лампу, добавили датчик. Слушаем реестры, чтобы не застывать до F5 (D5).
+    await ARVID_APP.registry.subscribeRegistryUpdates();
+    ARVID_APP.layout = await ARVID_APP.storage.getLayout();
     // Здоровье устройств берём у ядра DALI. Объект создаём сразу, снимок запрашивает страница
     // (ядра может не быть — тогда модуль сам себя отключит, остальной интерфейс не страдает).
     ARVID_APP.health = new ArvidHealth(ARVID_APP.ha, ARVID_APP.registry);
@@ -137,66 +137,13 @@ window.ARVID_RUNTIME = {
     // связи перечитываем снимок целиком (v0.11.0, A3).
     ARVID_APP.ha.addStatusHandler((status) => this.handleConnectionStatus(status));
 
-    /**
-     * МГНОВЕННАЯ ОТРИСОВКА ИЗ СНАПШОТА (v0.11.4).
-     *
-     * Кеш файлов (?v=версия) экономит скачивание, но не отменяет ПЕРЕЗАПУСК приложения при
-     * пересоздании iframe в дашборде HA: каждый заход — заново WS + loadAll + отрисовка, и
-     * пользователь видит паузу «пересборки». Главная задержка — loadAll (полный снимок всех
-     * состояний и реестров по WS).
-     *
-     * Поэтому держим последний снимок в localStorage (переживает пересоздание iframe): на старте
-     * рисуем план СРАЗУ из него, а живые данные подтягиваем в фоне и перерисовываем. Снимок —
-     * только для первой отрисовки; истина по-прежнему HA, живые данные его тут же перекрывают.
-     */
-    const snapshot = this.readSnapshot();
-    if (snapshot) {
-      ARVID_APP.registry.applyData(snapshot.data);   // гидратация реестра + индексы
-      ARVID_APP.layout = snapshot.layout;
-      ARVID_APP.live = false;
-      ARVID_LOG.info(logArea, "Мгновенная отрисовка из снапшота", {
-        states: ARVID_APP.registry.states.length,
-        ageMs: snapshot.ts ? Date.now() - snapshot.ts : null,
-      });
-      this.refreshLive(logArea);   // не ждём: живые данные приедут и перерисуют
-      return ARVID_APP;
-    }
-
-    // Снимка нет (первый запуск или другая версия) — полная загрузка, как раньше.
-    await this.loadLive(logArea);
-    ARVID_APP.live = true;
-    return ARVID_APP;
-  },
-
-  // Живая загрузка: полный снимок состояний+реестров из HA + layout. Пишет снапшот на будущее.
-  async loadLive(logArea) {
-    await ARVID_APP.storage.ping();
-    await ARVID_APP.registry.loadAll();
-    // Состав (сущности/устройства/области) меняется в HA и без нашего участия: задали area,
-    // переименовали лампу, добавили датчик. Слушаем реестры, чтобы не застывать до F5 (D5).
-    if (!this._registrySubscribed) {
-      this._registrySubscribed = true;
-      await ARVID_APP.registry.subscribeRegistryUpdates();
-    }
-    ARVID_APP.layout = await ARVID_APP.storage.getLayout();
-    this.writeSnapshot();
-
-    ARVID_LOG.info(logArea, "Живые данные HA загружены", {
+    ARVID_LOG.info(logArea, "Shared ARVID data loaded", {
       floors: ARVID_APP.registry.floors.length,
       areas: ARVID_APP.registry.areas.length,
       states: ARVID_APP.registry.states.length,
     });
-  },
 
-  // Фоновое обновление поверх снапшота: приезжают живые данные → перерисовываем страницы.
-  async refreshLive(logArea) {
-    try {
-      await this.loadLive(logArea);
-      ARVID_APP.live = true;
-      ARVID_APP.registry.notifyComposition("живые данные загружены");
-    } catch (error) {
-      ARVID_LOG.error(logArea, "Не удалось подтянуть живые данные поверх снапшота", error);
-    }
+    return ARVID_APP;
   },
 
   handleConnectionStatus(status) {
@@ -214,62 +161,12 @@ window.ARVID_RUNTIME = {
 
     ARVID_APP.registry.loadAll()
       .then(() => {
-        this.writeSnapshot();
         // Состав/состояния могли измениться за время обрыва — просим страницы перерисоваться.
         ARVID_APP.registry.notifyComposition("связь восстановлена");
       })
       .catch((error) => {
         ARVID_LOG.error("runtime", "Не удалось перечитать состояния после реконнекта", error);
       });
-  },
-
-  /**
-   * Снимок для мгновенной отрисовки: реестры + состояния + layout в localStorage.
-   * Привязан к версии приложения — после деплоя (смена схемы) старый снимок игнорируем.
-   */
-  readSnapshot() {
-    try {
-      const raw = localStorage.getItem(this.snapshotKey);
-      if (!raw) return null;
-
-      const snap = JSON.parse(raw);
-      if (!snap || snap.v !== window.ARVID_CONFIG.VERSION) {
-        ARVID_LOG.debug("runtime", "Снимок другой версии — пропускаем", { was: snap?.v });
-        return null;
-      }
-      if (!snap.data || !Array.isArray(snap.data.states) || !snap.data.states.length) return null;
-
-      return snap;
-    } catch (error) {
-      ARVID_LOG.debug("runtime", "Снимок нечитаем — пропускаем", error);
-      return null;
-    }
-  },
-
-  writeSnapshot() {
-    const registry = ARVID_APP.registry;
-    if (!registry || !ARVID_APP.layout) return;
-
-    try {
-      const snap = {
-        v: window.ARVID_CONFIG.VERSION,
-        ts: Date.now(),
-        data: {
-          floors: registry.floors,
-          areas: registry.areas,
-          entities: registry.entities,
-          devices: registry.devices,
-          states: registry.states,
-        },
-        layout: ARVID_APP.layout,
-      };
-      localStorage.setItem(this.snapshotKey, JSON.stringify(snap));
-    } catch (error) {
-      // QuotaExceededError на большом объекте — снимок просто не сохраняем: интерфейс работает
-      // как раньше (полная загрузка при старте), только без мгновенной отрисовки.
-      ARVID_LOG.warn("runtime", "Снимок не сохранён (вероятно, лимит localStorage) — деградируем к полной загрузке", error);
-      try { localStorage.removeItem(this.snapshotKey); } catch (e) { /* ignore */ }
-    }
   },
 
   addStateHandler(handler) {
