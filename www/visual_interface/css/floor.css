@@ -172,9 +172,13 @@
   vector-effect: non-scaling-stroke;   /* стены не толстеют при зуме */
 }
 
-/* Устройство, объявленное самим планом (data-entity). Состояние вешает JS. */
+/* Устройство, объявленное самим планом (data-entity). Состояние вешает JS.
+   fill: transparent (НЕ none!) — заливка невидима, но остаётся hit-областью: лампу можно
+   тапнуть по всей площади полигона и когда она горит, и когда потухла (v0.11.2). С fill:none
+   в погашенном состоянии ловился только тонкий контур. На этаже это безопасно: там у
+   .device-node стоит pointer-events:none (кликов по лампам нет), заливка ничего не перехватит. */
 .device-node {
-  fill: none;
+  fill: transparent;
   stroke: var(--muted);
   vector-effect: non-scaling-stroke;
   transition: stroke 0.18s ease, fill 0.18s ease;
@@ -183,14 +187,6 @@
 /* Кликабельная лампа плана комнаты (v0.11.1): тап = toggle, удержание = попап. */
 .device-node.is-interactive {
   cursor: pointer;
-}
-
-/* Прозрачная область-мишень под палец: сам контур светильника (fill:none) тонкий,
-   пальцем в него не попасть. Мишень ловит нажатие по габаритам устройства. */
-.device-node-hit {
-  fill: transparent;
-  stroke: none;
-  pointer-events: all;
 }
 
 .device-node.is-on {

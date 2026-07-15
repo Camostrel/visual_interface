@@ -224,14 +224,13 @@ class ArvidRoomPage {
    * расстановки (.device-marker); на плане из CAD (.device-node) лампа не реагировала вовсе,
    * а тап по ней начинал панораму. Поведение теперь как у маркеров — единый bindDevicePress.
    *
-   * ⚠ Геометрия светильника из чертежа — тонкий контур (fill:none), пальцем в него не попасть.
-   * Поэтому добавляем прозрачную область-мишень по габаритам элемента.
+   * ⚠ Тонкий контур светильника (fill:transparent) кликается целиком по площади полигона —
+   * и когда лампа горит, и когда потухла (заливка прозрачная, но остаётся hit-областью).
+   * Это правило CSS (.device-node { fill: transparent }); отдельная мишень-прямоугольник не
+   * нужна и невозможна: data-entity висит на самом <path>, а <path> не рендерит детей.
    */
   bindPlanDeviceEvents() {
     if (!this.planDevices?.length) return;
-
-    const metrics = ArvidSvgUtils.getViewBoxMetrics(this.svg);
-    const minPad = metrics ? Math.min(metrics.width, metrics.height) * 0.02 : 6;
 
     this.planDevices.forEach(({ entityId, element }) => {
       if (element.dataset.pressBound === "1") return;   // не вешаем повторно
@@ -240,38 +239,12 @@ class ArvidRoomPage {
       // Устройства нет в HA (план богаче объекта) — не выдаём его за рабочее, кликов не даём.
       if (!state) return;
 
-      this.addPlanDeviceHitArea(element, minPad);
       element.classList.add("is-interactive");
       element.setAttribute("tabindex", "0");
       // blockPan:false — панораму не глушим: жест «тащу план, палец на лампе» должен работать.
       this.bindDevicePress(element, state, { blockPan: false });
       element.dataset.pressBound = "1";
     });
-  }
-
-  // Прозрачная мишень под палец по габаритам устройства (тонкий контур сам по себе не тапабелен).
-  addPlanDeviceHitArea(element, minPad) {
-    if (typeof element.getBBox !== "function") return;
-    if (element.querySelector(".device-node-hit")) return;
-
-    let box;
-    try {
-      box = element.getBBox();
-    } catch (error) {
-      ARVID_LOG.debug(this.logArea, "getBBox недоступен для устройства плана", error);
-      return;
-    }
-
-    const pad = Math.max((box.width + box.height) / 2, minPad);
-    const hit = ArvidSvgUtils.createSvgElement("rect", {
-      x: box.x - pad,
-      y: box.y - pad,
-      width: box.width + pad * 2,
-      height: box.height + pad * 2,
-      class: "device-node-hit",
-    });
-    // Мишень — первым ребёнком, чтобы не перекрывать видимую геометрию.
-    element.insertBefore(hit, element.firstChild);
   }
 
   // Состояние устройств плана: только классы (инвариант — DOM не перестраиваем).
