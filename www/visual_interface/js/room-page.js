@@ -10,7 +10,6 @@ class ArvidRoomPage {
     this.areaId = null;
     this.floorId = null;
     this.devicePopup = null;
-    this.markerPress = null;
     // Режим редактирования расстановки устройств (v0.2.0) — вместо отдельной страницы редактора.
     this.editMode = false;
     this.editDirty = false;
@@ -215,6 +214,64 @@ class ArvidRoomPage {
         count: this.planDevices.length,
       });
     }
+
+    this.bindPlanDeviceEvents();
+  }
+
+  /**
+   * Делаем устройства ПЛАНА кликабельными (v0.11.1): тап по лампе на плане комнаты = toggle
+   * этой лампы, долгое удержание = попап яркости. Раньше клики вешались только на маркеры
+   * расстановки (.device-marker); на плане из CAD (.device-node) лампа не реагировала вовсе,
+   * а тап по ней начинал панораму. Поведение теперь как у маркеров — единый bindDevicePress.
+   *
+   * ⚠ Геометрия светильника из чертежа — тонкий контур (fill:none), пальцем в него не попасть.
+   * Поэтому добавляем прозрачную область-мишень по габаритам элемента.
+   */
+  bindPlanDeviceEvents() {
+    if (!this.planDevices?.length) return;
+
+    const metrics = ArvidSvgUtils.getViewBoxMetrics(this.svg);
+    const minPad = metrics ? Math.min(metrics.width, metrics.height) * 0.02 : 6;
+
+    this.planDevices.forEach(({ entityId, element }) => {
+      if (element.dataset.pressBound === "1") return;   // не вешаем повторно
+
+      const state = ARVID_APP.registry.getState(entityId);
+      // Устройства нет в HA (план богаче объекта) — не выдаём его за рабочее, кликов не даём.
+      if (!state) return;
+
+      this.addPlanDeviceHitArea(element, minPad);
+      element.classList.add("is-interactive");
+      element.setAttribute("tabindex", "0");
+      // blockPan:false — панораму не глушим: жест «тащу план, палец на лампе» должен работать.
+      this.bindDevicePress(element, state, { blockPan: false });
+      element.dataset.pressBound = "1";
+    });
+  }
+
+  // Прозрачная мишень под палец по габаритам устройства (тонкий контур сам по себе не тапабелен).
+  addPlanDeviceHitArea(element, minPad) {
+    if (typeof element.getBBox !== "function") return;
+    if (element.querySelector(".device-node-hit")) return;
+
+    let box;
+    try {
+      box = element.getBBox();
+    } catch (error) {
+      ARVID_LOG.debug(this.logArea, "getBBox недоступен для устройства плана", error);
+      return;
+    }
+
+    const pad = Math.max((box.width + box.height) / 2, minPad);
+    const hit = ArvidSvgUtils.createSvgElement("rect", {
+      x: box.x - pad,
+      y: box.y - pad,
+      width: box.width + pad * 2,
+      height: box.height + pad * 2,
+      class: "device-node-hit",
+    });
+    // Мишень — первым ребёнком, чтобы не перекрывать видимую геометрию.
+    element.insertBefore(hit, element.firstChild);
   }
 
   // Состояние устройств плана: только классы (инвариант — DOM не перестраиваем).
@@ -664,41 +721,49 @@ class ArvidRoomPage {
       return;
     }
 
-    // Короткое нажатие выполняет основное действие, длинное — открывает точечное управление.
-    group.addEventListener("pointerdown", (event) => {
+    // Маркер расстановки блокирует панораму (blockPan): он мелкий и точечный.
+    this.bindDevicePress(group, state, { blockPan: true });
+  }
+
+  /**
+   * Единый жест «нажатие на устройство»: короткий тап = основное действие (свет — toggle),
+   * долгое удержание = попап точечного управления. Используется и маркерами расстановки,
+   * и устройствами плана из CAD (v0.11.1, D2).
+   *
+   * blockPan:
+   *   true  — маркеры расстановки: гасим панораму (stopPropagation), они точечные;
+   *   false — устройства ПЛАНА: панораму НЕ трогаем. На объекте лампы всюду, и жест
+   *           «тащу план, палец попал на лампу» должен панорамировать, а не залипать.
+   *           Тап от панорамы отличаем по сдвигу пальца (порог 8px), как везде в проекте.
+   */
+  bindDevicePress(element, state, { blockPan = false } = {}) {
+    element.addEventListener("pointerdown", (event) => {
       if (event.button !== undefined && event.button !== 0) return;
       event.preventDefault();
-      event.stopPropagation();
+      if (blockPan) event.stopPropagation();
 
-      const press = {
-        entityId: state.entity_id,
-        handled: false,
-        startX: event.clientX,
-        startY: event.clientY,
-        timer: window.setTimeout(() => {
-          press.handled = true;
-          this.openDevicePopup(state, group);
-          ARVID_LOG.info(this.logArea, "Device long press opened popup", {
-            entityId: state.entity_id,
-          });
-        }, 650),
-      };
-      this.markerPress = press;
+      const press = { handled: false, moved: false, startX: event.clientX, startY: event.clientY };
+      press.timer = window.setTimeout(() => {
+        if (press.moved) return;
+        press.handled = true;
+        this.openDevicePopup(state, element);
+        ARVID_LOG.info(this.logArea, "Долгое нажатие: попап устройства", { entityId: state.entity_id });
+      }, 650);
 
       const onMove = (moveEvent) => {
-        if (!this.markerPress || this.markerPress.entityId !== state.entity_id) return;
-        const dx = Math.abs(moveEvent.clientX - press.startX);
-        const dy = Math.abs(moveEvent.clientY - press.startY);
-        if (dx > 8 || dy > 8) this.cancelMarkerPress();
+        if (Math.abs(moveEvent.clientX - press.startX) > 8 || Math.abs(moveEvent.clientY - press.startY) > 8) {
+          press.moved = true;             // это панорама, не тап
+          window.clearTimeout(press.timer);
+        }
       };
 
       const onUp = () => {
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
         window.removeEventListener("pointercancel", onUp);
-        const currentPress = this.markerPress;
-        this.cancelMarkerPress();
-        if (!currentPress?.handled) this.handleMarkerClick(state, group);
+        window.clearTimeout(press.timer);
+        // Тап срабатывает только если палец не уехал (иначе была панорама) и попап не открыт удержанием.
+        if (!press.moved && !press.handled) this.handleMarkerClick(state, element);
       };
 
       window.addEventListener("pointermove", onMove);
@@ -706,17 +771,12 @@ class ArvidRoomPage {
       window.addEventListener("pointercancel", onUp);
     });
 
-    group.addEventListener("keydown", (event) => {
+    element.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        this.handleMarkerClick(state, group);
+        this.handleMarkerClick(state, element);
       }
     });
-  }
-
-  cancelMarkerPress() {
-    if (this.markerPress?.timer) window.clearTimeout(this.markerPress.timer);
-    this.markerPress = null;
   }
 
   handleMarkerClick(state, group = null) {

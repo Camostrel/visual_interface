@@ -160,6 +160,9 @@ class ArvidSvgPanZoom {
     this.activePointers = new Map();
     this.lastPointerPoint = null;
     this.lastPinchDistance = null;
+    // Тап или перетаскивание: сбрасывается на нажатии, взводится при сдвиге дальше порога.
+    this.tapStart = null;
+    this.gestureMoved = false;
     // Колбэк смены масштаба: по нему план этажа показывает устройства при зуме (Фаза 3.5).
     // Зовётся только при изменении масштаба, не при панорамировании.
     this.onZoom = typeof options.onZoom === "function" ? options.onZoom : null;
@@ -211,6 +214,16 @@ class ArvidSvgPanZoom {
     window.addEventListener("pointermove", (event) => this.onPointerMove(event), { signal });
     window.addEventListener("pointerup", (event) => this.onPointerUp(event), { signal });
     window.addEventListener("pointercancel", (event) => this.onPointerUp(event), { signal });
+
+    // Различение «тап vs перетаскивание» (v0.11.1). Раньше pan НЕ запускался, если палец попал
+    // на зону или маркер — а зоны на объекте покрывают почти весь план, и перетащить его было
+    // нельзя. Теперь pan запускается всегда, а «случайный» клик по зоне/лампе ПОСЛЕ перетаскивания
+    // гасим здесь: если жест сдвинулся дальше порога, это была панорама, а не тап.
+    this.container.addEventListener("click", (event) => {
+      if (!this.gestureMoved) return;
+      event.stopPropagation();
+      event.preventDefault();
+    }, { capture: true, signal });
   }
 
   bindWheel() {
@@ -238,15 +251,22 @@ class ArvidSvgPanZoom {
   onPointerDown(event) {
     if (event.button !== undefined && event.button !== 0) return;
 
-    // Не начинаем перемещение плана, когда пользователь нажал на интерактивный маркер.
-    if (event.target.closest?.(".room-zone, .device-marker")) return;
-
-    this.svg.setPointerCapture?.(event.pointerId);
+    // Панораму больше НЕ блокируем по цели (зона/маркер): иначе план, покрытый зонами, не
+    // перетащить. Маркеры расстановки сами гасят pan через stopPropagation в своём pointerdown;
+    // зоны и лампы плана становятся и тапабельными, и «перетаскиваемыми» — различаем по сдвигу.
+    // Захват указателя (setPointerCapture) убран: pan слушает window, а захват мог перенаправить
+    // последующий click мимо зоны, сломав тап по помещению.
     this.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     this.lastPointerPoint = { x: event.clientX, y: event.clientY };
 
+    if (this.activePointers.size === 1) {
+      this.tapStart = { x: event.clientX, y: event.clientY };
+      this.gestureMoved = false;
+    }
+
     if (this.activePointers.size === 2) {
       this.lastPinchDistance = this.getPointerDistance();
+      this.gestureMoved = true;   // два пальца — заведомо жест (зум), а не тап
     }
 
     this.container.classList.add("is-pan-active");
@@ -263,6 +283,12 @@ class ArvidSvgPanZoom {
     }
 
     if (!this.lastPointerPoint) return;
+
+    // Ушли дальше порога от точки нажатия — это перетаскивание, а не тап (порог 8px, как везде).
+    if (this.tapStart
+        && (Math.abs(event.clientX - this.tapStart.x) > 8 || Math.abs(event.clientY - this.tapStart.y) > 8)) {
+      this.gestureMoved = true;
+    }
 
     const dx = event.clientX - this.lastPointerPoint.x;
     const dy = event.clientY - this.lastPointerPoint.y;

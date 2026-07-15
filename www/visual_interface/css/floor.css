@@ -180,6 +180,19 @@
   transition: stroke 0.18s ease, fill 0.18s ease;
 }
 
+/* Кликабельная лампа плана комнаты (v0.11.1): тап = toggle, удержание = попап. */
+.device-node.is-interactive {
+  cursor: pointer;
+}
+
+/* Прозрачная область-мишень под палец: сам контур светильника (fill:none) тонкий,
+   пальцем в него не попасть. Мишень ловит нажатие по габаритам устройства. */
+.device-node-hit {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+
 .device-node.is-on {
   stroke: rgba(255, 150, 40, 0.9);
   fill: rgba(255, 150, 40, 0.25);
