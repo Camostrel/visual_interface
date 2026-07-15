@@ -80,17 +80,30 @@ ARVID_RUNTIME.addStateHandler(fn)      — подписка на state_changed �
 
 ## 3. Потоки данных
 
-### 3.1 Запуск
+### 3.1 Запуск (v0.11.4 — мгновенная отрисовка из снапшота)
 ```
 index.html
   → new ArvidSpaApp().init()
     → routeFromLocation() → showView(view) → getPage(view).init(params)
-      → ARVID_RUNTIME.ensureData()
-        → ArvidHaWebSocket.connect()          (auth по токену)
-        → ArvidHaRegistry.loadAll()           (get_states + 4 реестра, ОДНИМ залпом)
-        → ArvidFloorplanStorage.getLayout()   (visual_interface/layout/get)
+      → ARVID_RUNTIME.ensureData() → loadData():
+          ArvidHaWebSocket.connect()          (auth по токену; быстро, всегда первым)
+          ── есть снимок в localStorage? ─────────────────────────────────────
+          ДА  → registry.applyData(снимок)    гидратация реестра + индексы
+                ARVID_APP.layout = снимок      ARVID_APP.live = false
+                return  ← СТРАНИЦА РИСУЕТ ПЛАН СРАЗУ
+                refreshLive() в фоне: loadLive() → notifyComposition() → перерисовка живыми
+          НЕТ → await loadLive()               (первый запуск/другая версия)
+                ARVID_APP.live = true; return
       → page рендерит план и панели
+
+loadLive():  storage.ping() → registry.loadAll() (get_states + 4 реестра ОДНИМ залпом)
+             → subscribeRegistryUpdates() (один раз) → getLayout() → writeSnapshot()
 ```
+**Снимок** (`arvid.snapshot.v1` в localStorage) = реестры + состояния + layout, привязан к
+`ARVID_CONFIG.VERSION` (деплой инвалидирует). Только для ПЕРВОЙ отрисовки — живые данные из HA
+тут же перекрывают. Переживает пересоздание iframe в дашборде HA (главный кейс). Превышен лимит
+localStorage → снимок не пишется, работаем как раньше (полная загрузка). Кеш файлов (`?v=`) —
+это отдельный слой (не скачивать байты повторно), снимок — про мгновенную ОТРИСОВКУ.
 
 ### 3.2 Управление светом (реальное состояние, без оптимистики)
 ```
