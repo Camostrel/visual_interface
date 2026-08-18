@@ -89,7 +89,7 @@
     <path id="path1277" d="M 378.48,117.52 L 378.48,117.84 L 378.48,119.92 L 378.48,120.24 L 394.96,120.24" class="plan-wall" stroke-width="0.80" />
     <path id="path1407" d="M 390.00,117.52 L 389.04,117.52" class="plan-wall" stroke-width="0.48" />
     <path id="path1502" d="M 321.68,113.20 L 321.68,120.24 L 326.96,120.24 L 326.96,113.20 L 321.68,113.20" class="plan-wall" stroke-width="0.48" />
-    </g><g id="devices"><path id="l_1_13_6" d="M 365.20,94.64 L 362.16,94.64 L 362.16,105.04 L 365.20,105.04 L 365.20,94.64" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_13_6" />
-    <path id="l_1_13_5" d="M 344.24,105.04 L 344.24,94.64 L 341.20,94.64 L 341.20,105.04 L 344.24,105.04" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_13_5" />
-    <path id="ms_1_13_4" d="M 351.92,99.68 C 351.92,98.66 351.10,97.84 350.08,97.84 C 349.06,97.84 348.24,98.66 348.24,99.68 C 348.24,100.70 349.06,101.52 350.08,101.52 C 351.10,101.52 351.92,100.70 351.92,99.68" class="device-node device-sensor" stroke-width="0.16" data-entity="sensor.ms_1_13_4" />
+    </g><g id="devices"><path id="l_1_1_2" d="M 365.20,94.64 L 362.16,94.64 L 362.16,105.04 L 365.20,105.04 L 365.20,94.64" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_1_2" />
+    <path id="l_1_1_1" d="M 344.24,105.04 L 344.24,94.64 L 341.20,94.64 L 341.20,105.04 L 344.24,105.04" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_1_1" />
+    <path id="ms_1_1_1" d="M 351.92,99.68 C 351.92,98.66 351.10,97.84 350.08,97.84 C 349.06,97.84 348.24,98.66 348.24,99.68 C 348.24,100.70 349.06,101.52 350.08,101.52 C 351.10,101.52 351.92,100.70 351.92,99.68" class="device-node device-sensor" stroke-width="0.16" data-entity="sensor.ms_1_1_1" />
     </g></svg>

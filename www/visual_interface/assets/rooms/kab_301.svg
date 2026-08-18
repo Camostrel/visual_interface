@@ -88,9 +88,8 @@
     <path id="path1553" d="M 324.40,6.32 L 324.40,8.88" class="plan-wall" stroke-width="0.80" />
     <path id="path1580" d="M 324.40,5.36 L 323.12,5.36 L 323.12,6.32 L 324.40,6.32 L 324.40,5.36" class="plan-wall" stroke-width="0.48" />
     <path id="path1581" d="M 308.08,6.32 L 323.12,6.32 L 323.12,5.36 L 308.08,5.36 L 308.08,6.32" class="plan-wall" stroke-width="0.48" />
-    </g><g id="devices"><path id="l_1_13_7" d="M 372.24,32.08 L 372.24,21.68 L 369.04,21.68 L 369.04,32.08 L 372.24,32.08" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_13_7" />
-    <path id="l_1_13_0" d="M 347.92,35.28 L 347.92,32.08 L 337.52,32.08 L 337.52,35.28 L 347.92,35.28" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_13_0" />
-    <path id="l_1_13_1" d="M 347.92,46.48 L 337.52,46.48 L 337.52,49.52 L 347.92,49.52 L 347.92,46.48" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_13_1" />
-    <path id="ms_1_13_0" d="M 365.84,38.24 C 365.84,37.22 365.02,36.40 364.00,36.40 C 362.98,36.40 362.16,37.22 362.16,38.24 C 362.16,39.26 362.98,40.08 364.00,40.08 C 365.02,40.08 365.84,39.26 365.84,38.24" class="device-node device-sensor" stroke-width="0.16" data-entity="sensor.ms_1_13_0" />
-    <path id="ms_1_13_1" d="M 351.60,38.24 C 351.60,37.22 350.78,36.40 349.76,36.40 C 348.74,36.40 347.92,37.22 347.92,38.24 C 347.92,39.26 348.74,40.08 349.76,40.08 C 350.78,40.08 351.60,39.26 351.60,38.24" class="device-node device-sensor" stroke-width="0.16" data-entity="sensor.ms_1_13_1" />
+    </g><g id="devices"><path id="l_1_1_5" d="M 372.24,32.08 L 372.24,21.68 L 369.04,21.68 L 369.04,32.08 L 372.24,32.08" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_1_5" />
+    <path id="l_1_1_3" d="M 347.92,35.28 L 347.92,32.08 L 337.52,32.08 L 337.52,35.28 L 347.92,35.28" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_1_3" />
+    <path id="l_1_1_4" d="M 347.92,46.48 L 337.52,46.48 L 337.52,49.52 L 347.92,49.52 L 347.92,46.48" class="device-node device-light" stroke-width="0.96" data-entity="light.l_1_1_4" />
+    <path id="ms_1_1_2" d="M 351.60,38.24 C 351.60,37.22 350.78,36.40 349.76,36.40 C 348.74,36.40 347.92,37.22 347.92,38.24 C 347.92,39.26 348.74,40.08 349.76,40.08 C 350.78,40.08 351.60,39.26 351.60,38.24" class="device-node device-sensor" stroke-width="0.16" data-entity="sensor.ms_1_1_2" />
     </g></svg>
