@@ -55,22 +55,27 @@ class ArvidDeviceUi {
   }
 
   /**
-   * Состояния движения — РУССКИЙ ТЕКСТ от ядра DALI (transport/decode.py, карта MOTION):
-   *   1 «нет движения» · 2 «ДВИЖЕНИЕ» · 3 «свободно» · 4 «занято» · 5 «пост.занято»
-   * Активными считаем 2/4/5.
+   * Состояния движения — ЛАТИНИЦА от ядра DALI с v1.2.45 (transport/decode.py, карта MOTION):
+   *   no_motion · motion · vacant · occupied · occupied_hold.
+   * Активными считаем motion / occupied / occupied_hold («пост.занято» — присутствие
+   * удерживается; раньше это значение выпадало из проверки и «Присутствие» его не видело).
+   * До v1.2.45 ядро отдавало РУССКИЙ текст — оставлен как совместимость (старое ядро/история).
    *
-   * ⚠ Сравнивать только ПОЛНЫМ значением: «нет движения» содержит подстроку «движение»,
-   * поэтому любой includes()/startsWith() по «движ» даст ложное срабатывание.
+   * ⚠ Сравнивать только ПОЛНЫМ значением: no_motion содержит подстроку motion (как и
+   * «нет движения» ⊃ «движение») — любой includes()/startsWith() даст ложное срабатывание.
    */
   static isMotionActive(state) {
     const value = String(state?.state || "").trim().toLowerCase();
+    // Латиница ядра (v1.2.45+) — основной контракт.
+    if (["motion", "occupied", "occupied_hold"].includes(value)) return true;
+    if (["no_motion", "vacant"].includes(value)) return false;
+
+    // Совместимость: русский текст старого ядра (< v1.2.45).
     if (["движение", "занято", "пост.занято"].includes(value)) return true;
     if (["нет движения", "свободно"].includes(value)) return false;
 
     // Совместимость, если датчик придёт как стандартный HA binary_sensor/sensor.
-    if (["motion", "occupancy"].includes(value)) return true;
-    if (["no_motion", "vacant"].includes(value)) return false;
-    if (["on", "detected", "occupied", "presence", "present", "1", "true"].includes(value)) return true;
+    if (["occupancy", "on", "detected", "presence", "present", "1", "true"].includes(value)) return true;
     return false;
   }
 
@@ -97,9 +102,15 @@ class ArvidDeviceUi {
     return ArvidDeviceUi.domain(state?.entity_id || "") === "event";
   }
 
-  /** Человекочитаемое описание последнего события панели. */
+  /**
+   * Человекочитаемое описание последнего события панели.
+   * Ядро с v1.2.45 кладёт тип как `key3_click` (клавиша в ТИПЕ) + атрибуты `gesture`/`key_no`;
+   * старое ядро отдавало голый жест (`click`). Берём жест из атрибута, иначе отрезаем префикс
+   * `keyN_` от типа — иначе в карточке светилось бы сырое «key3_click».
+   */
   static panelEventText(state) {
-    const eventType = state?.attributes?.event_type;
+    const attrs = state?.attributes || {};
+    const eventType = attrs.event_type;
     if (!eventType) return "событий не было";
 
     const types = {
@@ -109,8 +120,9 @@ class ArvidDeviceUi {
       hold_end: "конец удержания",
       rotate: "поворот",
     };
-    const typeText = types[eventType] || eventType;
-    const keyNo = state?.attributes?.key_no;
+    const gesture = attrs.gesture || String(eventType).replace(/^key\d+_/, "");
+    const typeText = types[gesture] || gesture;
+    const keyNo = attrs.key_no;
     return keyNo !== undefined && keyNo !== null ? `${typeText} · кнопка ${keyNo}` : typeText;
   }
 
