@@ -455,11 +455,9 @@ class ArvidRoomPage {
     });
     this.svg.addEventListener("click", (event) => this.handleEditPlanClick(event));
 
-    this.updateMobilePlanLayout();
-    // Вытянутое помещение (коридор) при «вписать целиком» съёживается в полоску —
-    // берём всю ширину, высоту показываем центральной частью. Делаем ПОСЛЕ подгонки
-    // высоты области: fitToWidth считает по фактическому размеру контейнера.
-    this.panZoom?.fitToWidth();
+    // Ждём кадр: высоту области раздаёт flex, и до первой раскладки контейнер ещё
+    // не знает своего размера — fitToWidth посчитал бы по нулю.
+    requestAnimationFrame(() => this.updateMobilePlanLayout());
     this.bindResponsiveResize();
   }
 
@@ -472,33 +470,28 @@ class ArvidRoomPage {
     window.visualViewport?.addEventListener("resize", refresh);
   }
 
+  /**
+   * Подгонка плана под мобильный экран (v0.13.3).
+   *
+   * Высоту области плана БОЛЬШЕ НЕ СЧИТАЕМ: раньше JS задавал `--room-plan-height`
+   * как «ширина × пропорция чертежа» с потолком в 42vh, и в помещении с двумя
+   * карточками полэкрана оставалось пустым. Теперь место делит flex — карточки
+   * берут по потребности, остальное достаётся плану (см. css/room.css).
+   *
+   * Здесь остаётся одно: пересчитать подгонку по ширине, когда область изменила
+   * размер (поворот экрана, появление/исчезновение карточки). Если пользователь
+   * менял масштаб сам — не перебиваем его.
+   */
   updateMobilePlanLayout() {
     const planArea = document.querySelector(".room-plan-area");
     if (!planArea || !this.svg) return;
 
-    if (!window.matchMedia("(max-width: 760px) and (orientation: portrait)").matches) {
-      planArea.style.removeProperty("--room-plan-height");
-      return;
-    }
+    // Осталось от прежней схемы: переменную больше никто не читает, но она могла
+    // остаться на элементе от предыдущей версии в кеше браузера.
+    planArea.style.removeProperty("--room-plan-height");
 
-    const metrics = ArvidSvgUtils.getViewBoxMetrics(this.svg);
-    const areaWidth = planArea.clientWidth || document.querySelector("[data-room-svg]")?.clientWidth || 320;
-    const viewportHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--arvid-app-height"), 10)
-      || Math.round(window.visualViewport?.height || window.innerHeight || 0);
-    const desiredHeight = Math.round(areaWidth * (metrics?.ratio || 0.68) + 22);
-    const maxHeight = Math.max(240, Math.round(viewportHeight * 0.42));
-    const nextHeight = Math.max(220, Math.min(desiredHeight, maxHeight));
-
-    planArea.style.setProperty("--room-plan-height", `${nextHeight}px`);
-    // Размер области изменился — прежняя подгонка по ширине больше не соответствует
-    // контейнеру. Пересчитываем, если пользователь не менял масштаб сам.
-    if (!this.panZoom?.userZoomed) this.panZoom?.fitToWidth();
-    ARVID_LOG.debug(this.logArea, "Mobile room plan height updated", {
-      areaWidth,
-      desiredHeight,
-      nextHeight,
-      viewportHeight,
-    });
+    if (!this.panZoom || this.panZoom.userZoomed) return;
+    this.panZoom.fitToWidth();
   }
 
   // СОСТАВ комнаты — истина HA (карточки, счётчики). См. ARVID_APP.entitiesForArea.

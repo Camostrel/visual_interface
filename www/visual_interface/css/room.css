@@ -279,14 +279,20 @@
     gap: 6px;
   }
 
+  /* v0.13.3: место делит не пропорция, а потребность. Карточек в помещении бывает
+     одна-две (свет + датчики), и фиксированная доля под план оставляла полэкрана
+     пустым. Теперь карточки занимают столько, сколько им нужно, а ВСЁ остальное
+     достаётся плану. Если карточек много — они упираются в потолок и прокручиваются,
+     план ужимается до min-height, но не исчезает. */
   .room-plan-area {
-    flex: 0 0 auto;
-    height: var(--room-plan-height, 40dvh);
-    min-height: 240px;
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 220px;
   }
 
   .room-controls {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
+    max-height: 55%;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -459,15 +465,15 @@
   }
 
   .room-plan-area {
-    flex: 0 0 auto;
-    height: var(--room-plan-height, 38dvh);
+    flex: 1 1 auto;
+    height: auto;
     min-height: 220px;
-    max-height: 42vh;
+    max-height: none;
   }
 
   .room-controls {
-    flex: 1 1 auto;
-    max-height: none;
+    flex: 0 1 auto;
+    max-height: 55%;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
