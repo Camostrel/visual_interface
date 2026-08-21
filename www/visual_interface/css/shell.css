@@ -1222,23 +1222,18 @@
   view-transition-name: arvid-options;
 }
 
-:root[data-options-transition] [data-floor-svg] {
+/* Имя вешаем на КОНТЕЙНЕР рабочей области, а не на сцену: в нём лежат и план,
+   и кнопка «показать целиком». Порознь (у каждого своё имя) они анимировались
+   независимо, и кнопка заметно отставала от края плана; в общем снимке они
+   двигаются как одно целое — рассинхрону взяться неоткуда. */
+:root[data-options-transition] [data-spa-view="floor"] .workspace {
   view-transition-name: arvid-plan;
-}
-
-/* Кнопка «показать целиком» лежит поверх плана и позиционирована от его края.
-   Без своего имени она оставалась в общем снимке и пересоздавалась между кадрами —
-   выглядело как моргание/нажатие. Со своим слоем она просто переезжает вместе
-   с планом. */
-:root[data-options-transition] .plan-toolbar {
-  view-transition-name: arvid-plan-toolbar;
 }
 
 /* Группа морфит положение и размер — это и есть «панель разъезжается,
    план сжимается». */
 ::view-transition-group(arvid-options),
-::view-transition-group(arvid-plan),
-::view-transition-group(arvid-plan-toolbar) {
+::view-transition-group(arvid-plan) {
   animation-duration: 260ms;
   animation-timing-function: cubic-bezier(0.32, 0.72, 0.3, 1);
 }
@@ -1246,14 +1241,12 @@
 /* Снимки плана не кроссфейдим: два почти одинаковых чертежа, наложенные друг на
    друга с прозрачностью, читаются как двоение. Показываем новый сразу, а размер
    доигрывает группа. */
-::view-transition-old(arvid-plan),
-::view-transition-old(arvid-plan-toolbar) {
+::view-transition-old(arvid-plan) {
   animation: none;
   opacity: 0;
 }
 
-::view-transition-new(arvid-plan),
-::view-transition-new(arvid-plan-toolbar) {
+::view-transition-new(arvid-plan) {
   animation: none;
   opacity: 1;
 }
