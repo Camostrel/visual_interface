@@ -468,6 +468,18 @@ class ArvidRoomPage {
     const refresh = () => this.updateMobilePlanLayout();
     window.addEventListener("resize", refresh);
     window.visualViewport?.addEventListener("resize", refresh);
+
+    // Область плана меняет размер и БЕЗ ресайза окна: карточки управления
+    // приходят асинхронно (после состояний из HA), и место, отданное плану,
+    // пересчитывается уже после первой подгонки. Без наблюдателя план оставался
+    // подогнанным под промежуточный — высокий и узкий — контейнер и показывал
+    // середину помещения вместо целого плана.
+    const planArea = document.querySelector(".room-plan-area");
+    if (planArea && typeof ResizeObserver !== "undefined") {
+      this._planResizeObserver?.disconnect();
+      this._planResizeObserver = new ResizeObserver(() => this.updateMobilePlanLayout());
+      this._planResizeObserver.observe(planArea);
+    }
   }
 
   /**
@@ -491,6 +503,9 @@ class ArvidRoomPage {
     planArea.style.removeProperty("--room-plan-height");
 
     if (!this.panZoom || this.panZoom.userZoomed) return;
+    // Вьюха комнаты скрыта (роутер переиспользует страницу) — размеры нулевые,
+    // подгонять не по чему.
+    if (!planArea.getBoundingClientRect().width) return;
     this.panZoom.fitToWidth();
   }
 

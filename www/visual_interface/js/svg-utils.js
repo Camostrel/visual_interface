@@ -400,14 +400,23 @@ class ArvidSvgPanZoom {
    * Планы, которые и так шире контейнера, не трогаем: им «вписать целиком» уже
    * означает «во всю ширину».
    */
-  fitToWidth() {
+  fitToWidth(threshold = 1.15) {
     const rect = this.container.getBoundingClientRect();
     if (!rect.width || !rect.height) return false;
 
     const containerRatio = rect.height / rect.width;
     const base = this.baseViewBox;
     const planRatio = base.height / base.width;
-    if (!Number.isFinite(planRatio) || planRatio <= containerRatio) return false;
+    // Обрезаем ТОЛЬКО когда план заметно вытянутее области (порог 1.15). Если разница
+    // невелика, «показать целиком» и «во всю ширину» дают почти одно и то же, а
+    // видеть помещение полностью при входе важнее лишних процентов ширины.
+    if (!Number.isFinite(planRatio) || planRatio <= containerRatio * threshold) {
+      // Возвращаемся к виду «целиком»: это и есть 100%.
+      this.currentViewBox = { ...base };
+      this.applyViewBox();
+      this.updateZoomLabel();
+      return false;
+    }
 
     const height = base.width * containerRatio;
     this.currentViewBox = {
