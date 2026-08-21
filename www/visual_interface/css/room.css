@@ -476,6 +476,20 @@
     overflow: hidden;
   }
 
+  /* Страховка ширины (v0.13.5). На десктопе комната заполняет панель целиком, а в
+     портрете план и карточки жались влево, оставляя половину панели пустой. Явно
+     тянем всю цепочку на полную ширину: что бы ни задавало ширину выше (колонка
+     грида, flex-basis, inline-стиль), здесь она сбрасывается в 100%. */
+  .room-shell .main-panel,
+  .room-shell .workspace,
+  .room-shell .room-layout,
+  .room-shell .room-plan-area,
+  .room-shell .room-controls {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
   .room-layout {
     height: 100%;
     min-height: 0;

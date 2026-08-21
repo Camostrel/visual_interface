@@ -7,7 +7,7 @@
  */
 (function initArvidConfig() {
   // Единственный источник версии. Деплой правит ЭТУ строку (и такую же метку ?v= в index.html).
-  const APP_VERSION = "v0.13.4";
+  const APP_VERSION = "v0.13.5";
 
   const scriptUrl = document.currentScript?.src || new URL("js/config.js", window.location.href).href;
   const scriptPath = new URL(scriptUrl, window.location.href).pathname;
