@@ -19,12 +19,12 @@
   </script>
   <!-- ?v=версия — разбиватель кеша (HA отдаёт /local/ с max-age 31 день). Деплой правит эти метки
        вместе с APP_VERSION в js/config.js. См. docs/DEPLOY.md, раздел про кеш. -->
-  <link rel="stylesheet" href="css/themes.css?v=v0.13.6">
-  <link rel="stylesheet" href="css/base.css?v=v0.13.6">
-  <link rel="stylesheet" href="css/shell.css?v=v0.13.6">
-  <link rel="stylesheet" href="css/floor.css?v=v0.13.6">
-  <link rel="stylesheet" href="css/room.css?v=v0.13.6">
-  <link rel="stylesheet" href="css/schedule.css?v=v0.13.6">
+  <link rel="stylesheet" href="css/themes.css?v=v0.13.7">
+  <link rel="stylesheet" href="css/base.css?v=v0.13.7">
+  <link rel="stylesheet" href="css/shell.css?v=v0.13.7">
+  <link rel="stylesheet" href="css/floor.css?v=v0.13.7">
+  <link rel="stylesheet" href="css/room.css?v=v0.13.7">
+  <link rel="stylesheet" href="css/schedule.css?v=v0.13.7">
 </head>
 <body>
   <div class="arvid-spa" data-spa-root>
@@ -95,10 +95,7 @@
               </div>
               <div class="svg-stage" data-floor-svg></div>
               <div class="plan-toolbar" data-plan-toolbar aria-label="Управление планом">
-                <button data-plan-zoom-out aria-label="Отдалить план" title="Отдалить">−</button>
-                <span data-plan-zoom-value>100%</span>
-                <button data-plan-zoom-in aria-label="Приблизить план" title="Приблизить">+</button>
-                <button data-plan-reset aria-label="Сбросить масштаб" title="Сбросить масштаб">⤢</button>
+                <button data-plan-reset aria-label="Показать план целиком" title="Показать целиком">⤢</button>
               </div>
             </section>
           </main>
@@ -197,10 +194,7 @@
                 <div class="room-plan-area">
                   <div class="svg-stage" data-room-svg></div>
                   <div class="plan-toolbar" data-plan-toolbar aria-label="Управление планом">
-                    <button data-plan-zoom-out aria-label="Отдалить план" title="Отдалить">−</button>
-                    <span data-plan-zoom-value>100%</span>
-                    <button data-plan-zoom-in aria-label="Приблизить план" title="Приблизить">+</button>
-                    <button data-plan-reset aria-label="Сбросить масштаб" title="Сбросить масштаб">⤢</button>
+                    <button data-plan-reset aria-label="Показать план целиком" title="Показать целиком">⤢</button>
                   </div>
                 </div>
                 <aside class="room-controls" data-room-controls></aside>
@@ -322,20 +316,20 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=v0.13.6"></script>
-  <script src="js/logger.js?v=v0.13.6"></script>
-  <script src="js/ha-ws.js?v=v0.13.6"></script>
-  <script src="js/floorplan-storage.js?v=v0.13.6"></script>
-  <script src="js/ha-registry.js?v=v0.13.6"></script>
-  <script src="js/health.js?v=v0.13.6"></script>
-  <script src="js/app-state.js?v=v0.13.6"></script>
-  <script src="js/svg-utils.js?v=v0.13.6"></script>
-  <script src="js/device-ui.js?v=v0.13.6"></script>
-  <script src="js/shell-ui.js?v=v0.13.6"></script>
-  <script src="js/floor-page.js?v=v0.13.6"></script>
-  <script src="js/room-page.js?v=v0.13.6"></script>
-  <script src="js/spa-router.js?v=v0.13.6"></script>
-  <script src="js/schedule-ui.js?v=v0.13.6"></script>
+  <script src="js/config.js?v=v0.13.7"></script>
+  <script src="js/logger.js?v=v0.13.7"></script>
+  <script src="js/ha-ws.js?v=v0.13.7"></script>
+  <script src="js/floorplan-storage.js?v=v0.13.7"></script>
+  <script src="js/ha-registry.js?v=v0.13.7"></script>
+  <script src="js/health.js?v=v0.13.7"></script>
+  <script src="js/app-state.js?v=v0.13.7"></script>
+  <script src="js/svg-utils.js?v=v0.13.7"></script>
+  <script src="js/device-ui.js?v=v0.13.7"></script>
+  <script src="js/shell-ui.js?v=v0.13.7"></script>
+  <script src="js/floor-page.js?v=v0.13.7"></script>
+  <script src="js/room-page.js?v=v0.13.7"></script>
+  <script src="js/spa-router.js?v=v0.13.7"></script>
+  <script src="js/schedule-ui.js?v=v0.13.7"></script>
   <script>
     window.ARVID_SPA = new ArvidSpaApp();
     window.ARVID_SPA.init()

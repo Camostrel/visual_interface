@@ -170,7 +170,7 @@ class ArvidSvgPanZoom {
     this.onZoom = typeof options.onZoom === "function" ? options.onZoom : null;
     this.baseViewBox = this.readInitialViewBox();
     this.currentViewBox = { ...this.baseViewBox };
-    // Менял ли масштаб сам пользователь (см. zoomAt/reset и fitToWidth).
+    // Менял ли масштаб сам пользователь (см. zoomAt/reset и fitToView).
     this.userZoomed = false;
   }
 
@@ -389,47 +389,19 @@ class ArvidSvgPanZoom {
   }
 
   /**
-   * Показать план ВО ВСЮ ШИРИНУ контейнера (v0.13.2).
+   * Показать план ЦЕЛИКОМ (v0.13.7).
    *
-   * preserveAspectRatio вписывает чертёж целиком, поэтому вытянутое помещение
-   * упирается в одну сторону и оставляет поля по другой: вертикальный коридор 1:4
-   * съёживался в столбик по центру экрана телефона. Здесь мы вместо «показать всё»
-   * берём всю ширину, а по высоте показываем центральную часть — панорама и кнопка
-   * «вписать» (reset) никуда не деваются.
-   *
-   * Планы, которые и так шире контейнера, не трогаем: им «вписать целиком» уже
-   * означает «во всю ширину».
+   * Это же и есть 100 % на шкале масштаба: при входе в помещение человек должен
+   * видеть его целиком, а не середину. Прежняя подгонка «во всю ширину» обрезала
+   * вытянутые помещения по высоте — от неё отказались: место под план добавляем
+   * раскладкой (сворачиваем опции), а не обрезкой чертежа.
    */
-  fitToWidth(threshold = 1.15) {
+  fitToView() {
     const rect = this.container.getBoundingClientRect();
     if (!rect.width || !rect.height) return false;
-
-    const containerRatio = rect.height / rect.width;
-    const base = this.baseViewBox;
-    const planRatio = base.height / base.width;
-    // Обрезаем ТОЛЬКО когда план заметно вытянутее области (порог 1.15). Если разница
-    // невелика, «показать целиком» и «во всю ширину» дают почти одно и то же, а
-    // видеть помещение полностью при входе важнее лишних процентов ширины.
-    if (!Number.isFinite(planRatio) || planRatio <= containerRatio * threshold) {
-      // Возвращаемся к виду «целиком»: это и есть 100%.
-      this.currentViewBox = { ...base };
-      this.applyViewBox();
-      this.updateZoomLabel();
-      return false;
-    }
-
-    const height = base.width * containerRatio;
-    this.currentViewBox = {
-      x: base.x,
-      y: base.y + (base.height - height) / 2,
-      width: base.width,
-      height,
-    };
+    this.currentViewBox = { ...this.baseViewBox };
     this.applyViewBox();
     this.updateZoomLabel();
-    ARVID_LOG.info(this.logArea, "Plan fitted to width", {
-      planRatio, containerRatio, viewBox: this.currentViewBox,
-    });
     return true;
   }
 
