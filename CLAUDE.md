@@ -11,6 +11,7 @@
 [REQUIREMENTS.md](docs/REQUIREMENTS.md) (требование → как реализовано) ·
 [ROADMAP.md](docs/ROADMAP.md) (фазы) · [DEBT.md](docs/DEBT.md) (долги + задачи на HA) ·
 [DESIGN.md](docs/DESIGN.md) · [SVG_PLAN_SPEC.md](docs/SVG_PLAN_SPEC.md) (эталон плана из CAD) ·
+[PLAN_CONVEYOR_DXF_RESEARCH.md](docs/PLAN_CONVEYOR_DXF_RESEARCH.md) (🔬 исследование DXF+SVG конвейера, разработка — отд. сессия) ·
 [DEPLOY.md](docs/DEPLOY.md) · [CHANGELOG.md](docs/CHANGELOG.md).
 
 Работаем **только** в этом каталоге: `/home/user/nicksha/visual_interface/`.
