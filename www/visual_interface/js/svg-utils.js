@@ -170,6 +170,8 @@ class ArvidSvgPanZoom {
     this.onZoom = typeof options.onZoom === "function" ? options.onZoom : null;
     this.baseViewBox = this.readInitialViewBox();
     this.currentViewBox = { ...this.baseViewBox };
+    // Менял ли масштаб сам пользователь (см. zoomAt/reset и fitToWidth).
+    this.userZoomed = false;
   }
 
   init() {
@@ -348,6 +350,9 @@ class ArvidSvgPanZoom {
   }
 
   zoomAt(factor, clientX = null, clientY = null) {
+    // Пользователь взял масштаб в свои руки — автоподгонка по ширине (при повороте
+    // экрана, смене размера окна) больше не перебивает его выбор. Сбрасывается «вписать».
+    this.userZoomed = true;
     const currentZoom = this.getZoomValue();
     const targetZoom = this.clamp(currentZoom * factor, this.minZoom, this.maxZoom);
     const normalizedFactor = targetZoom / currentZoom;
@@ -376,10 +381,47 @@ class ArvidSvgPanZoom {
   }
 
   reset() {
+    this.userZoomed = false;
     this.currentViewBox = { ...this.baseViewBox };
     this.applyViewBox();
     this.updateZoomLabel();
     ARVID_LOG.info(this.logArea, "Plan zoom reset");
+  }
+
+  /**
+   * Показать план ВО ВСЮ ШИРИНУ контейнера (v0.13.2).
+   *
+   * preserveAspectRatio вписывает чертёж целиком, поэтому вытянутое помещение
+   * упирается в одну сторону и оставляет поля по другой: вертикальный коридор 1:4
+   * съёживался в столбик по центру экрана телефона. Здесь мы вместо «показать всё»
+   * берём всю ширину, а по высоте показываем центральную часть — панорама и кнопка
+   * «вписать» (reset) никуда не деваются.
+   *
+   * Планы, которые и так шире контейнера, не трогаем: им «вписать целиком» уже
+   * означает «во всю ширину».
+   */
+  fitToWidth() {
+    const rect = this.container.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+
+    const containerRatio = rect.height / rect.width;
+    const base = this.baseViewBox;
+    const planRatio = base.height / base.width;
+    if (!Number.isFinite(planRatio) || planRatio <= containerRatio) return false;
+
+    const height = base.width * containerRatio;
+    this.currentViewBox = {
+      x: base.x,
+      y: base.y + (base.height - height) / 2,
+      width: base.width,
+      height,
+    };
+    this.applyViewBox();
+    this.updateZoomLabel();
+    ARVID_LOG.info(this.logArea, "Plan fitted to width", {
+      planRatio, containerRatio, viewBox: this.currentViewBox,
+    });
+    return true;
   }
 
   applyViewBox() {

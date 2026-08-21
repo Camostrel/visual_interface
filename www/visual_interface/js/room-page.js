@@ -456,6 +456,10 @@ class ArvidRoomPage {
     this.svg.addEventListener("click", (event) => this.handleEditPlanClick(event));
 
     this.updateMobilePlanLayout();
+    // Вытянутое помещение (коридор) при «вписать целиком» съёживается в полоску —
+    // берём всю ширину, высоту показываем центральной частью. Делаем ПОСЛЕ подгонки
+    // высоты области: fitToWidth считает по фактическому размеру контейнера.
+    this.panZoom?.fitToWidth();
     this.bindResponsiveResize();
   }
 
@@ -486,6 +490,9 @@ class ArvidRoomPage {
     const nextHeight = Math.max(220, Math.min(desiredHeight, maxHeight));
 
     planArea.style.setProperty("--room-plan-height", `${nextHeight}px`);
+    // Размер области изменился — прежняя подгонка по ширине больше не соответствует
+    // контейнеру. Пересчитываем, если пользователь не менял масштаб сам.
+    if (!this.panZoom?.userZoomed) this.panZoom?.fitToWidth();
     ARVID_LOG.debug(this.logArea, "Mobile room plan height updated", {
       areaWidth,
       desiredHeight,
