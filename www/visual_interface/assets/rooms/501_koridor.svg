@@ -29,72 +29,72 @@
     <line x1="168.42" y1="730.15" x2="168.42" y2="864.89" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
   </g>
   <g id="devices">
-    <g id="l_5_1_12" class="device-node device-light" data-entity="light.l_5_1_12">
-      <rect x="196.17" y="241.75" width="3.94" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_12" class="device-node device-light" data-entity="light.l_5_1_12" fill="transparent" stroke="currentColor">
+      <rect x="196.17" y="241.75" width="3.94" height="26.64" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_13" class="device-node device-light" data-entity="light.l_5_1_13">
-      <rect x="239.61" y="241.75" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_13" class="device-node device-light" data-entity="light.l_5_1_13" fill="transparent" stroke="currentColor">
+      <rect x="239.61" y="241.75" width="4.03" height="26.64" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_14" class="device-node device-light" data-entity="light.l_5_1_14">
-      <rect x="279.2" y="241.75" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_14" class="device-node device-light" data-entity="light.l_5_1_14" fill="transparent" stroke="currentColor">
+      <rect x="279.2" y="241.75" width="4.03" height="26.64" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_17" class="device-node device-light" data-entity="light.l_5_1_17">
-      <rect x="279.2" y="338.18" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_17" class="device-node device-light" data-entity="light.l_5_1_17" fill="transparent" stroke="currentColor">
+      <rect x="279.2" y="338.18" width="4.03" height="26.55" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_20" class="device-node device-light" data-entity="light.l_5_1_20">
-      <rect x="279.2" y="452.63" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_20" class="device-node device-light" data-entity="light.l_5_1_20" fill="transparent" stroke="currentColor">
+      <rect x="279.2" y="452.63" width="4.03" height="26.64" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_23" class="device-node device-light" data-entity="light.l_5_1_23">
-      <rect x="279.2" y="567.18" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_23" class="device-node device-light" data-entity="light.l_5_1_23" fill="transparent" stroke="currentColor">
+      <rect x="279.2" y="567.18" width="4.03" height="26.55" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_26" class="device-node device-light" data-entity="light.l_5_1_26">
-      <rect x="279.2" y="681.63" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_26" class="device-node device-light" data-entity="light.l_5_1_26" fill="transparent" stroke="currentColor">
+      <rect x="279.2" y="681.63" width="4.03" height="26.64" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_15" class="device-node device-light" data-entity="light.l_5_1_15">
-      <rect x="196.17" y="338.18" width="3.94" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_15" class="device-node device-light" data-entity="light.l_5_1_15" fill="transparent" stroke="currentColor">
+      <rect x="196.17" y="338.18" width="3.94" height="26.55" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_19" class="device-node device-light" data-entity="light.l_5_1_19">
-      <rect x="239.61" y="452.63" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_19" class="device-node device-light" data-entity="light.l_5_1_19" fill="transparent" stroke="currentColor">
+      <rect x="239.61" y="452.63" width="4.03" height="26.64" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_18" class="device-node device-light" data-entity="light.l_5_1_18">
-      <rect x="196.17" y="452.63" width="3.94" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_18" class="device-node device-light" data-entity="light.l_5_1_18" fill="transparent" stroke="currentColor">
+      <rect x="196.17" y="452.63" width="3.94" height="26.64" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_16" class="device-node device-light" data-entity="light.l_5_1_16">
-      <rect x="239.61" y="338.18" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_16" class="device-node device-light" data-entity="light.l_5_1_16" fill="transparent" stroke="currentColor">
+      <rect x="239.61" y="338.18" width="4.03" height="26.55" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_22" class="device-node device-light" data-entity="light.l_5_1_22">
-      <rect x="239.61" y="567.18" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_22" class="device-node device-light" data-entity="light.l_5_1_22" fill="transparent" stroke="currentColor">
+      <rect x="239.61" y="567.18" width="4.03" height="26.55" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_21" class="device-node device-light" data-entity="light.l_5_1_21">
-      <rect x="196.17" y="567.18" width="3.94" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_21" class="device-node device-light" data-entity="light.l_5_1_21" fill="transparent" stroke="currentColor">
+      <rect x="196.17" y="567.18" width="3.94" height="26.55" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_25" class="device-node device-light" data-entity="light.l_5_1_25">
-      <rect x="239.61" y="681.63" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_25" class="device-node device-light" data-entity="light.l_5_1_25" fill="transparent" stroke="currentColor">
+      <rect x="239.61" y="681.63" width="4.03" height="26.64" stroke-width=".43px" />
     </g>
-    <g id="l_5_1_24" class="device-node device-light" data-entity="light.l_5_1_24">
-      <rect x="196.17" y="681.63" width="3.94" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    <g id="l_5_1_24" class="device-node device-light" data-entity="light.l_5_1_24" fill="transparent" stroke="currentColor">
+      <rect x="196.17" y="681.63" width="3.94" height="26.64" stroke-width=".43px" />
     </g>
-    <g id="ms_5_1_7" class="device-node device-sensor" data-entity="sensor.ms_5_1_7">
-      <circle cx="238.94" cy="673.37" r="4.65" stroke-width=".43px" stroke="currentColor" fill="none" />
-      <text transform="translate(237.38 675.21)" font-size="5.01px" stroke="none" fill="currentColor">
+    <g id="ms_5_1_7" class="device-node device-sensor" data-entity="sensor.ms_5_1_7" fill="transparent" stroke="currentColor">
+      <circle cx="238.94" cy="673.37" r="4.65" stroke-width=".43px" />
+      <text transform="translate(237.38 675.21)" font-size="5.01px" fill="currentColor" stroke="none">
         <tspan x="0" y="0">R</tspan>
       </text>
     </g>
-    <g id="ms_5_1_6" class="device-node device-sensor" data-entity="sensor.ms_5_1_6">
-      <circle cx="241.29" cy="546.23" r="4.65" stroke-width=".43px" stroke="currentColor" fill="none" />
-      <text transform="translate(239.73 548.07)" font-size="5.01px" stroke="none" fill="currentColor">
+    <g id="ms_5_1_6" class="device-node device-sensor" data-entity="sensor.ms_5_1_6" fill="transparent" stroke="currentColor">
+      <circle cx="241.29" cy="546.23" r="4.65" stroke-width=".43px" />
+      <text transform="translate(239.73 548.07)" font-size="5.01px" fill="currentColor" stroke="none">
         <tspan x="0" y="0">R</tspan>
       </text>
     </g>
-    <g id="ms_5_1_5" class="device-node device-sensor" data-entity="sensor.ms_5_1_5">
-      <circle cx="241.94" cy="430.61" r="4.65" stroke-width=".43px" stroke="currentColor" fill="none" />
-      <text transform="translate(240.37 432.46)" font-size="5.01px" stroke="none" fill="currentColor">
+    <g id="ms_5_1_5" class="device-node device-sensor" data-entity="sensor.ms_5_1_5" fill="transparent" stroke="currentColor">
+      <circle cx="241.94" cy="430.61" r="4.65" stroke-width=".43px" />
+      <text transform="translate(240.37 432.46)" font-size="5.01px" fill="currentColor" stroke="none">
         <tspan x="0" y="0">R</tspan>
       </text>
     </g>
-    <g id="ms_5_1_4" class="device-node device-sensor" data-entity="sensor.ms_5_1_4">
-      <circle cx="241.29" cy="306.04" r="4.65" stroke-width=".43px" stroke="currentColor" fill="none" />
-      <text transform="translate(239.73 307.88)" font-size="5.01px" stroke="none" fill="currentColor">
+    <g id="ms_5_1_4" class="device-node device-sensor" data-entity="sensor.ms_5_1_4" fill="transparent" stroke="currentColor">
+      <circle cx="241.29" cy="306.04" r="4.65" stroke-width=".43px" />
+      <text transform="translate(239.73 307.88)" font-size="5.01px" fill="currentColor" stroke="none">
         <tspan x="0" y="0">R</tspan>
       </text>
     </g>

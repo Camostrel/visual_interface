@@ -56,7 +56,7 @@ def style_props(root):
     return props
 
 
-def strip_paint(el, props):
+def strip_paint(el, props, paint=True):
     """Снять с элемента краску чертежа, оставив толщину линии.
 
     Толщина остаётся (по ней видна иерархия: несущая стена толще перегородки),
@@ -65,16 +65,21 @@ def strip_paint(el, props):
     Атрибуты `stroke`/`fill` ставим намеренно, хотя floor.css их всё равно
     перебивает (CSS сильнее презентационного атрибута): благодаря им план
     остаётся читаемым сам по себе — открыл файл в браузере и видишь чертёж,
-    а не чёрные пятна. Для плана, который живёт отдельно от интерфейса и
-    ездит по объектам, это важнее экономии двух атрибутов.
+    а не чёрные пятна.
+
+    ⚠ Но у ФИГУР ВНУТРИ значка краски быть не должно (`paint=False`): CSS красит
+    группу `.device-node`, а собственный атрибут ребёнка сильнее наследования от
+    родителя. С `fill="none"` на самом `<rect>` лампа кликалась только по контуру,
+    а подсветка `.is-on` до неё не доходила. Краска значка живёт на группе.
     """
     for prop, value in (props.get(el.get('class')) or {}).items():
         el.set(prop, value)
     for attr in ('class', 'style'):
         if attr in el.attrib:
             del el.attrib[attr]
-    el.set('stroke', 'currentColor')
-    el.set('fill', 'none')
+    if paint:
+        el.set('stroke', 'currentColor')
+        el.set('fill', 'none')
 
 
 # ------------------------------------------------------------------- сборка
@@ -113,10 +118,15 @@ def build_devices(doc, devices, shapes, captured, props):
             'id': entity.split('.', 1)[1],
             'class': f"device-node {pc.TYPE_CLASS.get(dev['type'], '')}".strip(),
             'data-entity': entity,
+            # fill=transparent, а НЕ none: заливка невидима, но остаётся hit-областью —
+            # лампа тапается по всей площади, а не по тонкому контуру. Состояние
+            # (.is-on и прочие) CSS вешает сюда же, и фигуры внутри его наследуют.
+            'fill': 'transparent',
+            'stroke': 'currentColor',
         })
         for k in sorted(captured.get(i, [])):
             el = shapes[k]['el']
-            strip_paint(el, props)
+            strip_paint(el, props, paint=False)
             if shapes[k]['bbox'] is None:        # текст внутри значка («R» у датчика)
                 el.set('fill', 'currentColor')
                 el.set('stroke', 'none')
