@@ -1,0 +1,128 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="444.96 518.69 284.61 218.13">
+  <g id="walls">
+    <line x1="461.39" y1="532.87" x2="456.96" y2="532.91" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="456.96" y1="532.91" x2="456.96" y2="720.39" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="456.96" y1="720.39" x2="461.39" y2="720.39" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="461.39" y1="720.39" x2="461.39" y2="724.82" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="461.39" y1="724.82" x2="717.57" y2="724.82" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="717.57" y1="724.82" x2="717.57" y2="530.7" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="717.57" y1="530.7" x2="461.39" y2="530.69" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="461.39" y1="530.69" x2="461.39" y2="532.87" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="318.9" y1="724.82" x2="451.64" y2="724.82" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="451.64" y1="724.82" x2="451.64" y2="530.7" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="451.64" y1="530.7" x2="318.9" y2="530.7" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="986.16" y1="730.15" x2="168.42" y2="730.15" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+  </g>
+  <g id="devices">
+    <g id="kp_5_4_1" class="device-node device-panel" data-entity="event.kp_5_4_1">
+      <rect x="469.86" y="717.84" width="6.65" height="6.65" stroke-width=".43px" stroke="currentColor" fill="none" />
+      <rect x="470.74" y="718.72" width="4.88" height="4.88" stroke-width=".43px" stroke="currentColor" fill="none" />
+      <line x1="473.18" y1="723.6" x2="473.18" y2="718.72" stroke-width=".43px" stroke="currentColor" fill="none" />
+      <line x1="470.74" y1="722.38" x2="475.62" y2="722.38" stroke-width=".43px" stroke="currentColor" fill="none" />
+      <line x1="470.74" y1="721.16" x2="475.62" y2="721.16" stroke-width=".43px" stroke="currentColor" fill="none" />
+      <line x1="470.74" y1="719.94" x2="475.62" y2="719.94" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="kp_5_4_2" class="device-node device-panel" data-entity="event.kp_5_4_2">
+      <rect x="661.05" y="718.17" width="6.65" height="6.65" stroke-width=".43px" stroke="currentColor" fill="none" />
+      <rect x="661.94" y="719.06" width="4.88" height="4.88" stroke-width=".43px" stroke="currentColor" fill="none" />
+      <line x1="664.38" y1="723.94" x2="664.38" y2="719.06" stroke-width=".43px" stroke="currentColor" fill="none" />
+      <line x1="661.94" y1="722.72" x2="666.81" y2="722.72" stroke-width=".43px" stroke="currentColor" fill="none" />
+      <line x1="661.94" y1="721.5" x2="666.81" y2="721.5" stroke-width=".43px" stroke="currentColor" fill="none" />
+      <line x1="661.94" y1="720.28" x2="666.81" y2="720.28" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_6" class="device-node device-light" data-entity="light.l_5_4_6">
+      <rect x="690.18" y="533.12" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_5" class="device-node device-light" data-entity="light.l_5_4_5">
+      <rect x="650.69" y="533.12" width="3.94" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_4" class="device-node device-light" data-entity="light.l_5_4_4">
+      <rect x="611.1" y="533.12" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_3" class="device-node device-light" data-entity="light.l_5_4_3">
+      <rect x="571.51" y="533.12" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_2" class="device-node device-light" data-entity="light.l_5_4_2">
+      <rect x="532.02" y="533.12" width="3.94" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_1" class="device-node device-light" data-entity="light.l_5_4_1">
+      <rect x="492.43" y="533.12" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_13" class="device-node device-light" data-entity="light.l_5_4_13">
+      <rect x="690.18" y="572.62" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_12" class="device-node device-light" data-entity="light.l_5_4_12">
+      <rect x="650.69" y="572.62" width="3.94" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_11" class="device-node device-light" data-entity="light.l_5_4_11">
+      <rect x="611.1" y="572.62" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_19" class="device-node device-light" data-entity="light.l_5_4_19">
+      <rect x="690.18" y="612.21" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_18" class="device-node device-light" data-entity="light.l_5_4_18">
+      <rect x="650.69" y="612.21" width="3.94" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_17" class="device-node device-light" data-entity="light.l_5_4_17">
+      <rect x="611.1" y="612.21" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_25" class="device-node device-light" data-entity="light.l_5_4_25">
+      <rect x="690.18" y="651.79" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_24" class="device-node device-light" data-entity="light.l_5_4_24">
+      <rect x="650.69" y="651.79" width="3.94" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_23" class="device-node device-light" data-entity="light.l_5_4_23">
+      <rect x="611.1" y="651.79" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_31" class="device-node device-light" data-entity="light.l_5_4_31">
+      <rect x="690.18" y="691.29" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_30" class="device-node device-light" data-entity="light.l_5_4_30">
+      <rect x="650.69" y="691.29" width="3.94" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_29" class="device-node device-light" data-entity="light.l_5_4_29">
+      <rect x="611.1" y="691.29" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_10" class="device-node device-light" data-entity="light.l_5_4_10">
+      <rect x="571.51" y="572.62" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_8" class="device-node device-light" data-entity="light.l_5_4_8">
+      <rect x="532.02" y="572.62" width="3.94" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_7" class="device-node device-light" data-entity="light.l_5_4_7">
+      <rect x="492.43" y="572.62" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_16" class="device-node device-light" data-entity="light.l_5_4_16">
+      <rect x="571.51" y="612.21" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_15" class="device-node device-light" data-entity="light.l_5_4_15">
+      <rect x="532.02" y="612.21" width="3.94" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_14" class="device-node device-light" data-entity="light.l_5_4_14">
+      <rect x="492.43" y="612.21" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_22" class="device-node device-light" data-entity="light.l_5_4_22">
+      <rect x="571.51" y="651.79" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_21" class="device-node device-light" data-entity="light.l_5_4_21">
+      <rect x="532.02" y="651.79" width="3.94" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_20" class="device-node device-light" data-entity="light.l_5_4_20">
+      <rect x="492.43" y="651.79" width="4.03" height="26.55" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_28" class="device-node device-light" data-entity="light.l_5_4_28">
+      <rect x="571.51" y="691.29" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_27" class="device-node device-light" data-entity="light.l_5_4_27">
+      <rect x="532.02" y="691.29" width="3.94" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+    <g id="l_5_4_26" class="device-node device-light" data-entity="light.l_5_4_26">
+      <rect x="492.43" y="691.29" width="4.03" height="26.64" stroke-width=".43px" stroke="currentColor" fill="none" />
+    </g>
+  </g>
+  <g id="room-zones">
+    <path id="503_zal" class="room-zone" data-room-id="503_zal" d="M 456.96,724.82 L 456.96,530.69 L 717.57,530.70 L 717.57,724.82 L 456.96,724.82 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+  </g>
+</svg>

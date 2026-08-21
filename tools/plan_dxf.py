@@ -16,6 +16,8 @@ plan_dxf.py — конвертер планов: DXF (данные) + SVG (гр�
 """
 import argparse
 import collections
+import copy
+import os
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -27,25 +29,34 @@ INDENT = '  '
 
 # ------------------------------------------------------------------ стили CSS
 
-def style_widths(root):
-    """Толщины линий из <style> Illustrator: {'st1': '0.26', ...}.
+#: свойства, которые переживают снятие класса. Цвета в списке нет — его даёт
+#: тема. А вот размер шрифта потерять нельзя: буква внутри значка датчика
+#: нарисуется дефолтными 16 px и вылезет за кружок.
+KEEP_PROPS = ('stroke-width', 'font-size')
 
-    Толщину сохраняем (по ней видна иерархия: несущая стена толще перегородки),
-    а цвет выбрасываем — красит тема интерфейса.
+
+def style_props(root):
+    """Свойства классов из <style> Illustrator: {'st1': {'stroke-width': '.26'}, …}.
+
+    Толщина линии нужна (по ней видна иерархия: несущая стена толще перегородки),
+    размер шрифта — тоже; цвет выбрасываем.
     """
-    widths = {}
+    props = collections.defaultdict(dict)
     for style in root.iter(pc.NS + 'style'):
         css = ''.join(style.itertext())
         for sel, body in re.findall(r'([^{}]+)\{([^}]*)\}', css):
-            m = re.search(r'stroke-width:\s*([\d.]+)', body)
-            if not m:
-                continue
-            for cls in re.findall(r'\.([A-Za-z0-9_-]+)', sel):
-                widths[cls] = m.group(1)
-    return widths
+            found = {}
+            for prop in KEEP_PROPS:
+                m = re.search(prop + r':\s*([\d.]+px|[\d.]+)', body)
+                if m:
+                    found[prop] = m.group(1)
+            if found:
+                for cls in re.findall(r'\.([A-Za-z0-9_-]+)', sel):
+                    props[cls].update(found)
+    return props
 
 
-def strip_paint(el, widths):
+def strip_paint(el, props):
     """Снять с элемента краску чертежа, оставив толщину линии.
 
     Толщина остаётся (по ней видна иерархия: несущая стена толще перегородки),
@@ -57,9 +68,8 @@ def strip_paint(el, widths):
     а не чёрные пятна. Для плана, который живёт отдельно от интерфейса и
     ездит по объектам, это важнее экономии двух атрибутов.
     """
-    cls = el.get('class')
-    if cls and cls in widths:
-        el.set('stroke-width', widths[cls])
+    for prop, value in (props.get(el.get('class')) or {}).items():
+        el.set(prop, value)
     for attr in ('class', 'style'):
         if attr in el.attrib:
             del el.attrib[attr]
@@ -80,16 +90,16 @@ def flatten_layer(layer):
     return out
 
 
-def build_walls(layer, widths):
+def build_walls(layer, props):
     g = ET.Element(pc.NS + 'g', {'id': 'walls'})
     for el in flatten_layer(layer):
-        strip_paint(el, widths)
+        strip_paint(el, props)
         el.set('class', 'plan-wall')
         g.append(el)
     return g
 
 
-def build_devices(doc, devices, shapes, captured, widths):
+def build_devices(doc, devices, shapes, captured, props):
     """Значок = <g class="device-node …" data-entity="…"> с графикой внутри.
 
     Класс и data-entity висят на группе, а не на фигуре: датчик — это кружок
@@ -106,7 +116,7 @@ def build_devices(doc, devices, shapes, captured, widths):
         })
         for k in sorted(captured.get(i, [])):
             el = shapes[k]['el']
-            strip_paint(el, widths)
+            strip_paint(el, props)
             if shapes[k]['bbox'] is None:        # текст внутри значка («R» у датчика)
                 el.set('fill', 'currentColor')
                 el.set('stroke', 'none')
@@ -168,6 +178,112 @@ def content_viewbox(groups, margin=0.02):
     return (min(xs) - pad, min(ys) - pad, w + 2 * pad, h + 2 * pad)
 
 
+# ------------------------------------------------------- нарезка планов комнат
+
+ROOM_PADDING = 12.0
+
+
+def element_bbox(el):
+    """Габарит фигуры или группы в координатах плана."""
+    xs, ys = [], []
+    for node in el.iter():
+        tag = node.tag[len(pc.NS):] if node.tag.startswith(pc.NS) else node.tag
+        try:
+            if tag == 'line':
+                xs += [float(node.get('x1')), float(node.get('x2'))]
+                ys += [float(node.get('y1')), float(node.get('y2'))]
+            elif tag == 'rect':
+                x, y = float(node.get('x')), float(node.get('y'))
+                xs += [x, x + float(node.get('width'))]
+                ys += [y, y + float(node.get('height'))]
+            elif tag == 'circle':
+                cx, cy, r = (float(node.get(a)) for a in ('cx', 'cy', 'r'))
+                xs += [cx - r, cx + r]; ys += [cy - r, cy + r]
+            elif tag == 'path':
+                nums = [float(v) for v in re.findall(r'-?\d+(?:\.\d+)?', node.get('d') or '')]
+                xs += nums[0::2]; ys += nums[1::2]
+        except (TypeError, ValueError):
+            continue
+    return (min(xs), min(ys), max(xs), max(ys)) if xs else None
+
+
+def path_points(d):
+    nums = [float(v) for v in re.findall(r'-?\d+(?:\.\d+)?', d or '')]
+    return list(zip(nums[0::2], nums[1::2]))
+
+
+def point_in_polygon(pt, poly):
+    """Луч вправо. Помещение — не всегда прямоугольник (рекреация о семи углах),
+    поэтому «центр внутри рамки» не годится: рамка захватила бы соседей."""
+    x, y = pt
+    inside = False
+    n = len(poly)
+    for i in range(n):
+        x1, y1 = poly[i]
+        x2, y2 = poly[(i + 1) % n]
+        if (y1 > y) != (y2 > y):
+            xin = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+            if x < xin:
+                inside = not inside
+    return inside
+
+
+def intersects(box, frame):
+    return not (box[2] < frame[0] or box[0] > frame[2]
+                or box[3] < frame[1] or box[1] > frame[3])
+
+
+def cut_rooms(walls_g, devices_g, zones_g, out_dir):
+    """Мини-план помещения = его зона + стены вокруг + устройства ВНУТРИ зоны.
+
+    Координаты не пересчитываются: рамку задаёт viewBox. Так один и тот же
+    data-entity указывает на одно место и на этаже, и в комнате — двух наборов
+    координат не существует, расходиться нечему.
+
+    Стены берём по ПЕРЕСЕЧЕНИЮ с рамкой, а не по включению: стена самого
+    помещения, уходящая за рамку, иначе потерялась бы, и комната осталась бы
+    без контура.
+    """
+    made = []
+    for zone in list(zones_g):
+        rid = zone.get('data-room-id')
+        poly = path_points(zone.get('d'))
+        if not poly:
+            continue
+        xs = [p[0] for p in poly]; ys = [p[1] for p in poly]
+        frame = (min(xs) - ROOM_PADDING, min(ys) - ROOM_PADDING,
+                 max(xs) + ROOM_PADDING, max(ys) + ROOM_PADDING)
+
+        room = ET.Element(pc.NS + 'svg', {
+            'version': '1.1',
+            'viewBox': f"{frame[0]:.2f} {frame[1]:.2f} "
+                       f"{frame[2] - frame[0]:.2f} {frame[3] - frame[1]:.2f}",
+        })
+        w = ET.SubElement(room, pc.NS + 'g', {'id': 'walls'})
+        for el in list(walls_g):
+            box = element_bbox(el)
+            if box and intersects(box, frame):
+                w.append(copy.deepcopy(el))
+        d = ET.SubElement(room, pc.NS + 'g', {'id': 'devices'})
+        count = 0
+        for el in list(devices_g):
+            box = element_bbox(el)
+            if not box:
+                continue
+            center = ((box[0] + box[2]) / 2, (box[1] + box[3]) / 2)
+            if point_in_polygon(center, poly):
+                d.append(copy.deepcopy(el))
+                count += 1
+        z = ET.SubElement(room, pc.NS + 'g', {'id': 'room-zones'})
+        z.append(copy.deepcopy(zone))
+
+        indent(room)
+        path = os.path.join(out_dir, f"{rid}.svg")
+        ET.ElementTree(room).write(path, encoding='utf-8', xml_declaration=True)
+        made.append((rid, count, len(w)))
+    return made
+
+
 def indent(el, level=0):
     pad = '\n' + INDENT * level
     if len(el):
@@ -197,6 +313,9 @@ def main():
                     help='оставить текстовые подписи помещений из чертежа')
     ap.add_argument('--keep-viewbox', action='store_true',
                     help='оставить viewBox исходника, не поджимать под содержимое')
+    ap.add_argument('--rooms', metavar='DIR',
+                    help='нарезать мини-планы помещений в этот каталог '
+                         '(assets/rooms/<area_id>.svg)')
     args = ap.parse_args()
 
     try:
@@ -240,17 +359,17 @@ def main():
         sys.exit(f"план не годен: {exc}\n"
                  f"подробности:  python3 plan_probe.py {args.dxf!r} {args.svg!r}")
 
-    widths = style_widths(root)
+    props = style_props(root)
     out = ET.Element(pc.NS + 'svg', {
         'version': '1.1',
         'viewBox': root.get('viewBox') or '0 0 1920 1080',
     })
-    out.append(build_walls(layers[pc.WALL_LAYER], widths))
-    out.append(build_devices(doc, devices, shapes, captured, widths))
+    out.append(build_walls(layers[pc.WALL_LAYER], props))
+    out.append(build_devices(doc, devices, shapes, captured, props))
     if args.keep_room_labels and 'Room_number' in layers:
         g = ET.Element(pc.NS + 'g', {'id': 'room-labels'})
         for el in flatten_layer(layers['Room_number']):
-            strip_paint(el, widths)
+            strip_paint(el, props)
             el.set('class', 'plan-label')
             g.append(el)
         out.append(g)
@@ -265,6 +384,14 @@ def main():
     indent(out)
     ET.ElementTree(out).write(args.output, encoding='utf-8', xml_declaration=True)
 
+    cut = []
+    if args.rooms and rooms:
+        os.makedirs(args.rooms, exist_ok=True)
+        cut = cut_rooms(out.find(pc.NS + 'g[@id="walls"]'),
+                        out.find(pc.NS + 'g[@id="devices"]'),
+                        out.find(pc.NS + 'g[@id="room-zones"]'),
+                        args.rooms)
+
     by_type = collections.Counter(d['type'] for d in devices)
     print(f"план записан: {args.output}")
     print(f"  устройств:  " + ", ".join(f"{t}={n}" for t, n in sorted(by_type.items()))
@@ -275,6 +402,8 @@ def main():
     print(f"  масштаб:    {sx:.8f}   поворот {rot:+.6f}°   перекос {shear:+.6f}°")
     print(f"  остаток:    max "
           f"{max(pc.residuals(devices, shapes, captured, matrix), default=0):.5f} px")
+    for rid, ndev, nwall in cut:
+        print(f"  комната:    {rid}.svg — устройств {ndev}, линий стен {nwall}")
     unclaimed = len(shapes) - len(claims)
     if unclaimed:
         print(f"  ⚠ {unclaimed} элементов слоя значков не принадлежат ни одному устройству "
