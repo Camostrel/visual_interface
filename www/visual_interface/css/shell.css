@@ -536,6 +536,42 @@
   display: none;
 }
 
+/* Секция-ссылка: у неё одно действие, поэтому она сама кнопка, без раскрытия.
+   Заголовок секции не показываем — он повторял бы надпись на кнопке. */
+.panel-section-link h3 {
+  display: none;
+}
+
+.panel-section-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-soft);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.panel-section-button:hover {
+  border-color: color-mix(in srgb, var(--accent), transparent 45%);
+  background: var(--accent-soft);
+}
+
+.panel-section-button-icon {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
 /* Выбор этажа стоит там, где раньше был просто его номер: заголовок и есть
    навигация (v0.13.10). Отдельная полоса с этажами и темой на телефоне съедала
    строку, а больше в ней ничего не было. */
@@ -987,6 +1023,20 @@
   /* «Опции» — только контейнер. Секции внутри остаются СВЁРНУТЫМИ кнопками и
      раскрываются по одной, как раньше: разворачивать их все сразу — значит снова
      занять полэкрана, ровно то, от чего уходили. */
+
+  /* Секция-ссылка (Расписание) в списке «Опций» — такая же строка, как остальные,
+     только сразу открывает попап, без промежуточного раскрытия. */
+  .right-panel .panel-section-link {
+    border: none;
+    background: transparent;
+  }
+
+  .right-panel .panel-section-button {
+    min-height: 44px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 15px;
+  }
 
   .right-panel .brand,
   .right-panel.is-collapsed .brand {
