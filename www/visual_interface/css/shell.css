@@ -1210,6 +1210,43 @@
   display: none;
 }
 
+/* ── Раскрытие «Опций» через View Transitions (v0.14.1) ───────────────────────
+   Анимация высоты в потоке заставляла план пере-вписываться каждый кадр: 727
+   элементов на этаже (1760 на тестовом 3-м) перерисовывались 60 раз в секунду,
+   отсюда рябь и подвисание на телефоне. Здесь раскладка меняется РАЗОМ, а браузер
+   снимает картинку до и после и анимирует снимки — живой SVG не трогается вовсе.
+
+   Имена назначаются ТОЛЬКО на время этого перехода (атрибут на :root), иначе они
+   вмешались бы в навигацию этаж ↔ комната, у которой свой сценарий. */
+:root[data-options-transition] .right-panel {
+  view-transition-name: arvid-options;
+}
+
+:root[data-options-transition] [data-floor-svg] {
+  view-transition-name: arvid-plan;
+}
+
+/* Группа морфит положение и размер — это и есть «панель разъезжается,
+   план сжимается». */
+::view-transition-group(arvid-options),
+::view-transition-group(arvid-plan) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0.3, 1);
+}
+
+/* Снимки плана не кроссфейдим: два почти одинаковых чертежа, наложенные друг на
+   друга с прозрачностью, читаются как двоение. Показываем новый сразу, а размер
+   доигрывает группа. */
+::view-transition-old(arvid-plan) {
+  animation: none;
+  opacity: 0;
+}
+
+::view-transition-new(arvid-plan) {
+  animation: none;
+  opacity: 1;
+}
+
 /* v0.9.0: анимации SPA-переходов через View Transitions API */
 ::view-transition-old(root),
 ::view-transition-new(root) {

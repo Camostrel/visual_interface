@@ -162,8 +162,14 @@ class ArvidFloorPage {
     if (!panel || !toggle || toggle.dataset.optionsReady === "1") return;
 
     toggle.dataset.optionsReady = "1";
-    toggle.addEventListener("click", () => {
-      const open = !panel.classList.contains("is-options-open");
+
+    // Смена состояния — РАЗОМ, без анимации высоты. Плавность даёт View Transitions:
+    // браузер снимает старую и новую картинку и анимирует их как изображения.
+    // Живой SVG плана (727 элементов, на тестовом этаже 1760) при этом не
+    // перерисовывается ни разу — прежняя анимация max-height заставляла его
+    // пере-вписываться каждый кадр, отсюда и рябь. Тот же механизм уже работает
+    // на переходах этаж ↔ комната.
+    const applyOptionsState = (open) => {
       panel.classList.toggle("is-options-open", open);
       toggle.setAttribute("aria-expanded", String(open));
 
@@ -178,6 +184,32 @@ class ArvidFloorPage {
           item.setAttribute("aria-expanded", "false");
         });
       }
+
+      // Вписываем план СИНХРОННО, пока снимок нового состояния ещё не сделан:
+      // ResizeObserver сработал бы позже, и план дёрнулся бы уже после анимации.
+      if (this.panZoom && !this.panZoom.userZoomed) {
+        void panel.offsetHeight;                       // просим пересчитать раскладку сейчас
+        this.panZoom.fitToView();
+      }
+    };
+
+    toggle.addEventListener("click", () => {
+      const open = !panel.classList.contains("is-options-open");
+
+      // Помечаем переход, чтобы CSS отличил его от навигации этаж ↔ комната.
+      document.documentElement.dataset.optionsTransition = open ? "open" : "close";
+
+      if (typeof document.startViewTransition === "function") {
+        const transition = document.startViewTransition(() => applyOptionsState(open));
+        transition.finished.finally(() => {
+          delete document.documentElement.dataset.optionsTransition;
+        });
+      } else {
+        // Старый браузер — просто мгновенно, как было.
+        applyOptionsState(open);
+        delete document.documentElement.dataset.optionsTransition;
+      }
+
       ARVID_LOG.debug(this.logArea, "Mobile options toggled", { open });
     });
 
