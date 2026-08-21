@@ -186,7 +186,9 @@ class ArvidRoomPage {
 
     (this.planDevices || []).forEach(({ entityId: id }) => ids.add(id));
 
-    ids.add(`light.${this.areaId}`);
+    // Общая группа помещения — её состояние нужно подписке, иначе «N/N включено»
+    // и тап по зоне узнают о ней только после перезагрузки страницы.
+    ids.add(ARVID_APP.roomLightGroupId(this.areaId));
 
     return [...ids];
   }
@@ -1076,9 +1078,9 @@ class ArvidRoomPage {
     return `arvid.room.${this.areaId}.lightTarget`;
   }
 
-  // Формула HA-группы света комнаты: light.<area_id> (см. ARVID_APP.lightGroupState).
+  // Общая группа света помещения: light.<room_slug>_obshchii (ARVID_APP.roomLightGroupId).
   getRoomLightGroupId() {
-    return `light.${this.areaId}`;
+    return ARVID_APP.roomLightGroupId(this.areaId);
   }
 
   getLightTargetIds(card, lights) {
@@ -1087,8 +1089,8 @@ class ArvidRoomPage {
 
     if (value !== "all") return [value];
 
-    // «Вся комната» — детерминированно через HA-группу light.<area_id>, если она есть.
-    const group = ARVID_APP.lightGroupState(this.areaId);
+    // «Вся комната» — детерминированно через общую группу помещения, если она есть.
+    const group = ARVID_APP.roomLightGroupState(this.areaId);
     if (group) return [group.entity_id];
 
     // Фолбэк (группы ещё нет): отправляем все лампы-члены помещения.

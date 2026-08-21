@@ -571,7 +571,7 @@ class ArvidFloorPage {
 
     this.getAreasForCurrentFloor().forEach((area) => {
       ARVID_APP.registry.entityIdsForArea(area.area_id).forEach((id) => ids.add(id));
-      ids.add(`light.${area.area_id}`);                       // группа света комнаты
+      ids.add(ARVID_APP.roomLightGroupId(area.area_id));      // общая группа помещения
     });
 
     (this.planDevices || []).forEach(({ entityId: id }) => ids.add(id));
@@ -739,9 +739,9 @@ class ArvidFloorPage {
    * предупреждение (лампы поиском не собираем — «свет только через группы»).
    */
   async turnOffRoomLights(areaId) {
-    const group = ARVID_APP.lightGroupState(areaId);
+    const group = ARVID_APP.roomLightGroupState(areaId);
     if (!group) {
-      ARVID_LOG.warn(this.logArea, `Нет HA-группы light.${areaId} — свет комнаты не выключаем (только через группу)`, { areaId });
+      ARVID_LOG.warn(this.logArea, `Нет HA-группы ${ARVID_APP.roomLightGroupId(areaId)} — свет комнаты не выключаем (только через группу)`, { areaId });
       return;
     }
     await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: group.entity_id });
@@ -768,8 +768,8 @@ class ArvidFloorPage {
     const motionSensors = entities.filter((state) => ArvidDeviceUi.isMotion(state));
     const luxSensor = entities.find((state) => ArvidDeviceUi.isIlluminance(state));
 
-    // Истина о «свет включён» — HA-группа комнаты, если она есть; иначе любая лампа.
-    const group = ARVID_APP.lightGroupState(areaId);
+    // Истина о «свет включён» — общая группа помещения, если она есть; иначе любая лампа.
+    const group = ARVID_APP.roomLightGroupState(areaId);
     const hasLightOn = group ? group.state === "on" : lightsOn.length > 0;
 
     // Здоровье устройств помещения — снимок ядра DALI (свою логику offline не ведём).
@@ -1339,9 +1339,9 @@ class ArvidFloorPage {
    * Фолбэк (группы ещё нет) — сборка ламп комнаты, с предупреждением в лог.
    */
   async toggleRoomLights(areaId) {
-    const group = ARVID_APP.lightGroupState(areaId);
+    const group = ARVID_APP.roomLightGroupState(areaId);
     if (!group) {
-      ARVID_LOG.warn(this.logArea, `Нет HA-группы light.${areaId} — свет комнаты не переключаем (только через группу)`, { areaId });
+      ARVID_LOG.warn(this.logArea, `Нет HA-группы ${ARVID_APP.roomLightGroupId(areaId)} — свет комнаты не переключаем (только через группу)`, { areaId });
       return;
     }
     const action = group.state === "on" ? "turn_off" : "turn_on";

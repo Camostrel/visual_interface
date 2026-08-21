@@ -137,7 +137,7 @@ state_changed → ArvidFloorPage.handleStateChanged()   (rAF-коалесцен�
 health-снимок → ArvidHealth._onUpdate → applyHealthToUi()
   → applyZoneStateClasses()
     → для каждой .room-zone[data-room-id] один вызов getRoomStats(areaId):
-        hasLightOn    → .has-light-on   группа light.<area_id>, иначе «горит любая лампа состава»
+        hasLightOn    → .has-light-on   группа light.<area_id>_obshchii, иначе «горит любая лампа состава»
         motionActive  → .has-motion     сработал ЛЮБОЙ датчик движения помещения
         offlineCount  → .has-offline    health: lamp_offline/lamp_unknown/sensor_unknown/panel_unknown
         anomalyCount  → .has-anomaly    health: motion_stuck/motion_idle/lux_stale
@@ -206,7 +206,7 @@ ArvidFloorPage.initHealth() → ARVID_APP.health.start()
 ### 4.2 Группы света (детерминированные, v0.6.x)
 
 ```
-комната → light.<area_id>    (light.ofis)
+комната → light.<area_id>_obshchii   (light.512_koridor_obshchii)
 этаж    → light.<floor_id>   (light.3_etazh)
 объект  → light.all
 ```
