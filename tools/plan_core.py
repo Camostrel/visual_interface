@@ -260,6 +260,23 @@ def svg_layers(root):
     return {decode_id(g.get('id')): g for g in root if g.tag == NS + 'g'}
 
 
+def num(el, attr, default=0.0):
+    """Число из атрибута. Отсутствующий атрибут — это НОЛЬ, а не ошибка.
+
+    Illustrator опускает координату, если она равна нулю (`<line x1=".." y1=".."
+    x2=".."/>` без `y2`), и по спеке SVG это законный ноль. Пока в чертеже не было
+    стен на нулевой координате, разницы не было; на первом же плане с такой стеной
+    элемент считался битым.
+    """
+    raw = el.get(attr)
+    if raw is None or raw == '':
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
 def shapes_of(layer):
     """Плоский список фигур слоя: центр, габарит, родитель.
 
@@ -273,16 +290,16 @@ def shapes_of(layer):
             shape = {'el': el, 'parent': parent, 'tag': tag, 'bbox': None}
             try:
                 if tag == 'rect':
-                    x, y, w, h = (float(el.get(a)) for a in ('x', 'y', 'width', 'height'))
+                    x, y, w, h = (num(el, a) for a in ('x', 'y', 'width', 'height'))
                     shape.update(cx=x + w / 2, cy=y + h / 2, bbox=(x, y, x + w, y + h))
                 elif tag == 'circle':
-                    cx, cy, r = (float(el.get(a)) for a in ('cx', 'cy', 'r'))
+                    cx, cy, r = (num(el, a) for a in ('cx', 'cy', 'r'))
                     shape.update(cx=cx, cy=cy, bbox=(cx - r, cy - r, cx + r, cy + r))
                 elif tag == 'ellipse':
-                    cx, cy, rx, ry = (float(el.get(a)) for a in ('cx', 'cy', 'rx', 'ry'))
+                    cx, cy, rx, ry = (num(el, a) for a in ('cx', 'cy', 'rx', 'ry'))
                     shape.update(cx=cx, cy=cy, bbox=(cx - rx, cy - ry, cx + rx, cy + ry))
                 elif tag == 'line':
-                    x1, y1, x2, y2 = (float(el.get(a)) for a in ('x1', 'y1', 'x2', 'y2'))
+                    x1, y1, x2, y2 = (num(el, a) for a in ('x1', 'y1', 'x2', 'y2'))
                     shape.update(cx=(x1 + x2) / 2, cy=(y1 + y2) / 2,
                                  bbox=(min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)))
                 elif tag in ('polygon', 'polyline'):

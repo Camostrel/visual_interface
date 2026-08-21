@@ -164,14 +164,14 @@ def content_viewbox(groups, margin=0.02):
             tag = el.tag[len(pc.NS):] if el.tag.startswith(pc.NS) else el.tag
             try:
                 if tag == 'line':
-                    xs += [float(el.get('x1')), float(el.get('x2'))]
-                    ys += [float(el.get('y1')), float(el.get('y2'))]
+                    xs += [pc.num(el, 'x1'), pc.num(el, 'x2')]
+                    ys += [pc.num(el, 'y1'), pc.num(el, 'y2')]
                 elif tag == 'rect':
-                    x, y = float(el.get('x')), float(el.get('y'))
-                    xs += [x, x + float(el.get('width'))]
-                    ys += [y, y + float(el.get('height'))]
+                    x, y = pc.num(el, 'x'), pc.num(el, 'y')
+                    xs += [x, x + pc.num(el, 'width')]
+                    ys += [y, y + pc.num(el, 'height')]
                 elif tag == 'circle':
-                    cx, cy, r = (float(el.get(a)) for a in ('cx', 'cy', 'r'))
+                    cx, cy, r = (pc.num(el, a) for a in ('cx', 'cy', 'r'))
                     xs += [cx - r, cx + r]; ys += [cy - r, cy + r]
                 elif tag == 'path':
                     nums = [float(v) for v in re.findall(r'-?\d+(?:\.\d+)?', el.get('d') or '')]
@@ -214,7 +214,7 @@ def element_bbox(el):
                 xs += nums[0::2]; ys += nums[1::2]
         except (TypeError, ValueError):
             continue
-    return (min(xs), min(ys), max(xs), max(ys)) if xs else None
+    return (min(xs), min(ys), max(xs), max(ys)) if xs and ys else None
 
 
 def path_points(d):
