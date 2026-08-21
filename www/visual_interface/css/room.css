@@ -866,3 +866,38 @@
   margin-top: 4px;
   font-size: 22px;
 }
+
+/* Автояркость в карточке датчиков (вкл/выкл поддержания освещённости) */
+.autobright-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.autobright-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.autobright-actions {
+  flex: 0 0 auto;
+  width: auto;
+  gap: 6px;
+}
+
+.autobright-actions button {
+  flex: 0 0 auto;
+  padding: 6px 16px;
+}
+
+/* Активная сторона тумблера (Вкл/Выкл) */
+.autobright-actions button.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #06111c;
+  font-weight: 700;
+}

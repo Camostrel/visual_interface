@@ -339,6 +339,9 @@ class ArvidRoomPage {
       row.classList.toggle("is-offline", this.isDeviceOffline(anchor));
     });
 
+    // Автояркость: отражаем состояние тумблеров switch.*_act (их приносит подписка на сегмент).
+    if (container.querySelector('[data-autobright="1"]')) this._setAutobrightUi(this.isAutobrightnessOn());
+
     // Панели: последнее событие (+ статус связи).
     container.querySelectorAll("[data-panel-entity]").forEach((row) => {
       const state = ARVID_APP.registry.getState(row.getAttribute("data-panel-entity"));
@@ -1191,7 +1194,80 @@ class ArvidRoomPage {
 
     const list = card.querySelector(".sensor-status-list");
     this.sortSensorsForDisplay(sensors).forEach((state) => list.appendChild(this.renderSensorStatusLine(state)));
+
+    // Автояркость (0202): вкл/выкл поддержания освещённости — только если в комнате есть
+    // датчик освещённости (иначе управлять нечем).
+    if (sensors.some((state) => ArvidDeviceUi.isIlluminance(state))) {
+      card.appendChild(this.renderAutobrightnessControl());
+    }
     return card;
+  }
+
+  /**
+   * Переключатель автояркости комнаты. Управление — сервис ядра `set_autobrightness {enabled}`
+   * по `area_id` (не admin; HA раскрывает область, сервис сам выбирает датчики освещённости 0202).
+   * Состояние — тумблеры `switch.*_act` датчиков комнаты (их приносит подписка на сегмент, D1).
+   * Тонкую настройку контура (цель-группа, коридор люксов) НЕ трогаем — она в admin-карточке ядра.
+   */
+  renderAutobrightnessControl() {
+    const on = this.isAutobrightnessOn();
+    const wrap = document.createElement("div");
+    wrap.className = "autobright-control";
+    wrap.dataset.autobright = "1";
+    wrap.innerHTML = `
+      <span class="autobright-label">Автояркость</span>
+      <div class="segmented-actions autobright-actions">
+        <button type="button" data-autobright-on class="${on ? "is-active" : ""}">Вкл</button>
+        <button type="button" data-autobright-off class="${on ? "" : "is-active"}">Выкл</button>
+      </div>
+    `;
+    wrap.querySelector("[data-autobright-on]").addEventListener("click", () => this.setAutobrightness(true));
+    wrap.querySelector("[data-autobright-off]").addEventListener("click", () => this.setAutobrightness(false));
+    return wrap;
+  }
+
+  getAutobrightnessSwitches() {
+    // Тумблеры автояркости (switch.*_act) — на устройствах датчиков освещённости комнаты (0202).
+    const switches = [];
+    this.getRoomComposition()
+      .filter((state) => ArvidDeviceUi.isIlluminance(state))
+      .forEach((lux) => {
+        const deviceId = ARVID_APP.registry.getDeviceId(lux.entity_id);
+        if (!deviceId) return;
+        ARVID_APP.registry.getEntitiesForDevice(deviceId).forEach((st) => {
+          if (st.entity_id.startsWith("switch.")) switches.push(st);
+        });
+      });
+    return switches;
+  }
+
+  isAutobrightnessOn() {
+    return this.getAutobrightnessSwitches().some((st) => st.state === "on");
+  }
+
+  _setAutobrightUi(on) {
+    const wrap = document.querySelector('[data-autobright="1"]');
+    if (!wrap) return;
+    wrap.querySelector("[data-autobright-on]")?.classList.toggle("is-active", on);
+    wrap.querySelector("[data-autobright-off]")?.classList.toggle("is-active", !on);
+  }
+
+  async setAutobrightness(enabled) {
+    ARVID_LOG.info(this.logArea, "set_autobrightness", { areaId: this.areaId, enabled });
+    this._setAutobrightUi(enabled);   // оптимистично; подтвердит switch.*_act через подписку
+    try {
+      // ⚠ Адресуемся ОБЛАСТЬЮ (не ms_): сервис сам выберет датчики освещённости 0202.
+      await ARVID_APP.ha.callService(
+        "arvid_dali_center",
+        "set_autobrightness",
+        { enabled },
+        { area_id: this.areaId },
+      );
+    } catch (err) {
+      ARVID_LOG.error(this.logArea, "Ошибка set_autobrightness", err);
+      this._setAutobrightUi(this.isAutobrightnessOn());   // откат к реальному состоянию
+      alert(err?.message || "Не удалось изменить автояркость");
+    }
   }
 
   sortSensorsForDisplay(sensors) {
