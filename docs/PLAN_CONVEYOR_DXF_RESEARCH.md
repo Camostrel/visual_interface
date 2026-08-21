@@ -222,6 +222,7 @@ python3 tools/plan_probe.py "tools/5 этаж.dxf" "tools/5 этаж.svg"
 - У датчиков есть `MANUFACTURER` / `MODEL`, у панелей ещё и `KEYS` (число клавиш) — в скоуп
   плана не входят, но лежат в чертеже и доступны, если понадобятся.
 - `ezdxf` ставился как `pip install --break-system-packages ezdxf` (venv в системе нет).
+- Исходные пары DXF+SVG в репозиторий не кладём (`.gitignore`) — это планы объекта.
 
 ### Что это значит для A1
 

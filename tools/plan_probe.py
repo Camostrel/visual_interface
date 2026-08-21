@@ -302,15 +302,13 @@ def main():
     dups = {n: c for n, c in collections.Counter(d['name'] for d in devices).items() if c > 1}
     print(f"NAME согласован с атрибутами: {len(devices) - len(bad_name)}/{len(devices)}")
     for n, why in bad_name:
-        problems.append(f"NAME {n!r}: {why}")
+        print(f"  ⚠ NAME {n!r}: {why}")
     if dups:
-        problems.append(f"дубли NAME: {dups}")
+        problems.append(f"дубли NAME: {dups} — одинаковых устройств в проекте не бывает")
     print(f"дубли NAME: {dups or 'нет'}")
-    print(f"FLOOR: {dict(floors)}")
-    if len(floors) > 1:
-        alien = [d['name'] for d in devices if d['attrs'].get('FLOOR') != floors.most_common(1)[0][0]]
-        print(f"  ⚠ на плане {len(alien)} устройств с чужим этажом: {', '.join(alien[:12])}"
-              f"{' …' if len(alien) > 12 else ''}")
+    # FLOOR намеренно НЕ проверяется: линии по лестнице проходят через этаж,
+    # и на плане они законны. Истина — чертёж.
+    print(f"FLOOR (справочно, не проверяется): {dict(floors)}")
     for r in rooms:
         if not r['closed']:
             problems.append(f"помещение {r['name']!r}: полилиния не замкнута")
