@@ -19,12 +19,12 @@
   </script>
   <!-- ?v=версия — разбиватель кеша (HA отдаёт /local/ с max-age 31 день). Деплой правит эти метки
        вместе с APP_VERSION в js/config.js. См. docs/DEPLOY.md, раздел про кеш. -->
-  <link rel="stylesheet" href="css/themes.css?v=v0.13.9">
-  <link rel="stylesheet" href="css/base.css?v=v0.13.9">
-  <link rel="stylesheet" href="css/shell.css?v=v0.13.9">
-  <link rel="stylesheet" href="css/floor.css?v=v0.13.9">
-  <link rel="stylesheet" href="css/room.css?v=v0.13.9">
-  <link rel="stylesheet" href="css/schedule.css?v=v0.13.9">
+  <link rel="stylesheet" href="css/themes.css?v=v0.13.10">
+  <link rel="stylesheet" href="css/base.css?v=v0.13.10">
+  <link rel="stylesheet" href="css/shell.css?v=v0.13.10">
+  <link rel="stylesheet" href="css/floor.css?v=v0.13.10">
+  <link rel="stylesheet" href="css/room.css?v=v0.13.10">
+  <link rel="stylesheet" href="css/schedule.css?v=v0.13.10">
 </head>
 <body>
   <div class="arvid-spa" data-spa-root>
@@ -78,7 +78,13 @@
           <main class="main-panel">
             <header class="topbar">
               <div class="topbar-title">
-                <h1><span data-building-name>ARVID Smart Building</span> | <span data-current-floor-name>Этаж</span></h1>
+                <h1>
+                  <span data-building-name>ARVID Smart Building</span>
+                  <!-- Текстовое имя этажа оставлено для JS (он его обновляет) и для
+                       поиска по странице; на экране этаж показывает селектор рядом. -->
+                  <span class="topbar-floor-name" data-current-floor-name>Этаж</span>
+                </h1>
+                <select class="topbar-floor-select" data-floor-select aria-label="Выбор этажа"></select>
                 <p>Навигатор по зданию</p>
               </div>
               <div class="map-mode-switch" role="group" aria-label="Режим карты" data-map-mode-switch>
@@ -103,7 +109,7 @@
                 </button>
               </div>
               <div class="topbar-actions">
-                <select data-floor-select aria-label="Выбор этажа"></select>
+                <button class="header-button" data-theme-toggle title="Светлая / тёмная тема" aria-label="Светлая / тёмная тема">◐</button>
               </div>
             </header>
 
@@ -339,20 +345,20 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=v0.13.9"></script>
-  <script src="js/logger.js?v=v0.13.9"></script>
-  <script src="js/ha-ws.js?v=v0.13.9"></script>
-  <script src="js/floorplan-storage.js?v=v0.13.9"></script>
-  <script src="js/ha-registry.js?v=v0.13.9"></script>
-  <script src="js/health.js?v=v0.13.9"></script>
-  <script src="js/app-state.js?v=v0.13.9"></script>
-  <script src="js/svg-utils.js?v=v0.13.9"></script>
-  <script src="js/device-ui.js?v=v0.13.9"></script>
-  <script src="js/shell-ui.js?v=v0.13.9"></script>
-  <script src="js/floor-page.js?v=v0.13.9"></script>
-  <script src="js/room-page.js?v=v0.13.9"></script>
-  <script src="js/spa-router.js?v=v0.13.9"></script>
-  <script src="js/schedule-ui.js?v=v0.13.9"></script>
+  <script src="js/config.js?v=v0.13.10"></script>
+  <script src="js/logger.js?v=v0.13.10"></script>
+  <script src="js/ha-ws.js?v=v0.13.10"></script>
+  <script src="js/floorplan-storage.js?v=v0.13.10"></script>
+  <script src="js/ha-registry.js?v=v0.13.10"></script>
+  <script src="js/health.js?v=v0.13.10"></script>
+  <script src="js/app-state.js?v=v0.13.10"></script>
+  <script src="js/svg-utils.js?v=v0.13.10"></script>
+  <script src="js/device-ui.js?v=v0.13.10"></script>
+  <script src="js/shell-ui.js?v=v0.13.10"></script>
+  <script src="js/floor-page.js?v=v0.13.10"></script>
+  <script src="js/room-page.js?v=v0.13.10"></script>
+  <script src="js/spa-router.js?v=v0.13.10"></script>
+  <script src="js/schedule-ui.js?v=v0.13.10"></script>
   <script>
     window.ARVID_SPA = new ArvidSpaApp();
     window.ARVID_SPA.init()

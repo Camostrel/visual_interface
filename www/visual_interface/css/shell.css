@@ -536,6 +536,41 @@
   display: none;
 }
 
+/* Выбор этажа стоит там, где раньше был просто его номер: заголовок и есть
+   навигация (v0.13.10). Отдельная полоса с этажами и темой на телефоне съедала
+   строку, а больше в ней ничего не было. */
+.topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.topbar-title h1 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Имя этажа текстом больше не показываем — его заменил селектор. */
+.topbar-floor-name {
+  display: none;
+}
+
+.topbar-floor-select {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-soft);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 /* Только «показать целиком» (v0.13.7): кнопки ±  и метка масштаба убраны — масштаб
    меняется щипком и колесом, а панель на краю плана съедала полезное место.
    Живёт в ПРАВОМ нижнем углу плана. */
@@ -667,8 +702,14 @@
     overflow: hidden;
   }
 
+  /* Полоса с этажами и темой убрана (v0.13.10): и то и другое переехало в шапку,
+     а строка на телефоне дороже. */
   .left-panel,
   .left-panel.is-collapsed {
+    display: none !important;
+  }
+
+  .left-panel--unused {
     order: 1;
     height: auto;
     display: grid;
@@ -794,10 +835,36 @@
     display: none;
   }
 
-  /* Скрыт селектор этажа: этажи и так стоят кнопками в верхней полосе.
-     Режимы карты живут отдельным блоком и этим правилом не задеваются. */
+  /* В шапке теперь всё: слева название с выбором этажа, справа тема и режимы.
+     Верхняя полоса (этажи + тема) на телефоне убрана — см. .left-panel ниже. */
   .topbar-actions {
-    display: none;
+    display: flex;
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .topbar-actions .header-button {
+    min-height: 34px;
+    min-width: 38px;
+    padding: 0 10px;
+    border-radius: 11px;
+    font-size: 14px;
+  }
+
+  .topbar-title h1 {
+    font-size: 15px;
+  }
+
+  .topbar-floor-select {
+    min-height: 32px;
+    padding: 0 8px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  /* Название здания уступает место: этаж, тема и режимы важнее на 400 px. */
+  .topbar-title {
+    gap: 6px;
   }
 
   .workspace {
@@ -917,17 +984,6 @@
     display: none;
   }
 
-  .right-panel.is-options-open .panel-content,
-  .right-panel.is-collapsed.is-options-open .panel-content {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: min(46vh, 380px);
-    padding: 0 8px 8px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
   /* «Опции» — только контейнер. Секции внутри остаются СВЁРНУТЫМИ кнопками и
      раскрываются по одной, как раньше: разворачивать их все сразу — значит снова
      занять полэкрана, ровно то, от чего уходили. */
@@ -937,15 +993,20 @@
     display: none;
   }
 
-  .right-panel .panel-content,
-  .right-panel.is-collapsed .panel-content {
+  /* ⚠ Раскрытое состояние: правило идёт ПОСЛЕ скрытия выше, поэтому обязано быть
+     привязано к .is-options-open — иначе оно вернёт содержимому display:flex и
+     «Опции» перестанут что-либо сворачивать. */
+  .right-panel.is-options-open .panel-content,
+  .right-panel.is-collapsed.is-options-open .panel-content {
     display: flex;
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     flex-direction: column;
     gap: 8px;
     min-height: 0;
-    padding: 8px;
-    overflow: hidden;
+    max-height: min(46vh, 380px);
+    padding: 0 8px 8px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .right-panel .panel-section,
