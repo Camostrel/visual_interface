@@ -19,12 +19,12 @@
   </script>
   <!-- ?v=версия — разбиватель кеша (HA отдаёт /local/ с max-age 31 день). Деплой правит эти метки
        вместе с APP_VERSION в js/config.js. См. docs/DEPLOY.md, раздел про кеш. -->
-  <link rel="stylesheet" href="css/themes.css?v=v0.13.7">
-  <link rel="stylesheet" href="css/base.css?v=v0.13.7">
-  <link rel="stylesheet" href="css/shell.css?v=v0.13.7">
-  <link rel="stylesheet" href="css/floor.css?v=v0.13.7">
-  <link rel="stylesheet" href="css/room.css?v=v0.13.7">
-  <link rel="stylesheet" href="css/schedule.css?v=v0.13.7">
+  <link rel="stylesheet" href="css/themes.css?v=v0.13.8">
+  <link rel="stylesheet" href="css/base.css?v=v0.13.8">
+  <link rel="stylesheet" href="css/shell.css?v=v0.13.8">
+  <link rel="stylesheet" href="css/floor.css?v=v0.13.8">
+  <link rel="stylesheet" href="css/room.css?v=v0.13.8">
+  <link rel="stylesheet" href="css/schedule.css?v=v0.13.8">
 </head>
 <body>
   <div class="arvid-spa" data-spa-root>
@@ -82,17 +82,32 @@
                 <p>Навигатор по зданию</p>
               </div>
               <div class="topbar-actions">
+              <div class="map-mode-switch" role="group" aria-label="Режим карты" data-map-mode-switch>
+                <button type="button" data-map-mode-option="light" aria-pressed="true" title="Освещение">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.45.9 1.05.9 1.7v.5h5.4v-.5c0-.65.3-1.25.9-1.7A6 6 0 0 0 12 3Z"/>
+                  </svg>
+                  <span>Освещение</span>
+                </button>
+                <button type="button" data-map-mode-option="presence" aria-pressed="false" title="Присутствие">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <circle cx="13" cy="4" r="1.8"/>
+                    <path d="M12.3 8.2 9.6 10l-1.2 3.4M12.3 8.2l2.9 1.6 1.5 3.1M12.3 8.2l-.5 4.6 2.4 2.3.8 5M11.8 12.8 8.9 16l-.6 4.4"/>
+                  </svg>
+                  <span>Присутствие</span>
+                </button>
+                <button type="button" data-map-mode-option="diagnostics" aria-pressed="false" title="Диагностика">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 12h3.5l2-5 3.5 10 2.5-6 1.5 3H21"/>
+                  </svg>
+                  <span>Диагностика</span>
+                </button>
+              </div>
                 <select data-floor-select aria-label="Выбор этажа"></select>
               </div>
             </header>
 
             <section class="workspace">
-              <!-- Режим карты (слой подсветки полигонов) — табы над планом, одинаково на ПК и телефоне. -->
-              <div class="map-mode-switch" role="group" aria-label="Режим карты" data-map-mode-switch>
-                <button type="button" data-map-mode-option="light" aria-pressed="true">Освещение</button>
-                <button type="button" data-map-mode-option="presence" aria-pressed="false">Присутствие</button>
-                <button type="button" data-map-mode-option="diagnostics" aria-pressed="false">Диагностика</button>
-              </div>
               <div class="svg-stage" data-floor-svg></div>
               <div class="plan-toolbar" data-plan-toolbar aria-label="Управление планом">
                 <button data-plan-reset aria-label="Показать план целиком" title="Показать целиком">⤢</button>
@@ -109,6 +124,14 @@
               <div class="brand-spacer"></div>
               <button class="panel-toggle-button" data-toggle-panel="#rightPanel" aria-label="Свернуть общие функции" title="Свернуть общие функции">↔</button>
             </div>
+
+            <!-- Телефон: всё содержимое правой панели прячется под одну кнопку «Опции».
+                 Закрыто — плану достаётся почти весь экран; открыто — план сжимается
+                 и снова вписывается целиком (v0.13.8). На десктопе кнопка не видна. -->
+            <button class="mobile-options-toggle" type="button" data-mobile-options-toggle aria-expanded="false">
+              <span>Опции</span>
+              <span class="mobile-accordion-icon" aria-hidden="true">⌄</span>
+            </button>
 
             <div class="panel-content">
               <section class="panel-section mobile-accordion-section">
@@ -316,20 +339,20 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=v0.13.7"></script>
-  <script src="js/logger.js?v=v0.13.7"></script>
-  <script src="js/ha-ws.js?v=v0.13.7"></script>
-  <script src="js/floorplan-storage.js?v=v0.13.7"></script>
-  <script src="js/ha-registry.js?v=v0.13.7"></script>
-  <script src="js/health.js?v=v0.13.7"></script>
-  <script src="js/app-state.js?v=v0.13.7"></script>
-  <script src="js/svg-utils.js?v=v0.13.7"></script>
-  <script src="js/device-ui.js?v=v0.13.7"></script>
-  <script src="js/shell-ui.js?v=v0.13.7"></script>
-  <script src="js/floor-page.js?v=v0.13.7"></script>
-  <script src="js/room-page.js?v=v0.13.7"></script>
-  <script src="js/spa-router.js?v=v0.13.7"></script>
-  <script src="js/schedule-ui.js?v=v0.13.7"></script>
+  <script src="js/config.js?v=v0.13.8"></script>
+  <script src="js/logger.js?v=v0.13.8"></script>
+  <script src="js/ha-ws.js?v=v0.13.8"></script>
+  <script src="js/floorplan-storage.js?v=v0.13.8"></script>
+  <script src="js/ha-registry.js?v=v0.13.8"></script>
+  <script src="js/health.js?v=v0.13.8"></script>
+  <script src="js/app-state.js?v=v0.13.8"></script>
+  <script src="js/svg-utils.js?v=v0.13.8"></script>
+  <script src="js/device-ui.js?v=v0.13.8"></script>
+  <script src="js/shell-ui.js?v=v0.13.8"></script>
+  <script src="js/floor-page.js?v=v0.13.8"></script>
+  <script src="js/room-page.js?v=v0.13.8"></script>
+  <script src="js/spa-router.js?v=v0.13.8"></script>
+  <script src="js/schedule-ui.js?v=v0.13.8"></script>
   <script>
     window.ARVID_SPA = new ArvidSpaApp();
     window.ARVID_SPA.init()

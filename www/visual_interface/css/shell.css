@@ -531,6 +531,11 @@
   display: none;
 }
 
+/* Кнопка «Опции» — только на телефоне (см. портретную ветку). */
+.mobile-options-toggle {
+  display: none;
+}
+
 /* Только «показать целиком» (v0.13.7): кнопки ±  и метка масштаба убраны — масштаб
    меняется щипком и колесом, а панель на краю плана съедала полезное место.
    Живёт в ПРАВОМ нижнем углу плана. */
@@ -855,6 +860,91 @@
   .right-panel.has-mobile-accordion-open,
   .right-panel.is-collapsed.has-mobile-accordion-open {
     height: auto;
+  }
+
+  /* ── «Опции»: одна кнопка вместо пяти аккордеонов (v0.13.8) ──────────────────
+     Пять свёрнутых секций занимали почти половину экрана, и плану оставалась
+     полоса. Теперь закрыто — панель это одна строка, план забирает всё
+     остальное; открыто — панель разворачивается, план сжимается и снова
+     вписывается целиком (за пересчётом следит ResizeObserver в floor-page). */
+  .right-panel,
+  .right-panel.is-collapsed {
+    max-height: none;
+    flex: 0 0 auto;
+  }
+
+  .mobile-options-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 18px;
+    background: transparent;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .mobile-options-toggle .mobile-accordion-icon {
+    transition: transform 0.18s ease;
+  }
+
+  .right-panel.is-options-open .mobile-options-toggle .mobile-accordion-icon {
+    transform: rotate(180deg);
+  }
+
+  /* Закрыто — содержимого нет вовсе, панель ровно в высоту кнопки. */
+  .right-panel .panel-content,
+  .right-panel.is-collapsed .panel-content {
+    display: none;
+  }
+
+  .right-panel.is-options-open .panel-content,
+  .right-panel.is-collapsed.is-options-open .panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: min(46vh, 380px);
+    padding: 0 8px 8px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Внутри «Опций» секции показываются целиком, как на десктопе: вложенные
+     аккордеоны здесь были бы вторым слоем сворачивания на том же экране. */
+  .right-panel.is-options-open .panel-section h3 {
+    display: block;
+    margin: 0 0 6px;
+    padding: 10px 12px 0;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .right-panel.is-options-open .mobile-accordion-toggle {
+    display: none;
+  }
+
+  .right-panel.is-options-open .mobile-accordion-body {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: auto;
+    max-height: none;
+    padding: 0 12px 12px;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .right-panel .brand,

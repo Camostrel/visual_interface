@@ -31,6 +31,7 @@ class ArvidFloorPage {
     this.renderFloors();
     this.renderModes();
     this.initMobileAccordions();
+    this.initMobileOptions();
     this.initHealth();
     // Событие обязательно пробрасывать: handleStateChanged фильтрует по entity_id (D19).
     ARVID_RUNTIME.addStateHandler((event) => this.handleStateChanged(event));
@@ -145,6 +146,42 @@ class ArvidFloorPage {
         ARVID_LOG.error(this.logArea, "Failed to turn off all lights", error);
       });
     });
+  }
+
+  /**
+   * «Опции» на телефоне (v0.13.8): всё содержимое правой панели под одной кнопкой.
+   *
+   * Пять свёрнутых секций занимали почти половину экрана, и плану оставалась полоса.
+   * Закрыто — панель это одна строка; открыто — она разворачивается, план сжимается.
+   * Пересчёт вида плана делает ResizeObserver: панель меняет высоту с анимацией, и
+   * ловить конец перехода вручную не нужно.
+   */
+  initMobileOptions() {
+    const panel = document.querySelector(".right-panel");
+    const toggle = document.querySelector("[data-mobile-options-toggle]");
+    if (!panel || !toggle || toggle.dataset.optionsReady === "1") return;
+
+    toggle.dataset.optionsReady = "1";
+    toggle.addEventListener("click", () => {
+      const open = !panel.classList.contains("is-options-open");
+      panel.classList.toggle("is-options-open", open);
+      toggle.setAttribute("aria-expanded", String(open));
+      // Открытая секция-аккордеон старой схемы не должна висеть поверх «Опций».
+      this.restoreMobileAccordionBody?.();
+      ARVID_LOG.debug(this.logArea, "Mobile options toggled", { open });
+    });
+
+    // Место под план меняется и без ресайза окна: разворот «Опций», приход карточек.
+    const stage = document.querySelector("[data-floor-svg]");
+    if (stage && typeof ResizeObserver !== "undefined") {
+      this._planResizeObserver?.disconnect();
+      this._planResizeObserver = new ResizeObserver(() => {
+        if (!this.panZoom || this.panZoom.userZoomed) return;
+        if (!stage.getBoundingClientRect().width) return;
+        this.panZoom.fitToView();
+      });
+      this._planResizeObserver.observe(stage);
+    }
   }
 
   initMobileAccordions() {
