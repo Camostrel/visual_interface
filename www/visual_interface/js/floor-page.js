@@ -178,18 +178,42 @@ class ArvidFloorPage {
           item.setAttribute("aria-expanded", "false");
         });
       }
+      // Запасной путь: если перехода не случилось (reduced-motion, мгновенное
+      // сворачивание) — transitionend не придёт, и вид поставит таймер.
+      this._scheduleFloorPlanRefit?.(320);
       ARVID_LOG.debug(this.logArea, "Mobile options toggled", { open });
     });
 
     // Место под план меняется и без ресайза окна: разворот «Опций», приход карточек.
+    //
+    // ⚠ Перевписывать план НА КАЖДЫЙ кадр анимации нельзя: в плане этажа 727 элементов,
+    // и запись нового viewBox — полная перерисовка всего SVG. Шестьдесят таких перерисовок
+    // в секунду съедали кадры у самой анимации, и раскрытие выглядело рваным. Поэтому
+    // во время перехода пересчёт откладывается, а точный вид ставится один раз по его
+    // окончании (transitionend) — с запасным таймером на случай, если события не будет
+    // (свёрнуто без анимации, prefers-reduced-motion).
     const stage = document.querySelector("[data-floor-svg]");
+    const content = panel.querySelector(".panel-content");
+
+    const refitPlan = () => {
+      if (!this.panZoom || this.panZoom.userZoomed) return;
+      if (!stage || !stage.getBoundingClientRect().width) return;
+      this.panZoom.fitToView();
+    };
+
+    const scheduleRefit = (delay = 60) => {
+      window.clearTimeout(this._planRefitTimer);
+      this._planRefitTimer = window.setTimeout(refitPlan, delay);
+    };
+    this._scheduleFloorPlanRefit = scheduleRefit;
+
+    content?.addEventListener("transitionend", (event) => {
+      if (event.propertyName === "max-height") refitPlan();
+    });
+
     if (stage && typeof ResizeObserver !== "undefined") {
       this._planResizeObserver?.disconnect();
-      this._planResizeObserver = new ResizeObserver(() => {
-        if (!this.panZoom || this.panZoom.userZoomed) return;
-        if (!stage.getBoundingClientRect().width) return;
-        this.panZoom.fitToView();
-      });
+      this._planResizeObserver = new ResizeObserver(() => scheduleRefit());
       this._planResizeObserver.observe(stage);
     }
   }
