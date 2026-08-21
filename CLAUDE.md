@@ -70,7 +70,8 @@ www/visual_interface/
     schedule.css         ← popup расписания
 
   js/
-    config.js            ← VERSION, HA_TOKEN (заглушка на диске, НЕ деплоить с токеном)
+    config.js            ← VERSION, HA_TOKEN (на диске ЗАГЛУШКА; ⛔ scp'ом НЕ деплоить —
+                           затрёт рабочий токен на стенде, версию правим sed'ом на месте)
     logger.js
     ha-ws.js             ← ArvidHaWebSocket (реконнект + восстановление подписок, v0.11.0)
     floorplan-storage.js
@@ -417,7 +418,9 @@ URL:       https://office.arvid-cloud.ru/local/NickSha/visual_interface/index.ht
 - SSH: `root@office.arvid-cloud.ru:2222`, ключ `~/.ssh/id_ed25519`,
   Cipher `aes256-ctr`, MAC `hmac-sha2-256-etm@openssh.com`
 - **Обязателен `-O`** (нет SFTP) и полный путь назначения с именем файла
-- **НЕ деплоить `js/config.js` с токеном** — на диске заглушка
+- ⛔ **`js/config.js` НЕ деплоить вообще** — на диске заглушка токена, на стенде рабочий
+  токен; `scp` его затирает и интерфейс молча теряет связь с HA. Локальный файл отличается
+  от стендового одной строкой версии — её правим `sed`'ом прямо на стенде (см. DEPLOY.md)
 - При деплое — только заливка файлов; HA не рестартить, логи не читать без задачи
 - После деплоя фронтенда — Ctrl+Shift+R в браузере
 - **Исключение — установка/обновление backend:** новая интеграция требует строки
