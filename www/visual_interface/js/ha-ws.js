@@ -350,6 +350,101 @@ class ArvidHaWebSocket {
       handler,
     );
   }
+
+  // ------------------------------------------------------------------
+  // subscribe_entities — подписка ТОЛЬКО на нужные сущности (долг D1).
+  // В отличие от subscribe_events(state_changed) (весь HA), тут сервер шлёт снимок и поток
+  // ТОЛЬКО по entity_ids. Формат СЖАТЫЙ: первым событием — снимок `a`, дальше `c` (диффы) и `r`.
+  // Реконнект НЕ через общий restore-список (сегмент меняется при навигации) — переподписку
+  // ведёт app-state (владелец сегмента).
+  // ------------------------------------------------------------------
+
+  subscribeEntities(entityIds, onDecoded) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN || !this.isAuthed) {
+      return Promise.reject(new Error("WebSocket is not connected or not authenticated"));
+    }
+
+    const id = this.messageId++;
+    this.socket.send(JSON.stringify({ id, type: "subscribe_entities", entity_ids: entityIds }));
+    ARVID_LOG.debug(this.logArea, "subscribe_entities", { id, count: entityIds.length });
+
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, {
+        type: "subscribe_entities",
+        resolve: () => {
+          // События приходят с тем же id; снимок — первым событием (event.a).
+          this.eventHandlers.set(id, (event) => onDecoded(ArvidHaWebSocket.decodeEntities(event)));
+          ARVID_LOG.info(this.logArea, "Подписка subscribe_entities активна", { id, count: entityIds.length });
+          resolve({ id });
+        },
+        reject,
+      });
+    });
+  }
+
+  unsubscribeEntities(id) {
+    if (id == null) return;
+    this.eventHandlers.delete(id);
+    if (this.socket && this.socket.readyState === WebSocket.OPEN && this.isAuthed) {
+      const msgId = this.messageId++;
+      // best-effort: ответ не ждём (в pending не кладём).
+      this.socket.send(JSON.stringify({ id: msgId, type: "unsubscribe_events", subscription: id }));
+      ARVID_LOG.debug(this.logArea, "unsubscribe_events", { subscription: id });
+    }
+  }
+
+  /**
+   * Переводчик СЖАТОГО формата subscribe_entities → привычные state-объекты.
+   *   a: {entity_id: {s,a,lc,lu,c}}                 — добавление/снимок
+   *   c: {entity_id: {"+":{s?,a?,lc?,lu?}, "-":{a:[ключи]}}}  — изменение (дифф)
+   *   r: [entity_id, …]                             — удаление
+   * Слияние диффа на предыдущее состояние делает реестр (у него есть stateById); здесь только
+   * РАЗБОР в нейтральную форму, без истории.
+   */
+  static decodeEntities(event) {
+    const out = { add: [], change: [], remove: [] };
+    if (!event) return out;
+
+    if (event.a) {
+      for (const entityId of Object.keys(event.a)) {
+        out.add.push(ArvidHaWebSocket.fullStateFromCompressed(entityId, event.a[entityId]));
+      }
+    }
+
+    if (event.c) {
+      for (const entityId of Object.keys(event.c)) {
+        const delta = event.c[entityId] || {};
+        const plus = delta["+"] || {};
+        const minus = delta["-"] || {};
+        out.change.push({
+          entity_id: entityId,
+          // s есть в диффе не всегда (могли поменяться только атрибуты) — undefined = «не трогать».
+          state: Object.prototype.hasOwnProperty.call(plus, "s") ? plus.s : undefined,
+          addedAttrs: plus.a || null,       // атрибуты добавить/перезаписать
+          removedAttrs: minus.a || null,    // ключи атрибутов удалить
+          last_changed: plus.lc,
+          last_updated: plus.lu,
+        });
+      }
+    }
+
+    if (Array.isArray(event.r)) {
+      for (const entityId of event.r) out.remove.push(entityId);
+    }
+
+    return out;
+  }
+
+  static fullStateFromCompressed(entityId, c) {
+    const comp = c || {};
+    return {
+      entity_id: entityId,
+      state: comp.s !== undefined ? comp.s : "unknown",
+      attributes: comp.a || {},
+      last_changed: comp.lc,
+      last_updated: comp.lu !== undefined ? comp.lu : comp.lc,
+    };
+  }
 }
 
 window.ArvidHaWebSocket = ArvidHaWebSocket;
