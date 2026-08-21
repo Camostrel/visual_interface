@@ -446,6 +446,8 @@ class ArvidFloorPage {
     if (floorId === this._loadedFloorId && this.svg) {
       ARVID_APP.currentFloorId = floorId;
       ARVID_LOG.debug(this.logArea, "Этаж уже показан — план не пересобираем", { floorId });
+      // Сегмент мог смениться (возврат из комнаты) — переподписываемся на сущности этажа (D1).
+      await ARVID_RUNTIME.subscribeSegment(this.floorSegmentIds());
       this.refreshFloorState();
       return;
     }
@@ -493,6 +495,8 @@ class ArvidFloorPage {
 
     this.collectPlanDevices();          // устройства, объявленные самим планом (data-entity)
     this.invalidateFloorEntityCache();  // устройства плана — тоже «свои» события
+    // Подписываемся ТОЛЬКО на сущности этажа (D1) и ждём первый снимок — рисуем по данным.
+    await ARVID_RUNTIME.subscribeSegment(this.floorSegmentIds());
     this.updateMobilePlanLayout();
     this.bindResponsiveResize();
     this.bindRoomZones();               // обработчики зон — только при загрузке плана
@@ -509,26 +513,35 @@ class ArvidFloorPage {
    * «Свои» — это: сущности помещений этажа, устройства, объявленные планом (data-entity),
    * группы света (комнат, этажа, здания) и сущности режимов.
    */
+  /**
+   * Набор сущностей ЭТАЖА — для подписки на сегмент (D1) и фильтра «своих» событий.
+   * Строим по РЕЕСТРУ (entityIdsForArea), а НЕ по состояниям: на старте состояний ещё нет,
+   * иначе список области был бы пуст и подписка не охватила бы устройства комнат.
+   * Плюс устройства плана (data-entity), группы света (комнат/этажа/объекта) и сущности режимов.
+   */
+  floorSegmentIds() {
+    const ids = new Set();
+
+    this.getAreasForCurrentFloor().forEach((area) => {
+      ARVID_APP.registry.entityIdsForArea(area.area_id).forEach((id) => ids.add(id));
+      ids.add(`light.${area.area_id}`);                       // группа света комнаты
+    });
+
+    (this.planDevices || []).forEach(({ entityId: id }) => ids.add(id));
+
+    if (ARVID_APP.currentFloorId) ids.add(`light.${ARVID_APP.currentFloorId}`);
+    ids.add("light.all");
+
+    this.getDisplayModes().forEach((mode) => ids.add(mode.entity_id));
+
+    return [...ids];
+  }
+
   isFloorEntityId(entityId) {
     if (!this._floorEntityIds) {
-      const ids = new Set();
-
-      this.getAreasForCurrentFloor().forEach((area) => {
-        ARVID_APP.entitiesForArea(area.area_id).forEach((state) => ids.add(state.entity_id));
-        ids.add(`light.${area.area_id}`);                       // группа света комнаты
-      });
-
-      (this.planDevices || []).forEach(({ entityId: id }) => ids.add(id));
-
-      if (ARVID_APP.currentFloorId) ids.add(`light.${ARVID_APP.currentFloorId}`);
-      ids.add("light.all");
-
-      this.getDisplayModes().forEach((mode) => ids.add(mode.entity_id));
-
-      this._floorEntityIds = ids;
-      ARVID_LOG.debug(this.logArea, "Набор «своих» сущностей этажа пересобран", { count: ids.size });
+      this._floorEntityIds = new Set(this.floorSegmentIds());
+      ARVID_LOG.debug(this.logArea, "Набор «своих» сущностей этажа пересобран", { count: this._floorEntityIds.size });
     }
-
     return this._floorEntityIds.has(entityId);
   }
 
@@ -642,109 +655,50 @@ class ArvidFloorPage {
     stage.style.removeProperty("--floor-plan-height");
   }
 
-  // Фолбэк: все лампы этажа по комнатам (когда HA-группы этажа ещё нет).
-  getFloorLightEntityIds() {
-    const ids = new Set();
-    this.getAreasForCurrentFloor().forEach((area) => {
-      this.getRoomMemberLights(area.area_id).forEach((state) => ids.add(state.entity_id));
-    });
-    return [...ids];
-  }
-
   /**
-   * «Выключить свет этажа» (быстрое действие правой панели).
-   * Основной путь — HA-группа light.<floor_id> (например light.3_etazh).
-   * Фолбэк — сборка ламп по комнатам этажа, с предупреждением.
+   * «Выключить свет этажа» (быстрое действие). ТОЛЬКО детерминированная HA-группа
+   * light.<floor_id> (например light.3_etazh). Нет группы → предупреждение; лампы поиском не
+   * собираем — массовый залп тяжёл для DALI-шины (решение пользователя, «свет только через группы»).
    */
   async turnOffFloorLights() {
     const floorId = ARVID_APP.currentFloorId;
     const group = ARVID_APP.lightGroupState(floorId);
-
-    if (group) {
-      await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: group.entity_id });
-      ARVID_LOG.info(this.logArea, "Floor lights turned off via HA group", {
-        floorId,
-        group: group.entity_id,
-      });
+    if (!group) {
+      ARVID_LOG.warn(this.logArea, `Нет HA-группы light.${floorId} — свет этажа не выключаем (только через группу)`, { floorId });
       return;
     }
-
-    const entityIds = this.getFloorLightEntityIds();
-    if (!entityIds.length) {
-      ARVID_LOG.warn(this.logArea, "На этаже не найдено ламп для выключения", { floorId });
-      return;
-    }
-
-    ARVID_LOG.warn(this.logArea, `Нет HA-группы light.${floorId} — фолбэк на сборку ламп этажа`, { floorId });
-    await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: entityIds });
+    await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: group.entity_id });
+    ARVID_LOG.info(this.logArea, "Floor lights turned off via HA group", { floorId, group: group.entity_id });
   }
 
   /**
-   * Фолбэк: все лампы из реестра (когда HA-группы light.all ещё нет).
-   * Группы отсеиваем — иначе команда ушла бы и в группу, и в её же лампы (двойная работа).
-   */
-  getAllLightEntityIds() {
-    return ARVID_APP.registry.states
-      .filter((state) => state.entity_id?.startsWith("light.") && !ARVID_APP.isLightGroupState(state))
-      .map((state) => state.entity_id);
-  }
-
-  /**
-   * «Включить/выключить весь свет» (быстрые действия).
-   * Основной путь — HA-группа всего объекта light.all (v0.6.1).
-   * Фолбэк — все light.* из реестра, с предупреждением.
+   * «Включить/выключить весь свет» (быстрые действия). ТОЛЬКО HA-группа объекта light.all.
+   * Нет группы → предупреждение; все light.* из реестра не дёргаем (тяжело для шины, и под D1
+   * в реестре только сегмент, а не весь дом).
    */
   async setAllLights(shouldTurnOn) {
     const service = shouldTurnOn ? "turn_on" : "turn_off";
     const group = ARVID_APP.lightGroupState("all");
-
-    if (group) {
-      await ARVID_APP.ha.callService("light", service, {}, { entity_id: group.entity_id });
-      ARVID_LOG.info(this.logArea, "All lights action via HA group", {
-        group: group.entity_id,
-        service,
-      });
+    if (!group) {
+      ARVID_LOG.warn(this.logArea, "Нет HA-группы light.all — «весь свет» не трогаем (только через группу)");
       return;
     }
-
-    const entityIds = this.getAllLightEntityIds();
-    if (!entityIds.length) {
-      ARVID_LOG.warn(this.logArea, "No light entities found for global light action");
-      return;
-    }
-
-    ARVID_LOG.warn(this.logArea, "Нет HA-группы light.all — фолбэк на все light.* из реестра");
-    await ARVID_APP.ha.callService("light", service, {}, { entity_id: entityIds });
+    await ARVID_APP.ha.callService("light", service, {}, { entity_id: group.entity_id });
+    ARVID_LOG.info(this.logArea, "All lights action via HA group", { group: group.entity_id, service });
   }
 
   /**
-   * «Выключить свет» из сводки этажа. До v0.9.0 этот путь единственный шёл в обход
-   * HA-группы — собирал лампы поиском, нарушая инвариант «свет только через группы».
-   * Теперь как везде: группа light.<area_id>, фолбэк — лампы комнаты с предупреждением.
+   * «Выключить свет» из сводки этажа. ТОЛЬКО HA-группа light.<area_id>; нет группы →
+   * предупреждение (лампы поиском не собираем — «свет только через группы»).
    */
   async turnOffRoomLights(areaId) {
     const group = ARVID_APP.lightGroupState(areaId);
-
-    if (group) {
-      await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: group.entity_id });
-      ARVID_LOG.info(this.logArea, "Room lights turned off via HA group", {
-        areaId,
-        group: group.entity_id,
-      });
+    if (!group) {
+      ARVID_LOG.warn(this.logArea, `Нет HA-группы light.${areaId} — свет комнаты не выключаем (только через группу)`, { areaId });
       return;
     }
-
-    const entityIds = this.getRoomMemberLights(areaId)
-      .filter((state) => state.state === "on")
-      .map((state) => state.entity_id);
-
-    if (!entityIds.length) {
-      ARVID_LOG.debug(this.logArea, "No active room lights to turn off", { areaId });
-      return;
-    }
-
-    ARVID_LOG.warn(this.logArea, `Нет HA-группы light.${areaId} — фолбэк на сборку ламп`, { areaId });
-    await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: entityIds });
+    await ARVID_APP.ha.callService("light", "turn_off", {}, { entity_id: group.entity_id });
+    ARVID_LOG.info(this.logArea, "Room lights turned off via HA group", { areaId, group: group.entity_id });
   }
 
   getAreasForCurrentFloor() {
@@ -1339,29 +1293,13 @@ class ArvidFloorPage {
    */
   async toggleRoomLights(areaId) {
     const group = ARVID_APP.lightGroupState(areaId);
-
-    if (group) {
-      const action = group.state === "on" ? "turn_off" : "turn_on";
-      await ARVID_APP.ha.callService("light", action, {}, { entity_id: group.entity_id });
-      ARVID_LOG.info(this.logArea, "Room lights toggled via HA group", {
-        areaId,
-        group: group.entity_id,
-        action,
-      });
+    if (!group) {
+      ARVID_LOG.warn(this.logArea, `Нет HA-группы light.${areaId} — свет комнаты не переключаем (только через группу)`, { areaId });
       return;
     }
-
-    const lights = this.getRoomMemberLights(areaId);
-    if (!lights.length) {
-      ARVID_LOG.warn(this.logArea, "Zone tap: в комнате нет света", { areaId });
-      return;
-    }
-
-    ARVID_LOG.warn(this.logArea, `Нет HA-группы light.${areaId} — фолбэк на сборку ламп`, { areaId });
-    const action = lights.some((state) => state.state === "on") ? "turn_off" : "turn_on";
-    await ARVID_APP.ha.callService("light", action, {}, {
-      entity_id: lights.map((state) => state.entity_id),
-    });
+    const action = group.state === "on" ? "turn_off" : "turn_on";
+    await ARVID_APP.ha.callService("light", action, {}, { entity_id: group.entity_id });
+    ARVID_LOG.info(this.logArea, "Room lights toggled via HA group", { areaId, group: group.entity_id, action });
   }
 
   /**

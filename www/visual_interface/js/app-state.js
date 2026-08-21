@@ -93,7 +93,6 @@ window.ARVID_APP = {
 
 window.ARVID_RUNTIME = {
   dataPromise: null,
-  stateSubscriptionPromise: null,
   stateHandlers: new Set(),
 
   async ensureData(logArea = "runtime") {
@@ -123,7 +122,7 @@ window.ARVID_RUNTIME = {
     ARVID_APP.ha = await new ArvidHaWebSocket(config).connect();
     ARVID_APP.storage = new ArvidFloorplanStorage(ARVID_APP.ha);
     await ARVID_APP.storage.ping();
-    ARVID_APP.registry = await new ArvidHaRegistry(ARVID_APP.ha).loadAll();
+    ARVID_APP.registry = await new ArvidHaRegistry(ARVID_APP.ha).loadRegistries();
     // Состав (сущности/устройства/области) меняется в HA и без нашего участия: задали area,
     // переименовали лампу, добавили датчик. Слушаем реестры, чтобы не застывать до F5 (D5).
     await ARVID_APP.registry.subscribeRegistryUpdates();
@@ -157,31 +156,100 @@ window.ARVID_RUNTIME = {
     if (status !== "online" || !wasOffline) return;
 
     this._connectionLost = false;
-    ARVID_LOG.info("runtime", "Связь восстановлена — перечитываем состояния HA");
+    ARVID_LOG.info("runtime", "Связь восстановлена — перечитываем реестры и переподписываем сегмент");
 
-    ARVID_APP.registry.loadAll()
+    ARVID_APP.registry.loadRegistries()
       .then(() => {
-        // Состав/состояния могли измениться за время обрыва — просим страницы перерисоваться.
+        // Подписка на сегмент после реконнекта мертва (id старый) — оформляем заново; свежий
+        // снимок вернёт актуальные состояния (за время обрыва события нам не пересылались).
+        const ids = this._segmentIds;
+        this._segmentSubId = null;
+        this._segmentKey = null;   // сбрасываем guard, чтобы переподписка прошла
+        return ids ? this.subscribeSegment(ids) : null;
+      })
+      .then(() => {
         ARVID_APP.registry.notifyComposition("связь восстановлена");
       })
       .catch((error) => {
-        ARVID_LOG.error("runtime", "Не удалось перечитать состояния после реконнекта", error);
+        ARVID_LOG.error("runtime", "Не удалось перечитать после реконнекта", error);
       });
   },
 
   addStateHandler(handler) {
-    if (typeof handler !== "function") return;
-    this.stateHandlers.add(handler);
-    this.ensureStateSubscription().catch((error) => {
-      ARVID_LOG.error("runtime", "Failed to initialize shared state subscription", error);
-    });
+    // Обработчики ЗНАЧЕНИЙ (страницы). Подписку заводит subscribeSegment, а не addStateHandler:
+    // теперь слушаем только сегмент текущего экрана, а не весь HA (D1).
+    if (typeof handler === "function") this.stateHandlers.add(handler);
   },
 
-  async ensureStateSubscription() {
-    if (this.stateSubscriptionPromise) return this.stateSubscriptionPromise;
+  // --- Подписка на СЕГМЕНТ текущего экрана (D1) ---
+  _segmentSubId: null,
+  _segmentIds: null,
+  _segmentKey: null,
+  _segmentFirst: false,
+  _segmentResolveFirst: null,
 
-    this.stateSubscriptionPromise = this.ensureData("runtime").then(() => ARVID_APP.ha.subscribeStateChanged((event) => {
-      ARVID_APP.registry.updateStateFromEvent(event);
+  /**
+   * Подписаться на набор сущностей текущего экрана (этаж/комната). При навигации меняет подписку:
+   * отписывает прежнюю, подписывает новую. Возвращает промис, разрешаемый по ПЕРВОМУ снимку
+   * (страница ждёт его перед первой отрисовкой). Тот же набор повторно не переподписываем (guard).
+   */
+  async subscribeSegment(entityIds) {
+    const ids = [...new Set((entityIds || []).filter(Boolean))].sort();
+    const key = ids.join(",");
+
+    if (key === this._segmentKey && this._segmentSubId != null) return undefined; // тот же сегмент
+
+    if (this._segmentSubId != null) {
+      ARVID_APP.ha.unsubscribeEntities(this._segmentSubId);
+      this._segmentSubId = null;
+    }
+
+    this._segmentKey = key;
+    this._segmentIds = ids;
+    this._segmentFirst = false;
+
+    const first = new Promise((resolve) => {
+      this._segmentResolveFirst = resolve;
+      // Страховка для экрана 24/7: не держим отрисовку дольше 4с, даже если снимок задержался.
+      // Реальный снимок всё равно придёт и перерисует состав через notifyComposition.
+      window.setTimeout(() => { this._segmentResolveFirst?.(); this._segmentResolveFirst = null; }, 4000);
+    });
+
+    try {
+      const sub = await ARVID_APP.ha.subscribeEntities(ids, (decoded) => this._onSegmentEvent(decoded));
+      this._segmentSubId = sub.id;
+      ARVID_LOG.info("runtime", "Подписка на сегмент оформлена", { count: ids.length });
+    } catch (error) {
+      ARVID_LOG.error("runtime", "Не удалось подписаться на сегмент", error);
+      this._segmentResolveFirst?.();   // не держим страницу, если подписка не удалась
+      this._segmentResolveFirst = null;
+    }
+
+    return first;
+  },
+
+  _onSegmentEvent(decoded) {
+    const reg = ARVID_APP.registry;
+
+    // Первое событие подписки — снимок `a`: полный набор сегмента, заменяем состояния.
+    if (!this._segmentFirst) {
+      this._segmentFirst = true;
+      reg.replaceStates(decoded.add);
+      if (decoded.change.length || decoded.remove.length) {
+        reg.applyEntitiesUpdate({ add: [], change: decoded.change, remove: decoded.remove });
+      }
+      reg.notifyComposition("сегмент подписан");     // страницы рисуют состав
+      this._segmentResolveFirst?.();
+      this._segmentResolveFirst = null;
+      return;
+    }
+
+    const { valueChanges, composition } = reg.applyEntitiesUpdate(decoded);
+
+    // Значения → существующим обработчикам страниц. Форма события ТА ЖЕ, что у state_changed,
+    // поэтому floor-page/room-page.handleStateChanged менять не нужно (D1).
+    valueChanges.forEach((ch) => {
+      const event = { data: { entity_id: ch.entity_id, new_state: ch.new_state, old_state: ch.old_state } };
       this.stateHandlers.forEach((handler) => {
         try {
           handler(event);
@@ -189,8 +257,8 @@ window.ARVID_RUNTIME = {
           ARVID_LOG.error("runtime", "State handler failed", error);
         }
       });
-    }));
+    });
 
-    return this.stateSubscriptionPromise;
+    if (composition) reg.notifyComposition("состав сегмента изменился");
   },
 };

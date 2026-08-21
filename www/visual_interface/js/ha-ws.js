@@ -344,13 +344,6 @@ class ArvidHaWebSocket {
     });
   }
 
-  subscribeStateChanged(handler) {
-    return this.subscribeCommand(
-      { type: "subscribe_events", event_type: "state_changed" },
-      handler,
-    );
-  }
-
   // ------------------------------------------------------------------
   // subscribe_entities — подписка ТОЛЬКО на нужные сущности (долг D1).
   // В отличие от subscribe_events(state_changed) (весь HA), тут сервер шлёт снимок и поток

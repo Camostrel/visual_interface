@@ -12,6 +12,10 @@
  *
  * ⚠ Индексы строятся по РЕЕСТРУ (entity/device registry), а не по states: принадлежность
  * области — свойство реестра. Сущность без записи в реестре area не имеет (так было и раньше).
+ *
+ * v0.12.0 — D1: states больше НЕ «весь HA». loadRegistries() грузит только реестры (без get_states);
+ * состояния — это ТЕКУЩИЙ СЕГМЕНТ экрана, наполняется снимком/диффами subscribe_entities
+ * (replaceStates / applyEntitiesUpdate). Индексы area/device — по-прежнему на реестре.
  */
 class ArvidHaRegistry {
   constructor(ha) {
@@ -35,25 +39,29 @@ class ArvidHaRegistry {
     this._compositionHandlers = new Set();
   }
 
-  async loadAll() {
-    ARVID_LOG.info(this.logArea, "Loading HA floors, areas, registries and states");
+  /**
+   * Загрузка РЕЕСТРОВ (этажи/области/сущности/устройства) — БЕЗ get_states (D1).
+   * Состояния больше не тянем «всё сразу»: они приходят снимком сегмента через
+   * subscribe_entities (app-state.subscribeSegment). Реестры — метаданные, статичны, грузим разом.
+   */
+  async loadRegistries() {
+    ARVID_LOG.info(this.logArea, "Loading HA floors, areas and registries (без get_states)");
 
-    const [floors, areas, entities, devices, states] = await Promise.all([
+    const [floors, areas, entities, devices] = await Promise.all([
       this.ha.send({ type: "config/floor_registry/list" }),
       this.ha.send({ type: "config/area_registry/list" }),
       this.ha.send({ type: "config/entity_registry/list" }),
       this.ha.send({ type: "config/device_registry/list" }),
-      this.ha.send({ type: "get_states" }),
     ]);
 
-    this.applyData({ floors, areas, entities, devices, states });
+    // states не трогаем: их наполняет подписка на сегмент (при первом старте — пусто).
+    this.applyData({ floors, areas, entities, devices, states: this.states });
 
-    ARVID_LOG.info(this.logArea, "HA data loaded", {
+    ARVID_LOG.info(this.logArea, "HA registries loaded", {
       floors: this.floors.length,
       areas: this.areas.length,
       entities: this.entities.length,
       devices: this.devices.length,
-      states: this.states.length,
     });
 
     return this;
@@ -150,6 +158,16 @@ class ArvidHaRegistry {
     return this.statesOf(this.entityIdsByArea.get(areaId));
   }
 
+  /**
+   * entity_id сущностей области — из РЕЕСТРА (не из состояний). Нужно для сборки сегмента
+   * подписки ДО прихода состояний (иначе список области был бы пуст на старте) — D1.
+   */
+  entityIdsForArea(areaId) {
+    if (!areaId) return [];
+    const set = this.entityIdsByArea.get(areaId);
+    return set ? [...set] : [];
+  }
+
   /** Set(entity_id) → массив состояний (сущности без состояния молча пропускаем). */
   statesOf(entityIds) {
     if (!entityIds) return [];
@@ -182,56 +200,86 @@ class ArvidHaRegistry {
   }
 
   /**
-   * Обновление состояния из события. O(1): правим Map и элемент массива по индексу.
-   *
-   * Два особых случая, которых раньше не было:
-   *  - new_state = null — сущность УДАЛЕНА. Раньше выходили по `if (!newState) return`,
-   *    и мёртвая запись жила в реестре вечно.
-   *  - сущность появилась впервые — её нет в entity registry, значит нет и в индексах:
-   *    area не резолвится. Поэтому просим перечитать реестры (D5).
+   * Снимок сегмента (первое событие subscribe_entities — `a`): полный набор состояний
+   * ТЕКУЩЕГО сегмента, заменяет прежние. Индексы area/device не трогаем — они на реестре.
    */
-  updateStateFromEvent(event) {
-    const entityId = event?.data?.entity_id;
-    if (!entityId) return;
-
-    const newState = event?.data?.new_state;
-
-    if (!newState) {
-      this.removeEntityState(entityId);
-      return;
-    }
-
-    const isNew = !this.stateById.has(entityId);
-    this.stateById.set(entityId, newState);
-
-    if (isNew) {
-      this.states.push(newState);
-      // Новой сущности нет в реестре → её area/device неизвестны. Перечитываем реестры.
-      this.scheduleRegistryReload("появилась сущность");
-      return;
-    }
-
-    const index = this.states.findIndex((state) => state.entity_id === entityId);
-    if (index >= 0) this.states[index] = newState;
-
-    ARVID_LOG.debug(this.logArea, "State updated from event", {
-      entityId,
-      state: newState.state,
-    });
+  replaceStates(list) {
+    this.states = list.slice();
+    this.stateById = new Map(list.map((s) => [s.entity_id, s]));
+    ARVID_LOG.debug(this.logArea, "Состояния сегмента заменены снимком", { count: list.length });
   }
 
-  removeEntityState(entityId) {
-    if (!this.stateById.delete(entityId)) return;
+  _setState(state) {
+    const existed = this.stateById.has(state.entity_id);
+    this.stateById.set(state.entity_id, state);
+    if (existed) {
+      const i = this.states.findIndex((s) => s.entity_id === state.entity_id);
+      if (i >= 0) this.states[i] = state; else this.states.push(state);
+    } else {
+      this.states.push(state);
+    }
+  }
 
-    const index = this.states.findIndex((state) => state.entity_id === entityId);
-    if (index >= 0) this.states.splice(index, 1);
+  _deleteState(entityId) {
+    this.stateById.delete(entityId);
+    const i = this.states.findIndex((s) => s.entity_id === entityId);
+    if (i >= 0) this.states.splice(i, 1);
+  }
 
-    // Из индексов сущность убираем сразу: иначе она осталась бы «фантомом» в составе комнаты.
-    this.entityIdsByArea.forEach((set) => set.delete(entityId));
-    this.entityIdsByDevice.forEach((set) => set.delete(entityId));
+  /** Слить дифф subscribe_entities (`+`/`-`) на предыдущее состояние. prev НЕ мутируем. */
+  static mergeChange(prev, ch) {
+    const attributes = { ...(prev.attributes || {}) };
+    if (ch.addedAttrs) Object.assign(attributes, ch.addedAttrs);
+    if (ch.removedAttrs) ch.removedAttrs.forEach((k) => delete attributes[k]);
+    return {
+      entity_id: ch.entity_id,
+      state: ch.state !== undefined ? ch.state : prev.state,
+      attributes,
+      last_changed: ch.last_changed !== undefined ? ch.last_changed : prev.last_changed,
+      last_updated: ch.last_updated !== undefined ? ch.last_updated : prev.last_updated,
+    };
+  }
 
-    ARVID_LOG.info(this.logArea, "Сущность удалена из реестра", { entityId });
-    this.notifyComposition("сущность удалена");
+  /**
+   * Применить декодированное событие сегмента (add/change/remove) — D1.
+   * Возвращает { valueChanges:[{entity_id,old_state,new_state}], composition:bool }:
+   *  - valueChanges → синтетические state_changed для страниц (ЗНАЧЕНИЕ);
+   *  - composition=true → появилась/исчезла сущность (перерисовка СОСТАВА, инвариант «состав ≠ состояние»).
+   */
+  applyEntitiesUpdate(decoded) {
+    const valueChanges = [];
+    let composition = false;
+
+    decoded.add.forEach((state) => {
+      const old = this.stateById.get(state.entity_id) || null;
+      const existed = old !== null;
+      this._setState(state);
+      if (!existed) {
+        composition = true;
+        // Незнакомая реестру сущность → area/device неизвестны, перечитываем реестры (D5).
+        if (!this.entityById.has(state.entity_id)) this.scheduleRegistryReload("появилась сущность");
+      } else {
+        valueChanges.push({ entity_id: state.entity_id, old_state: old, new_state: state });
+      }
+    });
+
+    decoded.change.forEach((ch) => {
+      const prev = this.stateById.get(ch.entity_id);
+      if (!prev) return; // изменение по сущности без снимка — игнор (снимок ещё не пришёл)
+      const next = ArvidHaRegistry.mergeChange(prev, ch);
+      this._setState(next);
+      valueChanges.push({ entity_id: ch.entity_id, old_state: prev, new_state: next });
+    });
+
+    decoded.remove.forEach((entityId) => {
+      const old = this.stateById.get(entityId);
+      if (!old) return;
+      this._deleteState(entityId);
+      composition = true;
+      valueChanges.push({ entity_id: entityId, old_state: old, new_state: null });
+    });
+
+    return { valueChanges, composition };
   }
 
   /**

@@ -86,6 +86,8 @@ class ArvidRoomPage {
 
     this.closeDevicePopup();
     await this.loadRoomSvg();
+    // Подписываемся ТОЛЬКО на сущности комнаты (D1) и ждём первый снимок — рисуем по данным.
+    await ARVID_RUNTIME.subscribeSegment(this.roomSegmentIds());
     this.renderDeviceMarkers();
     this.renderControls();
   }
@@ -166,14 +168,31 @@ class ArvidRoomPage {
    * резолв area по всем сущностям на каждое событие (на объекте это тысячи сущностей).
    * Кеш пересобирается при смене комнаты и полной перерисовке (см. invalidateRoomEntityCache).
    */
+  /**
+   * Набор сущностей КОМНАТЫ — для подписки на сегмент (D1) и фильтра «своих» событий.
+   * Строим по РЕЕСТРУ (entityIdsForArea), а НЕ по состояниям: на старте состояний ещё нет.
+   * Плюс размещённые нашим стором (могут быть без HA-area), устройства плана (data-entity)
+   * и группа света комнаты.
+   */
+  roomSegmentIds() {
+    const ids = new Set();
+
+    ARVID_APP.registry.entityIdsForArea(this.areaId).forEach((id) => ids.add(id));
+
+    const devices = ARVID_APP.layout?.devices || {};
+    Object.keys(devices).forEach((id) => {
+      if (devices[id]?.area_id === this.areaId) ids.add(id);
+    });
+
+    (this.planDevices || []).forEach(({ entityId: id }) => ids.add(id));
+
+    ids.add(`light.${this.areaId}`);
+
+    return [...ids];
+  }
+
   isRoomEntityId(entityId) {
-    if (!this._roomEntityIds) {
-      this._roomEntityIds = new Set(this.getRoomEntities().map((state) => state.entity_id));
-      // Устройства, объявленные планом (data-entity), тоже «свои»: без этого их события
-      // отсеялись бы, и лампа на плане не меняла бы состояние. В составе комнаты (area HA)
-      // их может не быть — план знает о них раньше, чем HA.
-      (this.planDevices || []).forEach(({ entityId: id }) => this._roomEntityIds.add(id));
-    }
+    if (!this._roomEntityIds) this._roomEntityIds = new Set(this.roomSegmentIds());
     return this._roomEntityIds.has(entityId);
   }
 
