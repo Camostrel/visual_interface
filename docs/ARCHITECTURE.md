@@ -87,10 +87,11 @@ index.html
     → routeFromLocation() → showView(view) → getPage(view).init(params)
       → ARVID_RUNTIME.ensureData()
         → ArvidHaWebSocket.connect()          (auth по токену)
-        → ArvidHaRegistry.loadAll()           (get_states + 4 реестра, ОДНИМ залпом)
+        → ArvidHaRegistry.loadRegistries()    (ТОЛЬКО 4 реестра, без get_states — D1)
         → subscribeRegistryUpdates()          (следим за изменениями реестров, D5)
         → ArvidFloorplanStorage.getLayout()   (visual_interface/layout/get)
-      → page рендерит план и панели
+      → page объявляет сегмент → ARVID_RUNTIME.subscribeSegment(ids)
+        → subscribe_entities: снимок состояний сегмента → реестр → отрисовка (D1, v0.12.0)
 ```
 > **Про кеш и «пересборку» плана.** Кеш файлов (`?v=`, v0.11.3) экономит только СКАЧИВАНИЕ.
 > При заходе на дашборд HA пересоздаёт iframe → SPA стартует заново и план перерисовывается
@@ -294,7 +295,8 @@ AutoCAD → PDF → SVG (Inkscape)
 
 ## 7. Ключевые инварианты
 
-- **Одно WS-соединение** на весь SPA (в `ARVID_APP.ha`), одна подписка на `state_changed`.
+- **Одно WS-соединение** на весь SPA (в `ARVID_APP.ha`). Состояния — `subscribe_entities` по
+  СЕГМЕНТУ текущего экрана (D1, v0.12.0), а не глобальный `state_changed` по всему HA.
 - **Реальное состояние** из HA, без оптимистичного UI (DESIGN реш. 12).
 - **DOM не перестраивается по `state_changed`** — только значения и классы (v0.6.0).
 - **Состав комнаты — истина HA** (`entitiesForArea`), расстановка на плане — отдельно (v0.7.0).
@@ -327,10 +329,9 @@ AutoCAD → PDF → SVG (Inkscape)
 Полный реестр долгов и открытых вопросов — **[DEBT.md](DEBT.md)** (с приоритетами P1–P3
 и задачами на стороне HA).
 
-Архитектурно-значимые (P1):
-1. **D1 — загрузка «всё сразу»**: `loadAll()` + глобальный `subscribe_events(state_changed)`.
-   На ~4400 устройств стоп-фактор. Целевое (DESIGN реш. 13): `subscribe_entities` по сегменту.
-2. **D2 — `data-entity` из SVG не читается**: сейчас только зоны `data-room-id`.
-   Нужен для Сценария 1 (конвейер DWG→SVG).
+Архитектурно-значимые:
+1. ~~**D1 — загрузка «всё сразу»**~~ ✅ ЗАКРЫТ (v0.12.0): `subscribe_entities` по сегменту экрана
+   вместо `loadAll()`+глобального `state_changed`. Держит масштаб ~4400.
+2. ~~**D2 — `data-entity` из SVG не читается**~~ ✅ ЗАКРЫТ (v0.10.0): устройства читаются из плана.
 
 Фазы и приоритеты — в [ROADMAP.md](ROADMAP.md).

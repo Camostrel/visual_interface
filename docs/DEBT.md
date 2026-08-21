@@ -109,15 +109,17 @@ read-modify-write **без `asyncio.Lock`** — параллельные сох�
 
 ## P1 — блокирует реальный объект
 
-### D1. Загружаем и слушаем «всё сразу»
-`ArvidHaRegistry.loadAll()` тянет **все** `get_states` + 4 реестра, а подписка —
-глобальный `subscribe_events(state_changed)` на весь HA. На объекте ~4400 устройств это
-стоп-фактор (трафик, память, лишние события).
+### ~~D1. Загружаем и слушаем «всё сразу»~~ — ✅ ЗАКРЫТ (v0.12.0)
+Старт грузит только реестры (`loadRegistries()`, **без `get_states`**); подписка —
+`subscribe_entities` ТОЛЬКО на сущности текущего сегмента (этаж/комната). Набор объявляют страницы
+(`floorSegmentIds`/`roomSegmentIds`: состав зон **из реестра** ∪ устройства плана `data-entity` ∪
+группы света ∪ режимы). Сжатый формат `a`/`c`/`r` переводится в state-объекты (`ha-ws.decodeEntities`,
+проверено локально); `app-state.subscribeSegment` — снимок/диффы → реестр → **синтетические**
+`state_changed` страницам (форма события та же, страницы не тронуты), переподписка на реконнекте.
+Держит масштаб ~4400 сущностей.
 
-**Целевое** (DESIGN реш. 13): `subscribe_entities` только на сущности текущего сегмента;
-их объявляет сам SVG через `data-entity`. Кешировать только статику (SVG/структуру).
-
-**Где:** `js/ha-registry.js → loadAll()`, `js/ha-ws.js → subscribeStateChanged()`, `js/app-state.js`.
+**Где:** `js/ha-ws.js` (subscribeEntities/decodeEntities), `js/ha-registry.js` (loadRegistries/
+applyEntitiesUpdate/entityIdsForArea), `js/app-state.js` (subscribeSegment), `js/floor-page.js`/`room-page.js`.
 **Связано с:** D2.
 
 ### ~~D2. `data-entity` из SVG не читается~~ — ✅ ЗАКРЫТ (v0.10.0)
