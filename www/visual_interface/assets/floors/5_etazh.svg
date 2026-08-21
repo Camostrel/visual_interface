@@ -334,9 +334,9 @@
     <line x1="311.36" y1="278.06" x2="309.14" y2="278.06" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
     <line x1="309.14" y1="278.06" x2="309.14" y2="270.97" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
     <line x1="309.14" y1="270.97" x2="291.86" y2="270.97" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
-    <line x1="291.86" y1="270.97" x2="291.86" y2="226.64" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="291.86" y1="270.97" x2="291.86" y2="229.05" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
     <line x1="291.86" y1="226.64" x2="168.87" y2="226.64" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
-    <line x1="168.87" y1="226.64" x2="168.87" y2="406.15" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.87" y1="229.05" x2="168.87" y2="406.15" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
     <line x1="1129.76" y1="873.31" x2="1129.76" y2="883.05" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
     <line x1="1129.76" y1="883.05" x2="1139.51" y2="883.05" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
     <line x1="1139.51" y1="883.05" x2="1139.51" y2="873.31" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
@@ -538,6 +538,7 @@
     <line x1="1022.72" y1="577.21" x2="1005.44" y2="577.21" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
     <line x1="1005.44" y1="577.21" x2="1005.44" y2="607.37" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
     <line x1="1005.44" y1="607.37" x2="1022.72" y2="607.37" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.87" y1="229.05" x2="291.86" y2="229.05" stroke-width=".43px" stroke="currentColor" fill="none" class="plan-wall" />
   </g>
   <g id="devices">
     <g id="kp_5_4_1" class="device-node device-panel" data-entity="event.kp_5_4_1" fill="transparent" stroke="currentColor">
@@ -970,10 +971,10 @@
     <g id="l_5_3_33" class="device-node device-light" data-entity="light.l_5_3_33" fill="transparent" stroke="currentColor">
       <rect x="1239.2" y="1023.81" width="26.48" height="3.99" stroke-width=".43px" />
     </g>
-    <g id="l_2_8_19" class="device-node device-light" data-entity="light.l_2_8_19" fill="transparent" stroke="currentColor">
+    <g id="l_4_3_24" class="device-node device-light" data-entity="light.l_4_3_24" fill="transparent" stroke="currentColor">
       <rect x="1241.01" y="69.35" width="26.48" height="3.99" stroke-width=".43px" />
     </g>
-    <g id="l_2_8_20" class="device-node device-light" data-entity="light.l_2_8_20" fill="transparent" stroke="currentColor">
+    <g id="l_4_3_25" class="device-node device-light" data-entity="light.l_4_3_25" fill="transparent" stroke="currentColor">
       <rect x="1241.01" y="112.55" width="26.48" height="3.99" stroke-width=".43px" />
     </g>
     <g id="l_5_1_2" class="device-node device-light" data-entity="light.l_5_1_2" fill="transparent" stroke="currentColor">
@@ -1173,9 +1174,16 @@
     </g>
   </g>
   <g id="room-zones">
-    <path id="501_koridor" class="room-zone" data-room-id="501_koridor" d="M 177.29,727.48 L 177.29,227.83 L 291.86,229.56 L 291.86,727.48 L 177.29,727.48 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
-    <path id="504_rekreatcia" class="room-zone" data-room-id="504_rekreatcia" d="M 168.86,225.02 L 291.86,225.02 L 291.86,222.21 L 311.36,222.21 L 311.36,38.28 L 168.86,38.28 L 168.86,225.02 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
-    <path id="503_zal" class="room-zone" data-room-id="503_zal" d="M 456.96,724.82 L 456.96,530.69 L 717.57,530.70 L 717.57,724.82 L 456.96,724.82 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
-    <path id="502_koridor" class="room-zone" data-room-id="502_koridor" d="M 168.42,730.55 L 168.49,873.28 L 986.12,873.28 L 986.16,730.15 L 168.42,730.55 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="501_lestnitsa" class="room-zone" data-room-id="501_lestnitsa" d="M 4.87,43.15 L 4.87,124.26 L 159.11,124.26 L 159.11,119.83 L 163.55,119.83 L 163.55,47.58 L 159.11,47.58 L 159.11,43.15 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="502_rekreatsiia" class="room-zone" data-room-id="502_rekreatsiia" d="M 168.86,226.64 L 291.86,226.64 L 291.86,222.21 L 311.36,222.21 L 311.36,129.59 L 309.14,129.59 L 309.14,119.83 L 311.36,119.83 L 311.36,47.59 L 309.14,47.59 L 309.14,45.37 L 289.20,45.37 L 289.20,38.28 L 168.86,38.28 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="510_koridor" class="room-zone" data-room-id="510_koridor" d="M 168.86,229.05 L 291.86,229.05 L 291.86,270.97 L 309.14,270.97 L 309.14,278.06 L 311.36,278.06 L 311.36,321.94 L 296.29,321.94 L 296.29,340.77 L 311.36,340.77 L 311.36,381.33 L 309.14,381.33 L 309.14,391.08 L 311.36,391.08 L 311.36,494.35 L 309.14,494.35 L 309.14,532.91 L 311.36,532.91 L 311.36,607.37 L 309.14,607.37 L 309.14,617.12 L 311.36,617.12 L 311.36,720.39 L 309.14,720.39 L 309.14,727.48 L 177.29,727.48 L 177.29,632.20 L 168.87,632.19 L 168.88,607.81 L 182.83,607.81 L 182.83,585.65 L 168.87,585.65 L 168.87,461.57 L 177.29,461.57 L 177.29,406.15 L 168.86,406.15 L 168.86,229.05 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="511_rekreatsiia" class="room-zone" data-room-id="511_rekreatsiia" d="M 225.60,1035.08 L 225.60,875.28 L 166.50,875.28 L 166.50,745.20 L 111.92,745.20 L 111.92,730.14 L 7.09,730.14 L 7.09,740.11 L -0.00,740.11 L -0.00,871.08 L 11.52,871.08 L 11.52,890.81 L 7.09,890.81 L 7.09,1035.08 L 112.58,1035.08 L 112.58,1033.23 L 122.33,1033.23 L 122.33,1035.08 L 225.60,1035.08 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="512_koridor" class="room-zone" data-room-id="512_koridor" d="M 168.49,873.28 L 168.49,730.15 L 986.16,730.35 L 986.16,864.88 L 972.53,864.88 L 972.53,873.30 L 886.44,873.30 L 886.44,864.89 L 859.85,864.88 L 859.84,873.30 L 836.58,873.30 L 836.59,864.89 L 809.99,864.86 L 810.00,873.21 L 786.72,873.25 L 786.72,864.87 L 771.20,864.89 L 771.21,873.25 L 644.89,873.34 L 644.88,864.88 L 600.57,864.86 L 600.57,873.26 L 412.20,873.26 L 412.20,864.89 L 356.80,864.89 L 356.80,873.28 L 168.49,873.28 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="523_koridor" class="room-zone" data-room-id="523_koridor" d="M 988.38,864.88 L 988.41,730.35 L 1139.51,730.14 L 1139.50,720.39 L 1135.08,720.39 L 1135.08,666.99 L 1139.51,666.99 L 1139.51,499.67 L 1227.27,499.67 L 1227.27,506.98 L 1218.85,506.98 L 1218.85,551.31 L 1227.27,551.31 L 1227.27,618.90 L 1218.85,618.90 L 1218.85,634.41 L 1227.27,634.41 L 1227.27,692.02 L 1220.62,692.02 L 1220.62,723.04 L 1227.27,723.06 L 1227.27,873.30 L 1005.78,873.31 L 1005.78,864.88 L 988.38,864.88 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="522_rekreatsiia" class="room-zone" data-room-id="522_rekreatsiia" d="M 1031.26,1035.07 L 1031.26,1032.86 L 1021.74,1032.86 L 1021.74,957.96 L 1046.32,957.96 L 1046.32,876.51 L 1129.76,876.51 L 1129.76,883.05 L 1139.51,883.05 L 1139.51,876.51 L 1233.67,876.51 L 1233.67,730.14 L 1389.04,730.14 L 1389.05,833.41 L 1386.83,833.41 L 1386.83,843.16 L 1389.04,843.16 L 1389.05,950.87 L 1237.02,950.87 L 1237.02,946.43 L 1227.27,946.43 L 1227.27,1032.86 L 1222.84,1032.86 L 1222.84,1041.72 L 1146.16,1041.72 L 1146.16,1032.86 L 1127.55,1032.86 L 1127.55,1035.07 L 1031.26,1035.07 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="514_aktovyi" class="room-zone" data-room-id="514_aktovyi" d="M 461.39,724.82 L 461.39,720.39 L 456.96,720.39 L 456.96,532.91 L 461.39,532.91 L 461.39,530.69 L 717.57,530.70 L 717.57,724.82 L 461.39,724.82 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="532_lestnitsa" class="room-zone" data-room-id="532_lestnitsa" d="M 1232.59,124.27 L 1232.59,47.58 L 1237.02,47.58 L 1237.02,43.16 L 1395.69,43.16 L 1395.69,124.27 L 1232.59,124.27 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="vykhod_na_krovliu" class="room-zone" data-room-id="vykhod_na_krovliu" d="M 1617.40,137.26 L 1617.40,46.35 L 1785.80,46.35 L 1785.80,137.26 L 1617.40,137.26 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="533_lestnitsa" class="room-zone" data-room-id="533_lestnitsa" d="M 1232.59,956.18 L 1391.26,956.18 L 1391.26,1037.29 L 1232.59,1037.29 L 1232.59,956.18 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
   </g>
 </svg>

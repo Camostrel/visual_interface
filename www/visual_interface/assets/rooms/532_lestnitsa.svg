@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="1220.59 31.16 187.10 105.11">
+  <g id="walls">
+    <line x1="1389.04" y1="268.31" x2="1389.04" y2="134.01" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1389.04" y1="134.01" x2="1386.83" y2="134.01" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1386.83" y1="134.01" x2="1386.83" y2="129.58" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1386.83" y1="129.58" x2="1237.02" y2="129.58" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1237.02" y1="129.58" x2="1237.02" y2="134.01" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1237.02" y1="134.01" x2="1232.59" y2="134.01" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1232.59" y1="134.01" x2="1232.59" y2="268.31" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1139.51" y1="119.83" x2="1227.27" y2="119.83" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1227.27" y1="119.83" x2="1227.27" y2="45.37" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1227.27" y1="45.37" x2="1139.51" y2="45.37" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1395.69" y1="43.16" x2="1237.02" y2="43.16" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1237.02" y1="43.16" x2="1237.02" y2="47.59" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1237.02" y1="47.59" x2="1232.59" y2="47.59" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1232.59" y1="47.59" x2="1232.59" y2="124.27" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1232.59" y1="124.27" x2="1395.69" y2="124.27" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1395.69" y1="124.27" x2="1395.69" y2="43.16" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1226.6" y1="143.54" x2="1226.6" y2="125.81" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="1226.6" y1="125.81" x2="1140.18" y2="125.81" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+  </g>
+  <g id="devices">
+    <g id="l_2_9_17" class="device-node device-light" data-entity="light.l_2_9_17" fill="transparent" stroke="currentColor">
+      <rect x="1351.18" y="69.35" width="26.48" height="3.99" stroke-width=".43px" />
+    </g>
+    <g id="l_2_9_18" class="device-node device-light" data-entity="light.l_2_9_18" fill="transparent" stroke="currentColor">
+      <rect x="1351.18" y="112.57" width="26.48" height="3.99" stroke-width=".43px" />
+    </g>
+    <g id="l_4_3_24" class="device-node device-light" data-entity="light.l_4_3_24" fill="transparent" stroke="currentColor">
+      <rect x="1241.01" y="69.35" width="26.48" height="3.99" stroke-width=".43px" />
+    </g>
+    <g id="l_4_3_25" class="device-node device-light" data-entity="light.l_4_3_25" fill="transparent" stroke="currentColor">
+      <rect x="1241.01" y="112.55" width="26.48" height="3.99" stroke-width=".43px" />
+    </g>
+    <g id="ms_2_9_13" class="device-node device-sensor" data-entity="sensor.ms_2_9_13" fill="transparent" stroke="currentColor">
+      <circle cx="1365.28" cy="91.44" r="4.65" stroke-width=".43px" />
+      <text transform="translate(1363.71 93.28)" font-size="5.01px" fill="currentColor" stroke="none">
+        <tspan x="0" y="0">R</tspan>
+      </text>
+    </g>
+    <g id="ms_4_3_9" class="device-node device-sensor" data-entity="sensor.ms_4_3_9" fill="transparent" stroke="currentColor">
+      <circle cx="1257.82" cy="90.65" r="4.65" stroke-width=".43px" />
+      <text transform="translate(1256.26 92.49)" font-size="5.01px" fill="currentColor" stroke="none">
+        <tspan x="0" y="0">R</tspan>
+      </text>
+    </g>
+  </g>
+  <g id="room-zones">
+    <path id="532_lestnitsa" class="room-zone" data-room-id="532_lestnitsa" d="M 1232.59,124.27 L 1232.59,47.58 L 1237.02,47.58 L 1237.02,43.16 L 1395.69,43.16 L 1395.69,124.27 L 1232.59,124.27 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+  </g>
+</svg>

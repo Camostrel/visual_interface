@@ -738,14 +738,6 @@
     overflow: hidden;
   }
 
-  /* Размытие фона под панелями отключено (v0.13.13): панели и так непрозрачные,
-     но пока меняется высота «Опций», браузер пересчитывал blur каждый кадр —
-     отсюда рябь при раскрытии. */
-  .side-panel,
-  .main-panel {
-    backdrop-filter: none;
-  }
-
   /* Полоса с этажами и темой убрана (v0.13.10): и то и другое переехало в шапку,
      а строка на телефоне дороже. */
   .left-panel,
@@ -1022,33 +1014,10 @@
     transform: rotate(180deg);
   }
 
-  /* Закрыто — панель ровно в высоту кнопки.
-     ⚠ display: none анимировать нельзя, поэтому содержимое всегда в потоке, а
-     сворачивается высотой: max-height + прозрачность. Панель меняет высоту вслед
-     за содержимым, план подхватывает это через ResizeObserver и плавно
-     перевписывается — отсюда и ощущение, что план «раздвигается». */
+  /* Закрыто — содержимого нет вовсе, панель ровно в высоту кнопки. */
   .right-panel .panel-content,
   .right-panel.is-collapsed .panel-content {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 0;
-    padding: 0 8px;
-    opacity: 0;
-    overflow: hidden;
-    pointer-events: none;
-    /* Скрытое содержимое не должно ловить фокус табом — но убираем его из дерева
-       только ПОСЛЕ анимации, иначе оно исчезнет рывком. */
-    visibility: hidden;
-    /* Анимируем ТОЛЬКО высоту и прозрачность. padding сюда добавлять нельзя: это
-       layout-свойство, и каждый кадр пересчитывалась раскладка всех секций внутри —
-       блоки было видно, как они «перерисовываются». Отступ переключается разом. */
-    padding-bottom: 0;
-    contain: layout paint;
-    transition:
-      max-height 0.26s cubic-bezier(0.32, 0.72, 0.3, 1),
-      opacity 0.16s ease,
-      visibility 0s linear 0.26s;
+    display: none;
   }
 
   /* «Опции» — только контейнер. Секции внутри остаются СВЁРНУТЫМИ кнопками и
@@ -1074,29 +1043,20 @@
     display: none;
   }
 
-  /* ⚠ Раскрытое состояние обязано быть привязано к .is-options-open: правило стоит
-     ПОСЛЕ свёрнутого, и без класса оно вернуло бы содержимое насовсем. */
+  /* ⚠ Раскрытое состояние: правило идёт ПОСЛЕ скрытия выше, поэтому обязано быть
+     привязано к .is-options-open — иначе оно вернёт содержимому display:flex и
+     «Опции» перестанут что-либо сворачивать. */
   .right-panel.is-options-open .panel-content,
   .right-panel.is-collapsed.is-options-open .panel-content {
+    display: flex;
     flex: 0 1 auto;
+    flex-direction: column;
+    gap: 8px;
     min-height: 0;
     max-height: min(46vh, 380px);
-    padding-bottom: 8px;
-    opacity: 1;
+    padding: 0 8px 8px;
     overflow-y: auto;
-    pointer-events: auto;
-    visibility: visible;
-    transition-delay: 0s;
     -webkit-overflow-scrolling: touch;
-  }
-
-  /* Системная настройка «меньше движения» — раскрываем без анимации. */
-  @media (prefers-reduced-motion: reduce) {
-    .right-panel .panel-content,
-    .right-panel.is-collapsed .panel-content,
-    .mobile-options-toggle .mobile-accordion-icon {
-      transition: none;
-    }
   }
 
   .right-panel .panel-section,

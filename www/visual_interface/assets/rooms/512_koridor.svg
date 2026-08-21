@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="156.42 718.15 841.74 167.13">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="156.49 718.15 841.67 167.19">
   <g id="walls">
     <line x1="343.05" y1="1032.86" x2="343.05" y2="883.05" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
     <line x1="343.05" y1="883.05" x2="309.81" y2="883.05" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
@@ -256,6 +256,6 @@
     </g>
   </g>
   <g id="room-zones">
-    <path id="502_koridor" class="room-zone" data-room-id="502_koridor" d="M 168.42,730.55 L 168.49,873.28 L 986.12,873.28 L 986.16,730.15 L 168.42,730.55 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="512_koridor" class="room-zone" data-room-id="512_koridor" d="M 168.49,873.28 L 168.49,730.15 L 986.16,730.35 L 986.16,864.88 L 972.53,864.88 L 972.53,873.30 L 886.44,873.30 L 886.44,864.89 L 859.85,864.88 L 859.84,873.30 L 836.58,873.30 L 836.59,864.89 L 809.99,864.86 L 810.00,873.21 L 786.72,873.25 L 786.72,864.87 L 771.20,864.89 L 771.21,873.25 L 644.89,873.34 L 644.88,864.88 L 600.57,864.86 L 600.57,873.26 L 412.20,873.26 L 412.20,864.89 L 356.80,864.89 L 356.80,873.28 L 168.49,873.28 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
   </g>
 </svg>

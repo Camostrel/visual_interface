@@ -123,6 +123,6 @@
     </g>
   </g>
   <g id="room-zones">
-    <path id="503_zal" class="room-zone" data-room-id="503_zal" d="M 456.96,724.82 L 456.96,530.69 L 717.57,530.70 L 717.57,724.82 L 456.96,724.82 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+    <path id="514_aktovyi" class="room-zone" data-room-id="514_aktovyi" d="M 461.39,724.82 L 461.39,720.39 L 456.96,720.39 L 456.96,532.91 L 461.39,532.91 L 461.39,530.69 L 717.57,530.70 L 717.57,724.82 L 461.39,724.82 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
   </g>
 </svg>

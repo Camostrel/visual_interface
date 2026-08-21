@@ -1,0 +1,151 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="-12.00 718.14 249.60 328.94">
+  <g id="walls">
+    <line x1="230.92" y1="1032.86" x2="235.35" y2="1032.86" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="235.35" y1="1032.86" x2="235.35" y2="1035.07" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="235.35" y1="1035.07" x2="338.62" y2="1035.07" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="309.81" y1="878.62" x2="235.35" y2="878.62" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="235.35" y1="878.62" x2="235.35" y2="883.05" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="235.35" y1="883.05" x2="230.92" y2="883.05" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="230.92" y1="883.05" x2="230.92" y2="1032.86" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="7.09" y1="617.12" x2="7.09" y2="720.39" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="7.09" y1="720.39" x2="9.31" y2="720.39" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="9.31" y1="720.39" x2="9.31" y2="724.82" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="9.31" y1="724.82" x2="159.12" y2="724.82" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="159.12" y1="724.82" x2="159.12" y2="720.39" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="159.12" y1="720.39" x2="163.55" y2="720.39" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="163.55" y1="720.39" x2="163.55" y2="617.12" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="177.29" y1="632.19" x2="177.29" y2="727.48" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="177.29" y1="727.48" x2="309.14" y2="727.48" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="197.23" y1="864.89" x2="168.42" y2="864.89" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="864.89" x2="168.42" y2="873.28" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="873.28" x2="197.23" y2="873.28" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="197.23" y1="873.28" x2="197.23" y2="864.89" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="864.89" x2="197.23" y2="864.89" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="197.23" y1="864.89" x2="197.23" y2="873.28" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="197.23" y1="873.28" x2="356.8" y2="873.28" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="986.16" y1="730.15" x2="168.42" y2="730.15" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="730.15" x2="168.42" y2="864.89" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="121.89" y1="873.74" x2="113.02" y2="873.74" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="113.02" y1="873.74" x2="113.02" y2="882.61" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="113.02" y1="882.61" x2="121.89" y2="882.61" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="121.89" y1="882.61" x2="121.89" y2="875.97" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="121.89" y1="875.97" x2="159.56" y2="875.96" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="159.56" y1="875.96" x2="159.56" y2="882.61" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="159.56" y1="882.61" x2="168.42" y2="882.61" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="882.61" x2="168.42" y2="875.96" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="875.96" x2="197.23" y2="875.97" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="197.23" y1="875.97" x2="197.23" y2="873.28" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="197.23" y1="873.28" x2="168.42" y2="873.28" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="873.28" x2="168.42" y2="864.89" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="864.89" x2="121.89" y2="864.89" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="121.89" y1="864.89" x2="121.89" y2="873.74" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="113.02" y1="873.74" x2="121.89" y2="873.74" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="121.89" y1="873.74" x2="121.89" y2="864.89" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="121.89" y1="864.89" x2="168.42" y2="864.89" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="864.89" x2="168.42" y2="745.2" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="745.2" x2="111.92" y2="745.2" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="111.92" y1="745.2" x2="111.92" y2="730.14" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="111.92" y1="730.14" x2="7.09" y2="730.14" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="7.09" y1="730.14" x2="7.09" y2="740.11" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="0" y1="871.08" x2="11.52" y2="871.08" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="11.52" y1="871.08" x2="11.52" y2="890.81" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="11.52" y1="890.81" x2="7.09" y2="890.81" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="7.09" y1="890.81" x2="7.09" y2="1032.86" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="7.09" y1="1032.86" x2="9.31" y2="1032.86" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="9.31" y1="1032.86" x2="9.31" y2="1035.07" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="9.31" y1="1035.07" x2="112.58" y2="1035.07" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="112.58" y1="1035.07" x2="112.58" y2="1033.23" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="112.58" y1="1033.23" x2="122.33" y2="1033.23" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="122.33" y1="1033.23" x2="122.33" y2="1035.07" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="122.33" y1="1035.07" x2="225.6" y2="1035.07" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="225.6" y1="1035.07" x2="225.6" y2="873.29" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="225.6" y1="873.29" x2="197.23" y2="873.28" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="197.23" y1="873.28" x2="197.23" y2="875.97" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="197.23" y1="875.97" x2="168.42" y2="875.96" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="875.96" x2="168.42" y2="882.61" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="168.42" y1="882.61" x2="159.56" y2="882.61" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="159.56" y1="882.61" x2="159.56" y2="875.96" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="159.56" y1="875.96" x2="121.89" y2="875.97" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="121.89" y1="875.97" x2="121.89" y2="882.61" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="121.89" y1="882.61" x2="113.02" y2="882.61" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+    <line x1="113.02" y1="882.61" x2="113.02" y2="873.74" stroke-width=".26px" stroke="currentColor" fill="none" class="plan-wall" />
+  </g>
+  <g id="devices">
+    <g id="l_5_1_27" class="device-node device-light" data-entity="light.l_5_1_27" fill="transparent" stroke="currentColor">
+      <rect x="20.37" y="745.98" width="26.55" height="4.03" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_28" class="device-node device-light" data-entity="light.l_5_1_28" fill="transparent" stroke="currentColor">
+      <rect x="110.06" y="745.98" width="26.64" height="4.03" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_31" class="device-node device-light" data-entity="light.l_5_1_31" fill="transparent" stroke="currentColor">
+      <rect x="110.06" y="795.42" width="26.64" height="3.94" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_30" class="device-node device-light" data-entity="light.l_5_1_30" fill="transparent" stroke="currentColor">
+      <rect x="20.37" y="795.42" width="26.55" height="3.94" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_34" class="device-node device-light" data-entity="light.l_5_1_34" fill="transparent" stroke="currentColor">
+      <rect x="110.06" y="846.64" width="26.64" height="3.94" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_33" class="device-node device-light" data-entity="light.l_5_1_33" fill="transparent" stroke="currentColor">
+      <rect x="20.37" y="846.64" width="26.55" height="3.94" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_39" class="device-node device-light" data-entity="light.l_5_1_39" fill="transparent" stroke="currentColor">
+      <rect x="198.71" y="888.48" width="3.94" height="26.64" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_38" class="device-node device-light" data-entity="light.l_5_1_38" fill="transparent" stroke="currentColor">
+      <rect x="142.98" y="888.48" width="4.03" height="26.64" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_36" class="device-node device-light" data-entity="light.l_5_1_36" fill="transparent" stroke="currentColor">
+      <rect x="31.63" y="888.48" width="4.03" height="26.64" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_43" class="device-node device-light" data-entity="light.l_5_1_43" fill="transparent" stroke="currentColor">
+      <rect x="198.71" y="942.33" width="3.94" height="26.55" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_42" class="device-node device-light" data-entity="light.l_5_1_42" fill="transparent" stroke="currentColor">
+      <rect x="142.98" y="942.33" width="4.03" height="26.55" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_41" class="device-node device-light" data-entity="light.l_5_1_41" fill="transparent" stroke="currentColor">
+      <rect x="87.35" y="942.33" width="3.94" height="26.55" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_40" class="device-node device-light" data-entity="light.l_5_1_40" fill="transparent" stroke="currentColor">
+      <rect x="31.63" y="942.33" width="4.03" height="26.55" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_37" class="device-node device-light" data-entity="light.l_5_1_37" fill="transparent" stroke="currentColor">
+      <rect x="87.35" y="888.48" width="3.94" height="26.64" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_47" class="device-node device-light" data-entity="light.l_5_1_47" fill="transparent" stroke="currentColor">
+      <rect x="198.71" y="1002.55" width="3.94" height="26.55" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_46" class="device-node device-light" data-entity="light.l_5_1_46" fill="transparent" stroke="currentColor">
+      <rect x="142.98" y="1002.55" width="4.03" height="26.55" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_45" class="device-node device-light" data-entity="light.l_5_1_45" fill="transparent" stroke="currentColor">
+      <rect x="87.35" y="1002.55" width="3.94" height="26.55" stroke-width=".43px" />
+    </g>
+    <g id="l_5_1_44" class="device-node device-light" data-entity="light.l_5_1_44" fill="transparent" stroke="currentColor">
+      <rect x="31.63" y="1002.55" width="4.03" height="26.55" stroke-width=".43px" />
+    </g>
+    <g id="ms_5_1_9" class="device-node device-sensor" data-entity="sensor.ms_5_1_9" fill="transparent" stroke="currentColor">
+      <circle cx="54.97" cy="802.44" r="4.65" stroke-width=".43px" />
+      <text transform="translate(53.4 804.28)" font-size="5.01px" fill="currentColor" stroke="none">
+        <tspan x="0" y="0">R</tspan>
+      </text>
+    </g>
+    <g id="ms_5_1_10" class="device-node device-sensor" data-entity="sensor.ms_5_1_10" fill="transparent" stroke="currentColor">
+      <circle cx="53.5" cy="959.89" r="4.65" stroke-width=".43px" />
+      <text transform="translate(51.94 961.73)" font-size="5.01px" fill="currentColor" stroke="none">
+        <tspan x="0" y="0">R</tspan>
+      </text>
+    </g>
+    <g id="ms_5_1_11" class="device-node device-sensor" data-entity="sensor.ms_5_1_11" fill="transparent" stroke="currentColor">
+      <circle cx="179.07" cy="953.57" r="4.65" stroke-width=".43px" />
+      <text transform="translate(177.5 955.41)" font-size="5.01px" fill="currentColor" stroke="none">
+        <tspan x="0" y="0">R</tspan>
+      </text>
+    </g>
+  </g>
+  <g id="room-zones">
+    <path id="511_rekreatsiia" class="room-zone" data-room-id="511_rekreatsiia" d="M 225.60,1035.08 L 225.60,875.28 L 166.50,875.28 L 166.50,745.20 L 111.92,745.20 L 111.92,730.14 L 7.09,730.14 L 7.09,740.11 L -0.00,740.11 L -0.00,871.08 L 11.52,871.08 L 11.52,890.81 L 7.09,890.81 L 7.09,1035.08 L 112.58,1035.08 L 112.58,1033.23 L 122.33,1033.23 L 122.33,1035.08 L 225.60,1035.08 Z" fill="none" stroke="currentColor" stroke-width="0.5" />
+  </g>
+</svg>
