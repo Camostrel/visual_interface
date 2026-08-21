@@ -473,3 +473,294 @@
 .schedule-submit-btn:hover {
   opacity: 0.9;
 }
+
+/* ==================================================================
+   Вкладки «События / Исключения»
+   ================================================================== */
+.schedule-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.schedule-tab {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 120ms, border-color 120ms;
+}
+
+.schedule-tab.is-active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.schedule-tab:hover:not(.is-active) { color: var(--text); }
+
+/* Панели вкладок заполняют контейнер; скрытая — не в потоке */
+.schedule-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.schedule-pane[hidden] { display: none; }
+
+/* Баннер «сегодня расписание отключено» */
+.schedule-excluded-banner {
+  flex-shrink: 0;
+  margin: 12px 16px 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(220, 130, 60, 0.15);
+  color: #dc823c;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid rgba(220, 130, 60, 0.3);
+}
+
+/* Событие, отключённое сегодня датой-исключением */
+.schedule-event.is-excluded-today { opacity: 0.5; }
+
+/* ==================================================================
+   Вкладка «Исключения»: календарь + список + подвал
+   ================================================================== */
+.schedule-exc-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+
+.schedule-cal__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.schedule-cal__title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.schedule-cal__navbtn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-soft);
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-cal__navbtn:hover { background: var(--panel); }
+
+.schedule-cal__weekdays,
+.schedule-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.schedule-cal__weekdays {
+  margin-bottom: 6px;
+}
+
+.schedule-cal__weekdays span {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Сетка перехватывает жест — палец выделяет даты, а не скроллит */
+.schedule-cal__grid { touch-action: none; }
+
+.schedule-cal__cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-soft);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  transition: background 100ms, border-color 100ms;
+}
+
+.schedule-cal__cell:hover:not(.is-blank) {
+  border-color: color-mix(in srgb, var(--accent), transparent 50%);
+}
+
+.schedule-cal__cell.is-blank {
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.schedule-cal__cell.is-excluded {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #06111c;
+  font-weight: 700;
+}
+
+.schedule-cal__cell.is-today {
+  outline: 2px solid color-mix(in srgb, var(--accent), transparent 35%);
+  outline-offset: -2px;
+}
+
+.schedule-cal__cell.is-preview {
+  border-style: dashed;
+  opacity: 0.75;
+}
+
+.schedule-exc-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+/* Список выбранных дат/диапазонов */
+.schedule-exc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.schedule-exc-empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 10px 0;
+  text-align: center;
+}
+
+.schedule-exc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-soft), transparent 30%);
+}
+
+.schedule-exc-row__dates {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.schedule-exc-row__note {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.schedule-exc-row__note:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent), transparent 40%);
+}
+
+.schedule-exc-row__del {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--text), transparent 82%);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.schedule-exc-row__del:hover {
+  border-color: #e05252;
+  color: #e05252;
+  background: rgba(224, 82, 82, 0.08);
+}
+
+/* Подвал: индикатор несохранённого + сохранить/отменить */
+.schedule-exc-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.schedule-exc-dirty {
+  font-size: 12px;
+  color: #dc823c;
+  font-weight: 600;
+}
+
+.schedule-exc-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.schedule-exc-cancel {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.schedule-exc-cancel:hover { background: var(--panel-soft); color: var(--text); }
+
+.schedule-exc-save {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #06111c;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 120ms;
+}
+
+.schedule-exc-save:hover { opacity: 0.9; }
+
+/* Ошибка валидации формы события (наложение и т.п.) */
+.schedule-form-error {
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(224, 82, 82, 0.12);
+  border: 1px solid rgba(224, 82, 82, 0.35);
+  color: #e05252;
+  font-size: 13px;
+}

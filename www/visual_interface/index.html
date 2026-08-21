@@ -19,12 +19,12 @@
   </script>
   <!-- ?v=версия — разбиватель кеша (HA отдаёт /local/ с max-age 31 день). Деплой правит эти метки
        вместе с APP_VERSION в js/config.js. См. docs/DEPLOY.md, раздел про кеш. -->
-  <link rel="stylesheet" href="css/themes.css?v=v0.11.8">
-  <link rel="stylesheet" href="css/base.css?v=v0.11.8">
-  <link rel="stylesheet" href="css/shell.css?v=v0.11.8">
-  <link rel="stylesheet" href="css/floor.css?v=v0.11.8">
-  <link rel="stylesheet" href="css/room.css?v=v0.11.8">
-  <link rel="stylesheet" href="css/schedule.css?v=v0.11.8">
+  <link rel="stylesheet" href="css/themes.css?v=v0.11.9">
+  <link rel="stylesheet" href="css/base.css?v=v0.11.9">
+  <link rel="stylesheet" href="css/shell.css?v=v0.11.9">
+  <link rel="stylesheet" href="css/floor.css?v=v0.11.9">
+  <link rel="stylesheet" href="css/room.css?v=v0.11.9">
+  <link rel="stylesheet" href="css/schedule.css?v=v0.11.9">
 </head>
 <body>
   <div class="arvid-spa" data-spa-root>
@@ -221,15 +221,50 @@
           </div>
         </div>
 
-        <!-- Контейнер: список + панель формы поверх -->
+        <!-- Вкладки: события / исключения -->
+        <div class="schedule-tabs" role="tablist">
+          <button type="button" class="schedule-tab is-active" data-schedule-tab="events" role="tab">События</button>
+          <button type="button" class="schedule-tab" data-schedule-tab="exceptions" role="tab">Исключения</button>
+        </div>
+
+        <!-- Контейнер: панели «События» и «Исключения» + форма поверх -->
         <div class="schedule-popup__content">
 
-          <!-- Вид: список событий -->
-          <div class="schedule-popup__body" data-schedule-view="list">
-            <div class="schedule-list" data-schedule-list></div>
+          <!-- Панель: СОБЫТИЯ -->
+          <div class="schedule-pane" data-schedule-pane="events">
+            <div class="schedule-excluded-banner" data-schedule-excluded-banner hidden></div>
+            <div class="schedule-popup__body" data-schedule-view="list">
+              <div class="schedule-list" data-schedule-list></div>
+            </div>
           </div>
 
-          <!-- Панель формы — выезжает поверх списка справа -->
+          <!-- Панель: ИСКЛЮЧЕНИЯ (даты-выходные) -->
+          <div class="schedule-pane" data-schedule-pane="exceptions" hidden>
+            <div class="schedule-exc-scroll">
+              <div class="schedule-cal">
+                <div class="schedule-cal__nav">
+                  <button type="button" class="schedule-cal__navbtn" data-cal-prev aria-label="Предыдущий месяц">‹</button>
+                  <span class="schedule-cal__title" data-cal-title></span>
+                  <button type="button" class="schedule-cal__navbtn" data-cal-next aria-label="Следующий месяц">›</button>
+                </div>
+                <div class="schedule-cal__weekdays">
+                  <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+                </div>
+                <div class="schedule-cal__grid" data-cal-grid></div>
+              </div>
+              <div class="schedule-exc-hint">Клик — отметить дату, протаскивание — диапазон. В эти дни расписание не работает.</div>
+              <div class="schedule-exc-list" data-exc-list></div>
+            </div>
+            <div class="schedule-exc-footer">
+              <span class="schedule-exc-dirty" data-exc-dirty hidden>● есть несохранённые изменения</span>
+              <div class="schedule-exc-actions">
+                <button type="button" class="schedule-exc-cancel" data-exc-cancel>Отменить</button>
+                <button type="button" class="schedule-exc-save" data-exc-save>Сохранить</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Панель формы события — выезжает поверх (абсолют) -->
           <div class="schedule-form-panel" data-schedule-view="form">
             <div class="schedule-form-panel__header">
               <button type="button" class="schedule-back-btn" data-schedule-back>← Назад</button>
@@ -276,6 +311,7 @@
                   <label>Описание (необязательно)</label>
                   <textarea data-sf-description rows="2" placeholder="Дополнительная информация"></textarea>
                 </div>
+                <div class="schedule-form-error" data-sf-error hidden></div>
                 <button type="submit" class="schedule-submit-btn" data-sf-submit>Добавить</button>
               </form>
             </div>
@@ -286,20 +322,20 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=v0.11.8"></script>
-  <script src="js/logger.js?v=v0.11.8"></script>
-  <script src="js/ha-ws.js?v=v0.11.8"></script>
-  <script src="js/floorplan-storage.js?v=v0.11.8"></script>
-  <script src="js/ha-registry.js?v=v0.11.8"></script>
-  <script src="js/health.js?v=v0.11.8"></script>
-  <script src="js/app-state.js?v=v0.11.8"></script>
-  <script src="js/svg-utils.js?v=v0.11.8"></script>
-  <script src="js/device-ui.js?v=v0.11.8"></script>
-  <script src="js/shell-ui.js?v=v0.11.8"></script>
-  <script src="js/floor-page.js?v=v0.11.8"></script>
-  <script src="js/room-page.js?v=v0.11.8"></script>
-  <script src="js/spa-router.js?v=v0.11.8"></script>
-  <script src="js/schedule-ui.js?v=v0.11.8"></script>
+  <script src="js/config.js?v=v0.11.9"></script>
+  <script src="js/logger.js?v=v0.11.9"></script>
+  <script src="js/ha-ws.js?v=v0.11.9"></script>
+  <script src="js/floorplan-storage.js?v=v0.11.9"></script>
+  <script src="js/ha-registry.js?v=v0.11.9"></script>
+  <script src="js/health.js?v=v0.11.9"></script>
+  <script src="js/app-state.js?v=v0.11.9"></script>
+  <script src="js/svg-utils.js?v=v0.11.9"></script>
+  <script src="js/device-ui.js?v=v0.11.9"></script>
+  <script src="js/shell-ui.js?v=v0.11.9"></script>
+  <script src="js/floor-page.js?v=v0.11.9"></script>
+  <script src="js/room-page.js?v=v0.11.9"></script>
+  <script src="js/spa-router.js?v=v0.11.9"></script>
+  <script src="js/schedule-ui.js?v=v0.11.9"></script>
   <script>
     window.ARVID_SPA = new ArvidSpaApp();
     window.ARVID_SPA.init()
