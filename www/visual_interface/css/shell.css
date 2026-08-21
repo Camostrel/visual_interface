@@ -768,21 +768,34 @@
     flex: 1 1 auto;
   }
 
+  /* Шапка в одну строку (v0.13.9): слева название этажа, справа режимы карты.
+     Отдельной строки под режимы на телефоне нет — ради этого их и переносили. */
   .topbar {
-    align-items: flex-start;
-    padding: 12px;
+    align-items: center;
+    padding: 10px 12px;
     gap: 8px;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+
+  .topbar-title {
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .topbar-title h1 {
-    font-size: 18px;
+    font-size: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .topbar-title p {
     display: none;
   }
 
+  /* Скрыт селектор этажа: этажи и так стоят кнопками в верхней полосе.
+     Режимы карты живут отдельным блоком и этим правилом не задеваются. */
   .topbar-actions {
     display: none;
   }
@@ -915,37 +928,9 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Внутри «Опций» секции показываются целиком, как на десктопе: вложенные
-     аккордеоны здесь были бы вторым слоем сворачивания на том же экране. */
-  .right-panel.is-options-open .panel-section h3 {
-    display: block;
-    margin: 0 0 6px;
-    padding: 10px 12px 0;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .right-panel.is-options-open .mobile-accordion-toggle {
-    display: none;
-  }
-
-  .right-panel.is-options-open .mobile-accordion-body {
-    position: static;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: auto;
-    max-height: none;
-    padding: 0 12px 12px;
-    border: none;
-    box-shadow: none;
-    background: transparent;
-    transform: none;
-    opacity: 1;
-    pointer-events: auto;
-  }
+  /* «Опции» — только контейнер. Секции внутри остаются СВЁРНУТЫМИ кнопками и
+     раскрываются по одной, как раньше: разворачивать их все сразу — значит снова
+     занять полэкрана, ровно то, от чего уходили. */
 
   .right-panel .brand,
   .right-panel.is-collapsed .brand {

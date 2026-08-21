@@ -166,8 +166,18 @@ class ArvidFloorPage {
       const open = !panel.classList.contains("is-options-open");
       panel.classList.toggle("is-options-open", open);
       toggle.setAttribute("aria-expanded", String(open));
-      // Открытая секция-аккордеон старой схемы не должна висеть поверх «Опций».
-      this.restoreMobileAccordionBody?.();
+
+      // Секции внутри остаются обычными аккордеонами и раскрываются по одной.
+      // При закрытии «Опций» гасим раскрытую: её тело живёт в плавающем слое и
+      // иначе осталось бы висеть над планом уже без своей кнопки.
+      if (!open) {
+        this.restoreMobileAccordionBody?.();
+        this.mobileAccordionSections?.forEach((section) => section.classList.remove("is-open"));
+        panel.classList.remove("has-mobile-accordion-open");
+        panel.querySelectorAll("[data-mobile-accordion-toggle]").forEach((item) => {
+          item.setAttribute("aria-expanded", "false");
+        });
+      }
       ARVID_LOG.debug(this.logArea, "Mobile options toggled", { open });
     });
 
